@@ -29,6 +29,13 @@ struct BrowserView: View {
         }
         .task(id: model.connection) { await loadShares() }
         .onChange(of: selection) { path = [] }
+        .onChange(of: model.navigationRequest, initial: true) {
+            // From the Mac menu bar: show a share or the Offline list.
+            guard let request = model.navigationRequest else { return }
+            selection = request
+            path = []
+            model.navigationRequest = nil
+        }
         #if os(iOS)
         .sheet(isPresented: $showingSettings) {
             NavigationStack { SettingsView() }

@@ -9,6 +9,9 @@ struct SettingsView: View {
     @State private var confirmRemove: ServerProfile?
     @State private var editing: ServerProfile?
     @State private var showingGuide = false
+    #if os(macOS)
+    @AppStorage("showMenuBarItem") private var showMenuBarItem = true
+    #endif
 
     var body: some View {
         @Bindable var model = model
@@ -23,6 +26,14 @@ struct SettingsView: View {
             } footer: {
                 Text("Ownhold never collects analytics or sends data anywhere except your NAS.")
             }
+
+            #if os(macOS)
+            Section {
+                Toggle("Show in Menu Bar", isOn: $showMenuBarItem)
+            } footer: {
+                Text("Connection status, uploads and quick access to your shared folders.")
+            }
+            #endif
 
             Section("Storage on This Device") {
                 LabeledContent("Offline files", value: offlineBytes == 0 ? "None" : Format.bytes(offlineBytes))

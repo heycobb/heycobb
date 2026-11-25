@@ -24,6 +24,11 @@ final class AppModel {
     private(set) var offline: OfflineStore?
     private(set) var thumbnails: ThumbnailCache?
     private(set) var savedPaths: Set<String> = []
+    /// Offline files, newest first (the Mac menu bar lists the most recent).
+    private(set) var offlineEntries: [OfflineEntry] = []
+    /// Set from outside the main window (the Mac menu bar) to show a share
+    /// or the Offline list there.
+    var navigationRequest: SidebarItem?
     /// Bumped when a folder's contents change, so open folder views reload.
     private(set) var folderRevisions: [String: Int] = [:]
     /// Uploads the user started. Runs only while the app is open.
@@ -45,6 +50,7 @@ final class AppModel {
         didSet { defaults.set(hideInSwitcher, forKey: Keys.hideInSwitcher) }
     }
 
+    @ObservationIgnored private var started = false
     let trust = CertificateTrust()
     private let keychain = Keychain()
     private let defaults = UserDefaults.standard
@@ -66,8 +72,10 @@ final class AppModel {
 
     // MARK: Launch
 
+    /// Called by both the main window and the Mac menu bar item; runs once.
     func start() async {
-        guard activeServer == nil else { return }
+        guard !started, activeServer == nil else { return }
+        started = true
         #if DEBUG
         // `-demo` opens the demo library directly: used for screenshots.
         if CommandLine.arguments.contains("-demo") {
@@ -89,7 +97,7 @@ final class AppModel {
         defaults.set(profile.id.uuidString, forKey: Keys.lastServer)
         offline = OfflineStore(namespace: profile.id.uuidString)
         thumbnails = ThumbnailCache(namespace: profile.id.uuidString)
-        savedPaths = await offline?.savedPaths() ?? []
+        await refreshSaved()
 
         if profile.isDemo {
             service = DemoFileService()
@@ -194,13 +202,13 @@ final class AppModel {
                 banner = (error as? LocalizedError)?.errorDescription ?? "Couldn't save for offline use."
             }
         }
-        savedPaths = await offline.savedPaths()
+        await refreshSaved()
     }
 
     func refreshOffline() async {
         guard let offline, let service, case .online = connection else { return }
         await offline.refresh(using: service)
-        savedPaths = await offline.savedPaths()
+        await refreshSaved()
     }
 
     /// A local copy for previewing: the offline file if saved, otherwise a
@@ -229,6 +237,12 @@ final class AppModel {
         return urls
     }
 
+    private func refreshSaved() async {
+        let entries = await offline?.all() ?? []
+        savedPaths = Set(entries.map(\.item.path))
+        offlineEntries = entries.sorted { $0.savedAt > $1.savedAt }
+    }
+
     // MARK: Changes
 
     func revision(of folder: String) -> Int { folderRevisions[folder] ?? 0 }
@@ -255,7 +269,7 @@ final class AppModel {
         do {
             let renamed = try await service.rename(item, to: name.trimmingCharacters(in: .whitespaces))
             await offline?.relocate(from: item.path, to: renamed.path)
-            savedPaths = await offline?.savedPaths() ?? []
+            await refreshSaved()
             folderChanged(item.parentPath)
         } catch {
             handle(error)
@@ -272,7 +286,7 @@ final class AppModel {
             for item in items {
                 await offline?.relocate(from: item.path, to: RemoteItem.join(folder, item.name))
             }
-            savedPaths = await offline?.savedPaths() ?? []
+            await refreshSaved()
             for parent in Set(items.map(\.parentPath)) { folderChanged(parent) }
             folderChanged(folder)
             Haptics.success()
@@ -294,7 +308,7 @@ final class AppModel {
             try await service.delete(items)
             // The offline copies would be dropped at the next refresh anyway.
             for item in items { await offline?.remove(item.path) }
-            savedPaths = await offline?.savedPaths() ?? []
+            await refreshSaved()
             return true
         } catch {
             handle(error)

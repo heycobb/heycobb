@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="181 207 662 662">
+  <!-- The Ownhold "oh" monogram as a menu bar template: black on clear. -->
+  <path d="M317.4 819.2 V256 M317.4 522.2 A194.6 194.6 0 0 1 706.6 522.2 V819.2"
+        fill="none" stroke="#000" stroke-width="92" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="512" cy="690" r="84" fill="#000"/>
+</svg>
