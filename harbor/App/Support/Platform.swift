@@ -55,7 +55,8 @@ enum SharePresenter {
         if let popover = controller.popoverPresentationController {
             // iPad: show near the top right, where the toolbar is.
             popover.sourceView = top.view
-            popover.sourceRect = CGRect(x: top.view.bounds.maxX - 60, y: top.view.safeAreaInsets.top + 8, width: 1, height: 1)
+            let insets = top.view.safeAreaInsets
+            popover.sourceRect = CGRect(x: top.view.bounds.maxX - insets.right - 60, y: insets.top + 8, width: 1, height: 1)
             popover.permittedArrowDirections = [.up]
         }
         top.present(controller, animated: true)

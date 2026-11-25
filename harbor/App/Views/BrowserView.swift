@@ -10,11 +10,15 @@ enum SidebarItem: Hashable {
 /// navigation stack; on iPad and Mac it's a two-column layout.
 struct BrowserView: View {
     @Environment(AppModel.self) private var model
+    /// Compact (iPhone, folded iPhone Duo, narrow iPad window): the sidebar
+    /// is the first screen. Regular, or the Mac (no size class): two columns.
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var selection: SidebarItem?
     @State private var shares: [RemoteItem] = []
     @State private var path: [RemoteItem] = []
     @State private var showingSettings = false
-    @State private var visibility: NavigationSplitViewVisibility = .automatic
+    // Both columns from the start wherever they fit; one column on iPhone either way.
+    @State private var visibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
@@ -27,8 +31,18 @@ struct BrowserView: View {
                     }
             }
         }
+        #if os(iOS)
+        // Side by side whenever there's room (iPad, an unfolded iPhone Duo),
+        // rather than hiding the sidebar until it's asked for.
+        .navigationSplitViewStyle(.balanced)
+        #endif
         .task(id: model.connection) { await loadShares() }
         .onChange(of: selection) { path = [] }
+        .onChange(of: sizeClass) {
+            // Unfolding an iPhone Duo, or widening an iPad window, makes
+            // room for the second column: fill it rather than leave it empty.
+            if showsTwoColumns { selectInitialShare() }
+        }
         .onChange(of: model.navigationRequest, initial: true) {
             // From the Mac menu bar: show a share or the Offline list.
             guard let request = model.navigationRequest else { return }
@@ -61,6 +75,10 @@ struct BrowserView: View {
         .navigationTitle(model.activeServer?.name ?? "Ownhold")
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 200, ideal: 230)
+        #else
+        // Keeps the file list the main column on wide screens (an open
+        // iPhone Duo would otherwise split the screen in half).
+        .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 360)
         #endif
         #if os(macOS)
         // The Mac sidebar is too narrow for toolbar items next to the window
@@ -149,29 +167,48 @@ struct BrowserView: View {
             Section {
                 ForEach(shares) { share in
                     NavigationLink(value: SidebarItem.share(share)) {
-                        sidebarLabel(share.name, symbol: "externaldrive")
+                        sidebarLabel(share.name, symbol: "externaldrive", item: .share(share))
                     }
-                    .listRowBackground(selection == .share(share) ? nil : Color.clear)
+                    .listRowBackground(rowBackground(.share(share)))
                 }
             } header: {
                 sectionHeader("Shared Folders")
             }
             Section {
                 NavigationLink(value: SidebarItem.offline) {
-                    sidebarLabel("Offline", symbol: "arrow.down.circle")
+                    sidebarLabel("Offline", symbol: "arrow.down.circle", item: .offline)
                         .badge(model.savedPaths.count)
                 }
-                .listRowBackground(selection == .offline ? nil : Color.clear)
+                .listRowBackground(rowBackground(.offline))
             }
         }
         .listItemTint(.fixed(Theme.accent))
     }
 
-    private func sidebarLabel(_ title: String, symbol: String) -> some View {
-        Label {
-            Text(title).foregroundStyle(Theme.Sidebar.text)
+    /// Whether `item` shows the evergreen selection. Only with two columns:
+    /// in one column, a selected row is the screen you've moved on to.
+    private func isHighlighted(_ item: SidebarItem) -> Bool {
+        showsTwoColumns && selection == item
+    }
+
+    private func sidebarLabel(_ title: String, symbol: String, item: SidebarItem) -> some View {
+        let highlighted = isHighlighted(item)
+        return Label {
+            Text(title).foregroundStyle(highlighted ? Theme.onAccent : Theme.Sidebar.text)
         } icon: {
-            Image(systemName: symbol).foregroundStyle(Theme.accent)
+            Image(systemName: symbol).foregroundStyle(highlighted ? Theme.onAccent : Theme.accent)
+        }
+    }
+
+    /// The same solid evergreen selection as the Mac, instead of the
+    /// system's gray (which it uses whenever the file list has focus).
+    @ViewBuilder private func rowBackground(_ item: SidebarItem) -> some View {
+        if isHighlighted(item) {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Theme.accent)
+                .padding(.horizontal, 10)
+        } else {
+            Color.clear
         }
     }
     #endif
@@ -235,30 +272,26 @@ struct BrowserView: View {
         }
         do {
             shares = try await service.listShares()
-            if selection == nil, !Platform.isCompactDefault {
-                var initial = shares.first
-                #if DEBUG
-                // `-share Photos` opens a specific share: used for screenshots.
-                if let name = UserDefaults.standard.string(forKey: "share") {
-                    initial = shares.first { $0.name == name } ?? initial
-                }
-                #endif
-                if let initial { selection = .share(initial) }
-            }
+            if showsTwoColumns { selectInitialShare() }
         } catch {
             model.handle(error)
         }
     }
-}
 
-extension Platform {
-    /// On iPhone the sidebar is the first screen, so nothing is pre-selected.
-    @MainActor static var isCompactDefault: Bool {
-        #if os(iOS)
-        UIDevice.current.userInterfaceIdiom == .phone
-        #else
-        false
+    private var showsTwoColumns: Bool { sizeClass != .compact }
+
+    /// With two columns showing, open the first share instead of leaving
+    /// the detail column empty. In one column the sidebar is the first screen.
+    private func selectInitialShare() {
+        guard selection == nil else { return }
+        var initial = shares.first
+        #if DEBUG
+        // `-share Photos` opens a specific share: used for screenshots.
+        if let name = UserDefaults.standard.string(forKey: "share") {
+            initial = shares.first { $0.name == name } ?? initial
+        }
         #endif
+        if let initial { selection = .share(initial) }
     }
 }
 
