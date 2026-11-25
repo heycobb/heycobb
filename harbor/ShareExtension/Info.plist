@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>Save to Ownhold</string>
+	<key>OwnholdAppGroup</key>
+	<string>$(OWNHOLD_APP_GROUP)</string>
+	<key>OwnholdKeychainGroup</key>
+	<string>$(AppIdentifierPrefix)app.ownhold.shared</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Ownhold can use Face ID to keep your files private.</string>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>$(OWNHOLD_SHARE_EXTENSION_POINT)</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).ShareViewController</string>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<!-- Files, photos and videos only (no web pages or text). -->
+			<key>NSExtensionActivationRule</key>
+			<dict>
+				<key>NSExtensionActivationSupportsFileWithMaxCount</key>
+				<integer>100</integer>
+				<key>NSExtensionActivationSupportsImageWithMaxCount</key>
+				<integer>100</integer>
+				<key>NSExtensionActivationSupportsMovieWithMaxCount</key>
+				<integer>100</integer>
+			</dict>
+		</dict>
+	</dict>
+</dict>
+</plist>

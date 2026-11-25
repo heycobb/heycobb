@@ -42,6 +42,8 @@ targets:
       - package: OwnholdKit
       - target: OwnholdFiles
         embed: true
+      - target: OwnholdShare
+        embed: true
     settings:
       base:
         PRODUCT_NAME: Ownhold
@@ -91,6 +93,30 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
 
+  # "Save to Ownhold" in the share sheet.
+  OwnholdShare:
+    type: app-extension
+    platform: auto
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: ShareExtension
+        excludes: ["*.entitlements", "Info.plist"]
+    dependencies:
+      - package: OwnholdKit
+    settings:
+      base:
+        PRODUCT_NAME: OwnholdShare
+        PRODUCT_BUNDLE_IDENTIFIER: app.ownhold.Ownhold.Share
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        INFOPLIST_FILE: ShareExtension/Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        OWNHOLD_SHARE_EXTENSION_POINT: com.apple.share-services
+        CODE_SIGN_ENTITLEMENTS: ShareExtension/Share-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": ShareExtension/Share-macOS$(OWNHOLD_ENTITLEMENTS_SUFFIX).entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        SKIP_INSTALL: YES
+
 schemes:
   Ownhold:
     build:
@@ -99,3 +125,4 @@ schemes:
     test:
       targets:
         - package: OwnholdKit/OwnholdKitTests
+

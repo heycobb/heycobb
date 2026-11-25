@@ -48,6 +48,7 @@ final class AppModel {
     var requireUnlock: Bool {
         didSet {
             defaults.set(requireUnlock, forKey: Keys.requireUnlock)
+            SharedConnection.requiresUnlock = requireUnlock
             Task { await syncFilesApp() }
         }
     }
@@ -83,6 +84,7 @@ final class AppModel {
         isLocked = requireUnlock
         servers = SharedContainer.loadServers()
         PreviewFiles.purge()
+        SharedConnection.requiresUnlock = requireUnlock
         UploadQueue.purgeStaging()
     }
 

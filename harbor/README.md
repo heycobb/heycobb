@@ -9,6 +9,7 @@ Your files and photos, owned, not rented. Formerly "Harbor" (working name).
 - Upload photos (original format), files and folders; new folder, rename, move, delete, multi-select
 - Share several files at once (folders as zips); stream video and audio over the pinned connection
 - Mac menu bar item: connection status, upload progress, upload to a share, open shares and recent offline files
+- "Save to Ownhold" share extension (iPhone, iPad, Mac): uploads straight to a NAS folder, respects the app lock
 - Keep files or whole folders offline (encrypted at rest, no background sync)
 - Picks the best address automatically: home network → private network (Tailscale, ZeroTier, WireGuard…) → internet
 - Optional QuickConnect ID lookup (finds the NAS's direct addresses; never uses Synology's relay)

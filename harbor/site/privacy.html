@@ -52,6 +52,9 @@
   <p><strong>QuickConnect (optional):</strong> if you enter a Synology QuickConnect ID, Ownhold asks Synology's QuickConnect service (quickconnect.to) for your NAS's current addresses each time it connects. Only the QuickConnect ID is sent to Synology, under Synology's privacy policy, and Synology can see the network address your request comes from, as with any internet request. Your account name, password and files are never sent to Synology, and Ownhold never routes your connection through Synology's relay servers. If you don't enter a QuickConnect ID, Ownhold never contacts Synology.</p>
   <p>If you use Tailscale or another VPN, that connection is provided by its own app, under its own privacy policy. Ownhold doesn't communicate with their servers.</p>
 
+  <h2>Save to Ownhold</h2>
+  <p>When you choose Ownhold in another app's share sheet, the items you shared are uploaded directly to the folder you pick on your NAS. Ownhold makes a temporary copy while uploading and deletes it afterwards. Nothing is sent anywhere else.</p>
+
   <h2>Files app and Finder (optional)</h2>
   <p><strong>Settings › Privacy › Show NAS in Files App</strong> (<strong>Show NAS in Finder</strong> on a Mac) is off unless you turn it on, and it stays off while the app lock is on. When it's on, your NAS appears in the Files app or Finder, and files are downloaded only when you open them, directly from your NAS. When you turn it off, Ownhold removes the location and the system deletes every file it kept for it.</p>
   <p>On iPhone and iPad, the Files app keeps an Ownhold entry even when this is off. Apps can't remove it, but it stays empty: Ownhold shows nothing there and doesn't connect to your NAS. You can hide it in the Files app by tapping ⋯, then Edit.</p>

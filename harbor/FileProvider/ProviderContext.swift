@@ -21,22 +21,16 @@ actor ProviderContext {
             cached = demo
             return demo
         }
-        let keychain = SharedContainer.keychain
         guard let id = UUID(uuidString: domainID),
-              let profile = SharedContainer.loadServers().first(where: { $0.id == id }),
-              let session = keychain.codable(Session.self, for: SharedContainer.sessionKey(id)),
-              !session.sid.isEmpty
+              let profile = SharedConnection.servers().first(where: { $0.id == id })
         else { throw NSFileProviderError(.notAuthenticated) }
-        let trust = CertificateTrust(keychain: keychain)
-        let endpoint: Endpoint
         do {
-            endpoint = try await ConnectionResolver(trust: trust).resolve(profile.allEndpoints)
+            let client = try await SharedConnection.connect(to: profile)
+            cached = client
+            return client
         } catch {
             throw Self.fileProviderError(error)
         }
-        let client = FileStationClient(baseURL: endpoint.url, trust: trust, sid: session.sid)
-        cached = client
-        return client
     }
 
     /// Forget the connection after an error, so the next request picks the
