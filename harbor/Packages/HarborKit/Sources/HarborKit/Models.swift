@@ -107,4 +107,9 @@ public struct Session: Sendable, Codable, Equatable {
     /// Returned when "remember this device" is used, so the next login
     /// can skip the 2-factor code.
     public let deviceToken: String?
+
+    public init(sid: String, deviceToken: String?) {
+        self.sid = sid
+        self.deviceToken = deviceToken
+    }
 }
