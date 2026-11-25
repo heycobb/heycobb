@@ -49,6 +49,19 @@ struct SaveView: View {
         .tint(SharedAccent.color)
         #if os(macOS)
         .frame(minWidth: 440, minHeight: 500)
+        .safeAreaInset(edge: .bottom) {
+            // While loading, locked or after an error there's no action bar:
+            // keep a way out (the choosing screen has Cancel in its own bar).
+            if phase != .choosing, phase != .done {
+                HStack {
+                    Spacer()
+                    Button(phase == .uploading ? "Stop" : "Cancel") { finish(true) }
+                        .keyboardShortcut(.cancelAction)
+                        .controlSize(.large)
+                }
+                .padding(16)
+            }
+        }
         #endif
         .task { await start() }
         .alert("New Folder", isPresented: $creatingFolder) {
@@ -209,6 +222,11 @@ struct SaveView: View {
             .buttonStyle(.bordered)
             .disabled(path.isEmpty || service == nil)
             Spacer(minLength: 0)
+            #if os(macOS)
+            // Mac share sheets have no toolbar, so Cancel lives here (and Esc).
+            Button("Cancel") { finish(true) }
+                .keyboardShortcut(.cancelAction)
+            #endif
             Button {
                 Task { await save() }
             } label: {
