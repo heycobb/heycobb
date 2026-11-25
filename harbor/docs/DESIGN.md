@@ -12,12 +12,11 @@ every element has a job.
    platform conventions closely is what makes an app feel finished.
 2. **Glass is for navigation only.** Toolbars, tab bars and transient banners.
    Never on content and never on list rows. This is Apple's own guidance.
-3. **One accent color, used rarely.** Ownhold teal (`AccentColor` in the
-   asset catalog: #1E6E78 light, #4CB4C0 dark). It marks folders, the
-   offline badge and primary buttons. Sidebar selection stays the system's
-   neutral gray. Everything else is neutral, so photo thumbnails carry the
-   color. (An earlier burnt orange was dropped: too strong for a wide
-   audience and too close to other brands.)
+3. **One accent color, used rarely.** Deep evergreen (`AccentColor` in the
+   asset catalog: #1D4B3C light, #6FBF9A dark), matching the app icon. It
+   marks folders, the offline badge and primary buttons. Sidebar selection
+   stays the system's neutral gray. Everything else is neutral, so photo
+   thumbnails carry the color. (Earlier: burnt orange, then teal.)
 
 4. **Type does the work.** San Francisco at system sizes, with full Dynamic
    Type. Sizes, dates and paths use monospaced digits or SF Mono, which
@@ -48,7 +47,9 @@ every element has a job.
 
 ## Open design work
 
-- App icon (Icon Composer, layered for Liquid Glass)
+- App icon: done. `App/AppIcon.icon` (Icon Composer format); flat sources in
+  `Design/AppIcon/`. The "oh" monogram: the h of *hold* sheltering the o of
+  *own*, cream on deep evergreen with a mint dot.
 - Decide whether the grid should switch to a justified "Photos" layout for
   image-heavy folders
 - Empty-state illustrations: likely none, keep SF Symbols

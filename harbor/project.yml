@@ -51,7 +51,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         # On the Mac, selection highlights follow the accent color the user
-        # picked in System Settings (as in Finder and Mail); Ownhold's teal is
+        # picked in System Settings (as in Finder and Mail); Ownhold's evergreen is
         # applied explicitly through Theme.accent instead.
         "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME[sdk=macosx*]": ""
         CODE_SIGN_ENTITLEMENTS: Config/Ownhold-iOS.entitlements

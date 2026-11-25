@@ -5,7 +5,7 @@ import SwiftUI
 /// data. Everything else comes from the system so the app feels native on
 /// each platform. See docs/DESIGN.md for the reasoning.
 enum Theme {
-    /// Ownhold teal, defined in the asset catalog (light + dark variants).
+    /// Deep evergreen, defined in the asset catalog (light + dark variants).
     /// Named explicitly: on the Mac it isn't the app's global accent.
     static let accent = Color("AccentColor")
 

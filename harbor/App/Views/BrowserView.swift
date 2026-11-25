@@ -66,7 +66,7 @@ struct BrowserView: View {
                 }
             }
         }
-        // Icons keep Ownhold's teal; on the Mac the selection highlight
+        // Icons keep Ownhold's evergreen; on the Mac the selection highlight
         // follows the system accent color (see project.yml).
         .listItemTint(.fixed(Theme.accent))
         .navigationTitle(model.activeServer?.name ?? "Ownhold")
