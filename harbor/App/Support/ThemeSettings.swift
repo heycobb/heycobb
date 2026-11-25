@@ -1,4 +1,5 @@
 import Observation
+import OwnholdKit
 import SwiftUI
 #if os(macOS)
 import AppKit
@@ -14,7 +15,11 @@ final class ThemeSettings: @unchecked Sendable {
     static let shared = ThemeSettings()
 
     var accent: AccentChoice {
-        didSet { UserDefaults.standard.set(accent.rawValue, forKey: "accent") }
+        didSet {
+            UserDefaults.standard.set(accent.rawValue, forKey: "accent")
+            // The share extension uses the same accent.
+            SharedContainer.defaults.set(accent.rawValue, forKey: "accent")
+        }
     }
     var sidebarStyle: SidebarStyle {
         didSet { UserDefaults.standard.set(sidebarStyle.rawValue, forKey: "sidebarStyle") }
@@ -28,6 +33,7 @@ final class ThemeSettings: @unchecked Sendable {
         accent = defaults.string(forKey: "accent").flatMap(AccentChoice.init) ?? .evergreen
         sidebarStyle = defaults.string(forKey: "sidebarStyle").flatMap(SidebarStyle.init) ?? .tinted
         appIcon = defaults.string(forKey: "appIcon").flatMap(AppIconChoice.init) ?? .evergreen
+        SharedContainer.defaults.set(accent.rawValue, forKey: "accent")
     }
 }
 
