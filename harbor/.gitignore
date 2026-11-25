@@ -1,0 +1,6 @@
+Harbor.xcodeproj/
+xcuserdata/
+DerivedData/
+.build/
+.swiftpm/
+*.xcuserstate

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Merged with the generated Info.plist (GENERATE_INFOPLIST_FILE = YES). -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Harbor connects to your NAS on your home network.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Harbor can use Face ID to keep your files private.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Lets HTTPS connections to local addresses (192.168.x.x, nas.local) proceed so
+		     Harbor's own certificate checks (CertificateTrust.swift) can decide. Plain
+		     HTTP is never used. This exception doesn't require App Review justification. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<!-- Only standard HTTPS/TLS is used, which is exempt from export documentation. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+</dict>
+</plist>
