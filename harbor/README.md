@@ -33,14 +33,18 @@ Run the core tests with `swift test` in `Packages/HarborKit`, or with ⌘U in Xc
 
 ## NAS setup
 
+The app has the same steps, in plainer language, under **Settings › Setup Guide** (also linked from the welcome screen and Add NAS).
+
 1. DSM: **Control Panel → Login Portal → DSM**: make sure HTTPS is on (port 5001).
    Harbor doesn't use plain HTTP.
 2. The account needs File Station permission (Control Panel → Application Privileges).
 3. Tailscale: install the Tailscale package on the NAS and the Tailscale app
    on your devices. Enter the NAS's MagicDNS name (e.g. `nas.tailnet-name.ts.net`)
    or its `100.x.y.z` address as the Tailscale address.
-4. The first time you connect, Harbor shows the certificate fingerprint.
-   Compare it, then tap Trust. Harbor refuses to connect if it later changes.
+4. The first time you connect, Harbor shows the certificate's SHA-256
+   fingerprint (the same value Safari shows), then you tap Trust. Trust
+   covers all of that NAS's addresses. Harbor refuses to connect if the
+   certificate later changes.
 
 ## Layout
 

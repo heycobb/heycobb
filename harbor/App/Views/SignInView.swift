@@ -20,6 +20,7 @@ struct SignInView: View {
     @State private var working = false
     @State private var errorText: String?
     @State private var review: CertificateReview?
+    @State private var showingGuide = false
     @FocusState private var focus: Field?
 
     private enum Field { case name, home, tailscale, internet, account, password, code }
@@ -28,6 +29,13 @@ struct SignInView: View {
         NavigationStack {
             Form {
                 if existing == nil {
+                    Section {
+                        Button {
+                            showingGuide = true
+                        } label: {
+                            Label("New to this? Read the setup guide", systemImage: "questionmark.circle")
+                        }
+                    }
                     Section {
                         TextField("Name", text: $name, prompt: Text("Home NAS"))
                             .focused($focus, equals: .name)
@@ -105,11 +113,12 @@ struct SignInView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingGuide) { SetupGuideView() }
             .sheet(item: $review) { review in
                 CertificateReviewView(review: review) { trusted in
                     self.review = nil
                     if trusted {
-                        model.trust.trust(review.info)
+                        model.trust.trust(review.info, alsoFor: endpoints.map { CertificateTrustKey.make($0.url) })
                         submit()
                     }
                 }
@@ -213,15 +222,19 @@ struct CertificateReviewView: View {
                          ? "If you didn't renew or replace the certificate in DSM, don't continue. Someone may be intercepting the connection."
                          : "This is normal for a NAS using DSM's built-in self-signed certificate. Harbor will remember this certificate and refuse to connect if it ever changes unexpectedly.")
                 }
-                Section("Certificate") {
+                Section {
                     LabeledContent("Server", value: review.info.host)
                     LabeledContent("Issued to", value: review.info.subject)
                     VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-                        Text("SHA-256 key fingerprint").font(.caption).foregroundStyle(.secondary)
-                        Text(review.info.fingerprint)
+                        Text("SHA-256 fingerprint").font(.caption).foregroundStyle(.secondary)
+                        Text(review.info.certificateFingerprint.isEmpty ? review.info.fingerprint : review.info.certificateFingerprint)
                             .font(.path)
                             .textSelection(.enabled)
                     }
+                } header: {
+                    Text("Certificate")
+                } footer: {
+                    Text("To double-check, open your NAS's address in Safari on a computer at home and view its certificate: the SHA-256 fingerprint there should match. The setup guide explains how.")
                 }
             }
             .formStyle(.grouped)

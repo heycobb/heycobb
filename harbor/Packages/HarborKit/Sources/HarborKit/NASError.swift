@@ -86,11 +86,18 @@ public struct CertificateInfo: Equatable, Sendable, Codable {
     public let host: String
     public let subject: String
     /// SHA-256 of the certificate's public key, as colon-separated hex.
+    /// This is what Harbor pins: it survives a certificate renewal that
+    /// keeps the same key.
     public let fingerprint: String
+    /// SHA-256 of the whole certificate, as colon-separated hex. This is the
+    /// value Safari, Chrome and Firefox show, so it's the one people can
+    /// compare against.
+    public let certificateFingerprint: String
 
-    public init(host: String, subject: String, fingerprint: String) {
+    public init(host: String, subject: String, fingerprint: String, certificateFingerprint: String = "") {
         self.host = host
         self.subject = subject
         self.fingerprint = fingerprint
+        self.certificateFingerprint = certificateFingerprint
     }
 }

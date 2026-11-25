@@ -21,17 +21,36 @@ public final class CertificateTrust: NSObject, URLSessionDelegate, @unchecked Se
         self.pins = keychain.codable([String: String].self, for: Self.pinsKey) ?? [:]
     }
 
-    /// Trust a certificate the user has checked.
-    public func trust(_ info: CertificateInfo) {
+    /// Trust a certificate the user has checked, for the address it came
+    /// from and for the NAS's other addresses (`alsoFor`, as "host:port").
+    /// Pinning the other addresses too means the prompt appears once per
+    /// NAS, not once per address, and it only ever narrows what those
+    /// addresses may present: exactly this key.
+    public func trust(_ info: CertificateInfo, alsoFor hostKeys: [String] = []) {
         lock.withLock {
-            pins[info.host] = info.fingerprint
+            for key in Set([info.host] + hostKeys) {
+                pins[key] = info.fingerprint
+            }
+            keychain.setCodable(pins, for: Self.pinsKey)
+        }
+    }
+
+    /// Extends a NAS's existing pin to addresses that don't have one yet,
+    /// for example a Tailscale address added after setup. Does nothing if
+    /// none of `existingKeys` is pinned (a publicly trusted certificate).
+    public func extendPin(from existingKeys: [String], to newKeys: [String]) {
+        lock.withLock {
+            guard let fingerprint = existingKeys.lazy.compactMap({ self.pins[$0] }).first else { return }
+            for key in newKeys where pins[key] == nil {
+                pins[key] = fingerprint
+            }
             keychain.setCodable(pins, for: Self.pinsKey)
         }
     }
 
     public func forget(host: String) {
         lock.withLock {
-            pins = pins.filter { !$0.key.hasPrefix(host) }
+            pins.removeValue(forKey: host)
             keychain.setCodable(pins, for: Self.pinsKey)
         }
     }
@@ -81,15 +100,22 @@ public final class CertificateTrust: NSObject, URLSessionDelegate, @unchecked Se
         }
     }
 
+    private static func hex(_ digest: SHA256.Digest) -> String {
+        digest.map { String(format: "%02X", $0) }.joined(separator: ":")
+    }
+
     static func certificateInfo(trust: SecTrust, hostKey: String) -> CertificateInfo? {
         guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate],
               let leaf = chain.first,
               let key = SecCertificateCopyKey(leaf),
               let keyData = SecKeyCopyExternalRepresentation(key, nil) as Data?
         else { return nil }
-        let digest = SHA256.hash(data: keyData)
-        let fingerprint = digest.map { String(format: "%02X", $0) }.joined(separator: ":")
         let subject = (SecCertificateCopySubjectSummary(leaf) as String?) ?? "Unknown"
-        return CertificateInfo(host: hostKey, subject: subject, fingerprint: fingerprint)
+        return CertificateInfo(
+            host: hostKey,
+            subject: subject,
+            fingerprint: hex(SHA256.hash(data: keyData)),
+            certificateFingerprint: hex(SHA256.hash(data: SecCertificateCopyData(leaf) as Data))
+        )
     }
 }

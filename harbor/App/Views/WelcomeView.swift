@@ -7,6 +7,7 @@ import SwiftUI
 struct WelcomeView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var showingGuide = false
 
     private var isCompact: Bool {
         #if os(iOS)
@@ -77,8 +78,14 @@ struct WelcomeView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
+
+            Button("New to NAS or Tailscale? Read the setup guide") { showingGuide = true }
+                .font(.footnote)
+                .buttonStyle(.borderless)
+                .padding(.top, Theme.Spacing.s)
         }
         .tint(Theme.accent)
+        .sheet(isPresented: $showingGuide) { SetupGuideView() }
     }
 
     private struct Point: View {

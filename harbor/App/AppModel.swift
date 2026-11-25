@@ -152,6 +152,20 @@ final class AppModel {
         persistServers()
     }
 
+    /// Saves edits to a server's name or addresses.
+    func update(_ profile: ServerProfile) async {
+        guard let old = servers.first(where: { $0.id == profile.id }) else { return }
+        let oldKeys = old.endpoints.map { CertificateTrustKey.make($0.url) }
+        let newKeys = profile.endpoints.map { CertificateTrustKey.make($0.url) }
+        trust.extendPin(from: oldKeys, to: newKeys)
+        for key in Set(oldKeys).subtracting(newKeys) { trust.forget(host: key) }
+        save(profile)
+        if activeServer?.id == profile.id {
+            activeServer = profile
+            if old.endpoints != profile.endpoints { await reconnect() }
+        }
+    }
+
     func reconnect() async {
         guard let profile = activeServer else { return }
         await activate(profile)
@@ -210,7 +224,8 @@ final class AppModel {
     }
 
     func trustCertificate(_ review: CertificateReview) async {
-        trust.trust(review.info)
+        let addresses = activeServer?.endpoints.map { CertificateTrustKey.make($0.url) } ?? []
+        trust.trust(review.info, alsoFor: addresses)
         certificateReview = nil
         await reconnect()
     }

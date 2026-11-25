@@ -7,6 +7,8 @@ struct SettingsView: View {
     @State private var thumbnailBytes: Int64 = 0
     @State private var offlineBytes: Int64 = 0
     @State private var confirmRemove: ServerProfile?
+    @State private var editing: ServerProfile?
+    @State private var showingGuide = false
 
     var body: some View {
         @Bindable var model = model
@@ -36,13 +38,23 @@ struct SettingsView: View {
             if !model.servers.isEmpty {
                 Section("Servers") {
                     ForEach(model.servers) { server in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(server.name)
-                            Text(server.endpoints.map { $0.url.host() ?? "" }.joined(separator: "  ·  "))
-                                .font(.path)
-                                .foregroundStyle(.secondary)
+                        Button { editing = server } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(server.name)
+                                    Text(server.endpoints.map { $0.url.host() ?? "" }.joined(separator: "  ·  "))
+                                        .font(.path)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text("Edit").foregroundStyle(.secondary)
+                            }
+                            .contentShape(.rect)
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Edit name and addresses")
                         .contextMenu {
+                            Button("Edit", systemImage: "pencil") { editing = server }
                             Button("Remove", systemImage: "trash", role: .destructive) { confirmRemove = server }
                         }
                         .swipeActions {
@@ -50,6 +62,10 @@ struct SettingsView: View {
                         }
                     }
                 }
+            }
+
+            Section("Help") {
+                Button("Setup Guide") { showingGuide = true }
             }
 
             Section("About") {
@@ -67,6 +83,8 @@ struct SettingsView: View {
         }
         #endif
         .task { await measure() }
+        .sheet(item: $editing) { server in ServerEditView(server: server) }
+        .sheet(isPresented: $showingGuide) { SetupGuideView() }
         .confirmationDialog(
             "Remove \(confirmRemove?.name ?? "server")?",
             isPresented: Binding(get: { confirmRemove != nil }, set: { if !$0 { confirmRemove = nil } }),
