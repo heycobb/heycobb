@@ -84,9 +84,14 @@ struct BrowserView: View {
             .background(Theme.Sidebar.background)
         .navigationTitle(model.activeServer?.name ?? "Ownhold")
         #if os(iOS)
-        // The NAS name gets its own line under the toolbar buttons, in both
-        // one and two columns, so it isn't cut short beside them.
-        .navigationBarTitleDisplayMode(.large)
+        // The NAS name is shown as a heading in the list instead (see
+        // `serverHeading`): navigation bar titles stay on one line, so a long
+        // name was cut short. The title stays set for VoiceOver and the app
+        // switcher; this hides it from the bar.
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
+        }
         #endif
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 200, ideal: 230)
@@ -179,6 +184,7 @@ struct BrowserView: View {
     /// the tint makes the selection highlight evergreen.
     private var sidebarList: some View {
         List(selection: $selection) {
+            Section {} header: { serverHeading }
             Section {
                 ForEach(shares) { share in
                     NavigationLink(value: SidebarItem.share(share)) {
@@ -198,6 +204,20 @@ struct BrowserView: View {
             }
         }
         .listItemTint(.fixed(Theme.accent))
+    }
+
+    /// The NAS name, wrapping to two lines (and shrinking a little) rather
+    /// than being cut short: "Brian's DS920+ Home Server" fits in a sidebar.
+    private var serverHeading: some View {
+        Text(model.activeServer?.name ?? "Ownhold")
+            .font(showsTwoColumns ? .title.bold() : .largeTitle.bold())
+            // Explicit: section headers otherwise draw their text in gray.
+            .foregroundStyle(Color.primary)
+            .lineLimit(2)
+            .minimumScaleFactor(0.8)
+            .textCase(nil)
+            .accessibilityAddTraits(.isHeader)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 4, trailing: 0))
     }
 
     /// Whether `item` shows the evergreen selection. Only with two columns:

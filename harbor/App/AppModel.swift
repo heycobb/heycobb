@@ -92,6 +92,11 @@ final class AppModel {
     // MARK: Servers
 
     func activate(_ profile: ServerProfile) async {
+        var profile = profile
+        #if DEBUG
+        // `-demoName "…"` renames the demo NAS: used to test long names.
+        if profile.isDemo, let name = UserDefaults.standard.string(forKey: "demoName") { profile.name = name }
+        #endif
         await service?.signOut()
         activeServer = profile
         defaults.set(profile.id.uuidString, forKey: Keys.lastServer)
