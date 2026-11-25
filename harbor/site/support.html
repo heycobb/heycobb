@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support · Ownhold</title>
+<meta name="description" content="Help with Ownhold: setup, Tailscale, offline files and fixes for common messages.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.4" fill="#1D4B3C"/><path d="M31 80 V25 M31 51 a19 19 0 0 1 38 0 V80" fill="none" stroke="#F3F0E8" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="66" r="8.5" fill="#8FD3B0"/></svg>
+    <div><div class="app">Ownhold</div><div class="muted">Files and photos from your NAS</div></div>
+  </header>
+  <nav><a href="support.html" aria-current="page">Support</a><a href="privacy.html">Privacy</a></nav>
+
+  <h1>Support</h1>
+
+  <div class="summary">
+    <p><strong>Need a hand?</strong> Email <a href="mailto:support@ownhold.app">support@ownhold.app</a>. A real person reads every message.</p>
+    <p>It helps to include your device and its software version, your NAS model and DSM version, how you're connecting (home Wi-Fi, Tailscale or the internet), and the exact message you see. Please never send your password.</p>
+  </div>
+
+  <h2>What you need</h2>
+  <ul>
+    <li>An iPhone or iPad with iOS / iPadOS 26 or later, or a Mac with macOS 26 or later.</li>
+    <li>A Synology NAS running DSM 7, with HTTPS turned on. Port 5001 is the standard setting.</li>
+    <li>A DSM account that's allowed to use File Station.</li>
+    <li>For access away from home (optional): Tailscale on your NAS and on your device.</li>
+  </ul>
+  <p>Want to look around first? Tap <strong>Try the Demo Library</strong> on the welcome screen. It works without a NAS.</p>
+
+  <h2>Getting started</h2>
+  <p>Ownhold has a step-by-step guide built in, written for people who've never connected to a NAS from their phone. Open it from the welcome screen, from the Add NAS screen, or from <strong>Settings › Setup Guide</strong>. In short:</p>
+  <ol>
+    <li>Find your NAS's address on your home network, for example 192.168.1.20.</li>
+    <li>Check HTTPS is on in DSM: <strong>Control Panel › Login Portal › DSM</strong>.</li>
+    <li>In Ownhold, tap <strong>Add a NAS</strong>, enter the address, your account and password.</li>
+    <li>The first time, you'll be asked to check the NAS's certificate. That's normal; see below.</li>
+  </ol>
+
+  <h3>Where is Settings?</h3>
+  <p>On iPhone and iPad, tap the server button at the top of the list of shared folders, then <strong>Settings</strong>. On a Mac, choose <strong>Ownhold › Settings…</strong> (⌘,).</p>
+
+  <h2>Using it away from home</h2>
+  <p>Ownhold works with <strong>Tailscale</strong>, a free, private network between your own devices, with nothing opened on your router.</p>
+  <ol>
+    <li>On the NAS: in DSM, open <strong>Package Center</strong>, install <strong>Tailscale</strong>, open it and sign in.</li>
+    <li>On your iPhone, iPad or Mac: install the Tailscale app, sign in with the same account and switch it on.</li>
+    <li>In the Tailscale app, find your NAS. Its name looks like <em>nas.tailnet-name.ts.net</em>, or use its address that starts with 100.</li>
+    <li>In Ownhold, open <strong>Settings</strong>, tap your NAS, and enter that name as the <strong>Tailscale</strong> address.</li>
+  </ol>
+  <p>Keep Tailscale switched on when you're out. Ownhold uses your home address when you're home and Tailscale everywhere else, automatically.</p>
+
+  <h2>The “Check Certificate” screen</h2>
+  <p>Most home NAS boxes use their own certificate rather than one from a public authority, so the first time you connect, Ownhold shows its fingerprint and asks you to trust it. If you set up the NAS yourself and you're at home, tap <strong>Trust</strong>. Ownhold remembers the certificate for all of that NAS's addresses.</p>
+  <p>To double-check, open your NAS's address in Safari on a Mac at home (for example https://192.168.1.20:5001), choose <strong>Show Details › view the certificate</strong>, and compare the <strong>SHA-256</strong> fingerprint.</p>
+  <p>If Ownhold later says the certificate <em>changed</em> and you didn't replace it in DSM, don't continue. Something may be intercepting the connection.</p>
+
+  <h2>Keeping files offline</h2>
+  <ul>
+    <li>On iPhone and iPad, swipe left on a file or folder and tap <strong>Offline</strong>. Or touch and hold it (right-click on a Mac) and choose <strong>Keep Offline</strong>.</li>
+    <li>Everything you've saved is under <strong>Offline</strong> in the sidebar, and works with no connection at all.</li>
+    <li>When Ownhold connects to your NAS, it updates saved files that changed there. It doesn't sync in the background.</li>
+    <li>Saved files are encrypted while your iPhone or iPad is locked, and aren't included in backups.</li>
+  </ul>
+
+  <h2>Locking the app</h2>
+  <p>In <strong>Settings › Privacy</strong>, turn on <strong>Require Face ID or Passcode</strong> (Touch ID or your password on a Mac). On iPhone and iPad, <strong>Hide Content in App Switcher</strong> covers your files when you switch apps.</p>
+
+  <h2>Managing your NAS</h2>
+  <ul>
+    <li><strong>Change addresses or the name:</strong> Settings, then tap the NAS.</li>
+    <li><strong>Add another NAS:</strong> the server menu, then <strong>Add a NAS…</strong>.</li>
+    <li><strong>Remove a NAS:</strong> in Settings, swipe left on it (right-click on a Mac) and choose <strong>Remove</strong>. This deletes its offline files and sign-in from your device. Nothing on the NAS is affected.</li>
+  </ul>
+
+  <h2>If something doesn't work</h2>
+  <p>Find the message you see below.</p>
+
+  <details>
+    <summary>Can't reach the NAS</summary>
+    <p class="msg">“Can't reach the NAS. Check that you're on your home network or that Tailscale is connected.”</p>
+    <ul>
+      <li>At home: check this device is on your home Wi-Fi, and that the address in Settings is right.</li>
+      <li>Away: open the Tailscale app and make sure it's switched on, and that your NAS shows as connected.</li>
+      <li>On iPhone and iPad, check <strong>Settings › Privacy & Security › Local Network</strong> allows Ownhold.</li>
+      <li>Your saved offline files keep working in the meantime.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>Ownhold only connects over HTTPS</summary>
+    <p>Ownhold never uses plain HTTP, so your password is always encrypted. Remove “http://” from the address, turn on HTTPS in DSM (<strong>Control Panel › Login Portal</strong>), and use port 5001.</p>
+  </details>
+  <details>
+    <summary>Incorrect account name or password</summary>
+    <p>Use the same account and password you use to sign in to DSM in a web browser. Account names are not the same as display names.</p>
+  </details>
+  <details>
+    <summary>Verification code didn't work</summary>
+    <p class="msg">“That verification code didn't work. Try the next one.”</p>
+    <p>Codes change every 30 seconds. Wait for a new one, and check the time on your phone and NAS is set automatically. Turn on <strong>Remember this device</strong> so you're not asked again.</p>
+  </details>
+  <details>
+    <summary>Temporarily blocked</summary>
+    <p class="msg">“The NAS has temporarily blocked this device after too many failed sign-ins.”</p>
+    <p>DSM's auto-block protects against password guessing. Wait for it to expire, or remove the block in DSM under <strong>Control Panel › Security › Protection</strong>.</p>
+  </details>
+  <details>
+    <summary>Account disabled, or password expired</summary>
+    <p>Sign in to DSM in a browser as an administrator: <strong>Control Panel › User & Group</strong> lets you re-enable an account. If your password expired, change it in DSM, then sign in to Ownhold again.</p>
+  </details>
+  <details>
+    <summary>You don't have permission to open this</summary>
+    <p>Your account needs File Station access, and permission for that shared folder. In DSM: <strong>Control Panel › User & Group</strong>, select the account, <strong>Edit</strong>, then check <strong>Applications › File Station</strong> and <strong>Permissions</strong>.</p>
+  </details>
+  <details>
+    <summary>Your session expired</summary>
+    <p>DSM ends sessions after a while or when settings change. Sign in again. If you use 2-factor sign-in with “Remember this device”, you won't need a code.</p>
+  </details>
+  <details>
+    <summary>The certificate changed</summary>
+    <p>If you renewed or replaced your NAS's certificate in DSM, trust the new one. If you didn't, don't continue, especially on public Wi-Fi, and check your NAS from home.</p>
+  </details>
+  <details>
+    <summary>Something else</summary>
+    <p>Email <a href="mailto:support@ownhold.app">support@ownhold.app</a> with the exact message and what you were doing. Ownhold doesn't collect logs or analytics, so your description is what helps.</p>
+  </details>
+
+  <footer class="muted">
+    <p><a href="privacy.html">Privacy Policy</a> · <a href="mailto:support@ownhold.app">support@ownhold.app</a></p>
+    <p>Ownhold is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.</p>
+  </footer>
+</main>
+</body>
+</html>

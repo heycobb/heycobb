@@ -64,7 +64,7 @@ harbor/
 │   ├── ThumbnailCache.swift     memory + disk thumbnail cache
 │   ├── OfflineStore.swift       pinned files, file protection
 │   └── DemoFileService.swift    built-in sample library
-├── site/                        public web pages (privacy policy)
+├── site/                        public web pages: support, privacy policy
 └── docs/
     ├── APP_STORE.md             what's needed to sell it
     └── DESIGN.md                design direction
