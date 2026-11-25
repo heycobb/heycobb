@@ -1,5 +1,8 @@
 import OwnholdKit
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 /// Design tokens. One accent color, system typography, monospaced digits for
 /// data. Everything else comes from the system so the app feels native on
@@ -32,6 +35,51 @@ enum Theme {
     static let photoMinimum: CGFloat = 90
     static let photoMinimumRegular: CGFloat = 140
     static let photoSpacing: CGFloat = 2
+}
+
+/// The user's choice in Settings › Appearance.
+enum AppearanceChoice: String, CaseIterable, Identifiable {
+    case system, light, dark
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .system: "System"
+        case .light: "Light"
+        case .dark: "Dark"
+        }
+    }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    #if os(macOS)
+    /// Applied app-wide on the Mac, so Settings and menus follow too.
+    var nsAppearance: NSAppearance? {
+        switch self {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        }
+    }
+    #endif
+}
+
+extension View {
+    /// Applies Settings › Appearance.
+    func appAppearance(_ choice: AppearanceChoice) -> some View {
+        #if os(macOS)
+        onChange(of: choice, initial: true) { NSApp.appearance = choice.nsAppearance }
+        #else
+        preferredColorScheme(choice.colorScheme)
+        #endif
+    }
 }
 
 extension Font {

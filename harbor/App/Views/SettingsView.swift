@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var confirmRemove: ServerProfile?
     @State private var editing: ServerProfile?
     @State private var showingGuide = false
+    @AppStorage("appearance") private var appearance: AppearanceChoice = .system
     #if os(macOS)
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
     #endif
@@ -16,6 +17,14 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var model = model
         Form {
+            Section("Appearance") {
+                Picker("Appearance", selection: $appearance) {
+                    ForEach(AppearanceChoice.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
             Section("Privacy") {
                 Toggle(Platform.isMac ? "Lock with Touch ID or Password" : "Lock with Face ID or Passcode", isOn: $model.requireUnlock)
                 #if os(iOS)

@@ -4,6 +4,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("appearance") private var appearance: AppearanceChoice = .system
 
     var body: some View {
         @Bindable var model = model
@@ -15,6 +16,7 @@ struct RootView: View {
             }
         }
         .tint(Theme.accent)
+        .appAppearance(appearance)
         .sheet(item: $model.signInRequest) { profile in
             SignInView(existing: profile)
         }
