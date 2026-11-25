@@ -255,10 +255,19 @@ struct BrowserView: View {
     #if os(macOS)
     private var macFooter: some View {
         HStack(spacing: Theme.Spacing.s) {
-            ConnectionBadge(connection: model.connection)
-                .labelStyle(.titleAndIcon)
-                .font(.caption)
-                .lineLimit(1)
+            // Mac sidebars don't show a title, so the NAS name lives here,
+            // above how it's connected (like the account in Mail's sidebar).
+            VStack(alignment: .leading, spacing: 2) {
+                Text(model.activeServer?.name ?? "Ownhold")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(Theme.Sidebar.text)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                ConnectionBadge(connection: model.connection)
+                    .labelStyle(.titleAndIcon)
+                    .font(.caption)
+                    .lineLimit(1)
+            }
             Spacer(minLength: 0)
             serverMenu
                 .menuStyle(.button)
