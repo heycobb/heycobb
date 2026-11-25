@@ -33,6 +33,9 @@ struct SettingsView: View {
                     Text(Platform.isMac
                         ? "Off while the app lock is on, because Finder can't ask for Touch ID."
                         : "Off while the app lock is on, because the Files app can't ask for Face ID.")
+                } else if !Platform.isMac, !model.showInFilesApp {
+                    // iOS keeps an empty Ownhold entry in Files that apps can't remove.
+                    Text("The Files app still lists Ownhold, but it stays empty. To hide it, tap ⋯ › Edit in Files.")
                 }
             }
 
