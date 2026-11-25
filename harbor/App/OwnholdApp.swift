@@ -20,11 +20,16 @@ struct OwnholdApp: App {
                 .task { await model.start() }
         }
         .defaultSize(width: 1100, height: 720)
+        // Open the window at every launch, even if it was closed (to the
+        // menu bar) when Ownhold last quit.
+        .defaultLaunchBehavior(.presented)
 
-        MenuBarExtra("Ownhold", image: "MenuBarIcon", isInserted: $showMenuBarItem) {
+        MenuBarExtra(isInserted: $showMenuBarItem) {
             MenuBarMenu()
                 .environment(model)
                 .task { await model.start() }
+        } label: {
+            MenuBarLabel()
         }
         .menuBarExtraStyle(.menu)
         #else
@@ -46,6 +51,27 @@ struct OwnholdApp: App {
 }
 
 #if os(macOS)
+/// The menu bar icon. It also makes sure the main window is open at launch:
+/// with a menu bar item, SwiftUI doesn't reopen a window that was closed
+/// when Ownhold last quit, which would leave nothing on screen.
+private struct MenuBarLabel: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Image("MenuBarIcon")
+            .accessibilityLabel("Ownhold")
+            .task {
+                guard !Self.didLaunch else { return }
+                Self.didLaunch = true
+                try? await Task.sleep(for: .milliseconds(300))
+                let hasWindow = NSApp.windows.contains { $0.isVisible && $0.canBecomeMain }
+                if !hasWindow { openWindow(id: OwnholdApp.mainWindowID) }
+            }
+    }
+
+    @MainActor private static var didLaunch = false
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// With the menu bar item showing, closing the window leaves Ownhold
     /// running there (uploads keep going). Without it, Ownhold quits like

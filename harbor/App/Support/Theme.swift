@@ -11,6 +11,15 @@ enum Theme {
     /// Deep evergreen, defined in the asset catalog (light + dark variants).
     /// Named explicitly: on the Mac it isn't the app's global accent.
     static let accent = Color("AccentColor")
+    /// Text and icons on a solid accent fill (cream in light, deep green in dark).
+    static let onAccent = Color("OnAccent")
+
+    /// The sidebar: a light evergreen tint, with green-toned text.
+    enum Sidebar {
+        static let background = Color("SidebarBackground")
+        static let text = Color("SidebarText")
+        static let secondary = Color("SidebarSecondary")
+    }
 
     enum Spacing {
         static let xs: CGFloat = 4

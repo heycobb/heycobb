@@ -55,27 +55,9 @@ struct BrowserView: View {
     }
 
     private var sidebar: some View {
-        List(selection: $selection) {
-            Section {
-                ForEach(shares) { share in
-                    NavigationLink(value: SidebarItem.share(share)) {
-                        Label(share.name, systemImage: "externaldrive")
-                    }
-                }
-            } header: {
-                Text("Shared Folders")
-            }
-
-            Section {
-                NavigationLink(value: SidebarItem.offline) {
-                    Label("Offline", systemImage: "arrow.down.circle")
-                        .badge(model.savedPaths.count)
-                }
-            }
-        }
-        // Icons keep Ownhold's evergreen; on the Mac the selection highlight
-        // follows the system accent color (see project.yml).
-        .listItemTint(.fixed(Theme.accent))
+        sidebarList
+            .scrollContentBackground(.hidden)
+            .background(Theme.Sidebar.background)
         .navigationTitle(model.activeServer?.name ?? "Ownhold")
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 200, ideal: 230)
@@ -109,6 +91,93 @@ struct BrowserView: View {
                 }
             }
         }
+    }
+
+    // MARK: Sidebar rows
+
+    #if os(macOS)
+    /// On the Mac, rows draw their own evergreen selection: the system list
+    /// highlight always uses the user's accent color, which would clash with
+    /// the tinted sidebar.
+    private var sidebarList: some View {
+        List {
+            Section {
+                ForEach(shares) { share in
+                    macRow(.share(share), title: share.name, symbol: "externaldrive")
+                }
+            } header: {
+                sectionHeader("Shared Folders")
+            }
+            Section {
+                macRow(.offline, title: "Offline", symbol: "arrow.down.circle", badge: model.savedPaths.count)
+            }
+        }
+    }
+
+    private func macRow(_ item: SidebarItem, title: String, symbol: String, badge: Int = 0) -> some View {
+        let selected = selection == item
+        return Button { selection = item } label: {
+            HStack(spacing: Theme.Spacing.s) {
+                Image(systemName: symbol)
+                    .foregroundStyle(selected ? Theme.onAccent : Theme.accent)
+                    .frame(width: 18)
+                Text(title)
+                    .foregroundStyle(selected ? Theme.onAccent : Theme.Sidebar.text)
+                Spacer(minLength: 0)
+                if badge > 0 {
+                    Text("\(badge)")
+                        .font(.meta)
+                        .foregroundStyle(selected ? Theme.onAccent : Theme.Sidebar.secondary)
+                }
+            }
+            .padding(.vertical, 3)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .listRowBackground(
+            RoundedRectangle(cornerRadius: 7)
+                .fill(selected ? Theme.accent : .clear)
+                .padding(.horizontal, 10)
+        )
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+    #else
+    /// iPhone and iPad keep the system list (it drives navigation on iPhone);
+    /// the tint makes the selection highlight evergreen.
+    private var sidebarList: some View {
+        List(selection: $selection) {
+            Section {
+                ForEach(shares) { share in
+                    NavigationLink(value: SidebarItem.share(share)) {
+                        sidebarLabel(share.name, symbol: "externaldrive")
+                    }
+                    .listRowBackground(selection == .share(share) ? nil : Color.clear)
+                }
+            } header: {
+                sectionHeader("Shared Folders")
+            }
+            Section {
+                NavigationLink(value: SidebarItem.offline) {
+                    sidebarLabel("Offline", symbol: "arrow.down.circle")
+                        .badge(model.savedPaths.count)
+                }
+                .listRowBackground(selection == .offline ? nil : Color.clear)
+            }
+        }
+        .listItemTint(.fixed(Theme.accent))
+    }
+
+    private func sidebarLabel(_ title: String, symbol: String) -> some View {
+        Label {
+            Text(title).foregroundStyle(Theme.Sidebar.text)
+        } icon: {
+            Image(systemName: symbol).foregroundStyle(Theme.accent)
+        }
+    }
+    #endif
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title).foregroundStyle(Theme.Sidebar.secondary)
     }
 
     #if os(macOS)
