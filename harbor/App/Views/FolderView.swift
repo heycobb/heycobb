@@ -478,6 +478,9 @@ struct FolderView: View {
                 } label: {
                     Label("Add", systemImage: "plus")
                 }
+                // The Mac adds a menu arrow beside the icon, which crowds the
+                // small glass button; iPhone and iPad already hide it.
+                .menuIndicator(.hidden)
                 .disabled(!canChange)
             }
             viewOptions
@@ -552,6 +555,7 @@ struct FolderView: View {
             } label: {
                 Label("View Options", systemImage: "line.3.horizontal.decrease")
             }
+            .menuIndicator(.hidden)
         }
     }
 
