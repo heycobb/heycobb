@@ -27,6 +27,8 @@ final class AppModel {
 
     /// Set when the active server needs a password (first use or expired session).
     var signInRequest: ServerProfile?
+    /// Shows the Add NAS sheet (from the welcome screen or the server menu).
+    var isAddingServer = false
     /// Set when a server presents a certificate the user must review.
     var certificateReview: CertificateReview?
     var banner: String?

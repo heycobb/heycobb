@@ -12,10 +12,13 @@ every element has a job.
    platform conventions closely is what makes an app feel finished.
 2. **Glass is for navigation only.** Toolbars, tab bars and transient banners.
    Never on content and never on list rows. This is Apple's own guidance.
-3. **One accent color, used rarely.** A burnt orange (`AccentColor` in the
-   asset catalog: #C65530 light, #E87951 dark). It marks folders, selection,
-   the offline badge and primary buttons. Everything else is neutral, so
-   photo thumbnails carry the color.
+3. **One accent color, used rarely.** Harbor teal (`AccentColor` in the
+   asset catalog: #1E6E78 light, #4CB4C0 dark). It marks folders, the
+   offline badge and primary buttons. Sidebar selection stays the system's
+   neutral gray. Everything else is neutral, so photo thumbnails carry the
+   color. (An earlier burnt orange was dropped: too strong for a wide
+   audience and too close to other brands.)
+
 4. **Type does the work.** San Francisco at system sizes, with full Dynamic
    Type. Sizes, dates and paths use monospaced digits or SF Mono, which
    gives a precise, tool-like feel and makes columns line up.

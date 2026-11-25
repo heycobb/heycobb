@@ -66,6 +66,9 @@ struct BrowserView: View {
                 }
             }
         }
+        // Icons keep Harbor's teal; on the Mac the selection highlight
+        // follows the system accent color (see project.yml).
+        .listItemTint(.fixed(Theme.accent))
         .navigationTitle(model.activeServer?.name ?? "Harbor")
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 200, ideal: 230)
@@ -134,13 +137,14 @@ struct BrowserView: View {
                     }
                 }
             }
+            Button("Add a NAS…", systemImage: "plus") { model.isAddingServer = true }
             Divider()
             #if os(iOS)
             Button("Settings", systemImage: "gearshape") { showingSettings = true }
             #else
             SettingsLink { Label("Settings", systemImage: "gearshape") }
             #endif
-            Button("Sign Out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+            Button(model.activeServer?.isDemo == true ? "Leave Demo" : "Sign Out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
                 Task { await model.signOut() }
             }
         } label: {

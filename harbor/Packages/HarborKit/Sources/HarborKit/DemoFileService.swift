@@ -116,7 +116,7 @@ public struct DemoFileService: FileService {
             - Open photos and documents to preview them.
             - Swipe a file (or right-click on Mac) and choose **Keep Offline**.
 
-            When you're ready, choose Sign Out from the server menu, then Add a NAS.
+            When you're ready, choose Add a NAS from the server menu.
             """
         case "Home network notes.md":
             """

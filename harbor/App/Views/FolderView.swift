@@ -113,14 +113,65 @@ struct FolderView: View {
 
     private var grid: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: sizeClass == .regular ? Theme.gridMinimumRegular : Theme.gridMinimum), spacing: Theme.Spacing.m, alignment: .top)], spacing: Theme.Spacing.l) {
-                ForEach(shown) { item in
-                    tile(for: item)
-                        .onAppear { loadMoreIfNeeded(item) }
-                }
+            if isPhotoFolder {
+                folderRows(shown.filter(\.isDirectory))
+                photoGrid(shown.filter { !$0.isDirectory })
+            } else {
+                labeledGrid(shown)
             }
-            .padding(Theme.Spacing.l)
             if loading { ProgressView().padding() }
+        }
+    }
+
+    /// Mostly photos and videos: show them like Photos does.
+    private var isPhotoFolder: Bool {
+        let files = shown.filter { !$0.isDirectory }
+        guard files.count >= 4 else { return false }
+        return Double(files.filter(\.hasThumbnail).count) / Double(files.count) >= 0.7
+    }
+
+    private func labeledGrid(_ items: [RemoteItem]) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: sizeClass == .regular ? Theme.gridMinimumRegular : Theme.gridMinimum), spacing: Theme.Spacing.m, alignment: .top)], spacing: Theme.Spacing.l) {
+            ForEach(items) { item in
+                tile(for: item)
+                    .onAppear { loadMoreIfNeeded(item) }
+            }
+        }
+        .padding(Theme.Spacing.l)
+    }
+
+    /// Subfolders above a photo grid: compact rows, so the photos start high.
+    private func folderRows(_ folders: [RemoteItem]) -> some View {
+        LazyVStack(spacing: 0) {
+            ForEach(folders) { folder in
+                NavigationLink(value: folder) {
+                    HStack {
+                        ItemRow(item: folder, saved: model.savedPaths.contains(folder.path), busy: false)
+                        Image(systemName: "chevron.forward")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, Theme.Spacing.l)
+                    .padding(.vertical, Theme.Spacing.s)
+                }
+                .buttonStyle(.plain)
+                .contextMenu { menu(for: folder) }
+                Divider().padding(.leading, Theme.Spacing.l + 40 + Theme.Spacing.m)
+            }
+        }
+    }
+
+    /// Edge-to-edge square thumbnails with hairline gaps and no captions.
+    private func photoGrid(_ items: [RemoteItem]) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: sizeClass == .regular ? Theme.photoMinimumRegular : Theme.photoMinimum), spacing: Theme.photoSpacing)], spacing: Theme.photoSpacing) {
+            ForEach(items) { item in
+                Button { open(item) } label: {
+                    PhotoTile(item: item, saved: model.savedPaths.contains(item.path), busy: opening == item.path)
+                }
+                .buttonStyle(.plain)
+                .contextMenu { menu(for: item) }
+                .onAppear { loadMoreIfNeeded(item) }
+            }
         }
     }
 

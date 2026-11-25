@@ -74,6 +74,46 @@ struct ItemTile: View {
     }
 }
 
+/// Photos-style tile: a square thumbnail, no caption. Files without a
+/// thumbnail show their icon with the name inside the square.
+struct PhotoTile: View {
+    let item: RemoteItem
+    let saved: Bool
+    let busy: Bool
+
+    var body: some View {
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .overlay { ThumbnailView(item: item, size: .medium, side: nil) }
+            .overlay(alignment: .bottom) {
+                if !item.hasThumbnail {
+                    Text(item.name)
+                        .font(.caption2)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .padding(Theme.Spacing.xs)
+                }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if saved {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, Theme.accent)
+                        .padding(Theme.Spacing.xs)
+                }
+            }
+            .overlay {
+                if busy { ProgressView() }
+            }
+            .clipped()
+            .contentShape(.rect)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(item.name)
+            .accessibilityValue(saved ? "Available offline" : "")
+            .accessibilityAddTraits(.isButton)
+    }
+}
+
 /// Loads a NAS-generated thumbnail for photos and videos; falls back to a
 /// symbol for everything else.
 struct ThumbnailView: View {

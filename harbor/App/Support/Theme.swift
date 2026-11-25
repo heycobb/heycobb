@@ -5,8 +5,9 @@ import SwiftUI
 /// data. Everything else comes from the system so the app feels native on
 /// each platform. See docs/DESIGN.md for the reasoning.
 enum Theme {
-    /// Defined in the asset catalog (light + dark variants).
-    static let accent = Color.accentColor
+    /// Harbor teal, defined in the asset catalog (light + dark variants).
+    /// Named explicitly: on the Mac it isn't the app's global accent.
+    static let accent = Color("AccentColor")
 
     enum Spacing {
         static let xs: CGFloat = 4
@@ -26,6 +27,11 @@ enum Theme {
     #endif
     /// iPad (regular width) and Mac.
     static let gridMinimumRegular: CGFloat = 150
+
+    /// Photos-style grid: square thumbnails separated by hairline gaps.
+    static let photoMinimum: CGFloat = 90
+    static let photoMinimumRegular: CGFloat = 140
+    static let photoSpacing: CGFloat = 2
 }
 
 extension Font {
