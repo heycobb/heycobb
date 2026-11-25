@@ -6,14 +6,30 @@ import UniformTypeIdentifiers
 /// Built-in sample library. Lets people try the app before connecting a NAS,
 /// and gives Apple's App Review team a working account (Guideline 2.1).
 /// Images are drawn on the fly, so nothing large ships in the app bundle.
-public struct DemoFileService: FileService {
+///
+/// Changes (uploads, new folders, renames, moves, deletes) work too, but only
+/// in memory: the library is back to its original state next time.
+public actor DemoFileService: FileService {
+    /// Folder path → its items. Starts as the built-in library.
+    private var tree: [String: [RemoteItem]] = DemoFileService.initialTree
+    /// Where a file's bytes come from, by its current path.
+    private var sources: [String: Source] = [:]
+    private let uploads = FileManager.default.temporaryDirectory.appending(path: "DemoUploads", directoryHint: .isDirectory)
+
+    private enum Source {
+        /// Built-in content, keyed by the file's original path and name.
+        case builtIn(path: String, name: String)
+        /// A file the user uploaded during this session.
+        case uploaded(URL)
+    }
+
     public init() {}
 
     /// Dates count back from this morning, so the library always looks
     /// recently used and nothing is ever dated in the future.
     private static let now = Calendar.current.startOfDay(for: Date()).addingTimeInterval(9 * 3600)
 
-    private static let tree: [String: [RemoteItem]] = {
+    private static let initialTree: [String: [RemoteItem]] = {
         func folder(_ path: String, days: Double) -> RemoteItem {
             RemoteItem(path: path, name: (path as NSString).lastPathComponent, isDirectory: true, modified: now.addingTimeInterval(-days * 86400))
         }
@@ -54,11 +70,11 @@ public struct DemoFileService: FileService {
         return tree
     }()
 
-    public func listShares() async throws -> [RemoteItem] { Self.tree["/"] ?? [] }
+    public func listShares() async throws -> [RemoteItem] { tree["/"] ?? [] }
 
     public func list(folder: String, offset: Int, limit: Int, sort: SortField, ascending: Bool) async throws -> FolderPage {
         let key = folder.isEmpty ? "/" : folder
-        guard let items = Self.tree[key] else { throw NASError.notFound }
+        guard let items = tree[key] else { throw NASError.notFound }
         let sorted = items.sorted { a, b in
             if a.isDirectory != b.isDirectory { return a.isDirectory }
             let ordered: Bool
@@ -75,24 +91,169 @@ public struct DemoFileService: FileService {
 
     public func search(in folder: String, matching pattern: String) async throws -> [RemoteItem] {
         let prefix = folder == "/" ? "/" : folder + "/"
-        return Self.tree.values.flatMap { $0 }
+        return tree.values.flatMap { $0 }
             .filter { $0.path.hasPrefix(prefix) && $0.name.localizedCaseInsensitiveContains(pattern) }
     }
 
     public func thumbnail(for item: RemoteItem, size: ThumbnailSize) async throws -> Data {
         let px = switch size { case .small: 160; case .medium: 400; case .large: 800 }
-        guard let data = Self.renderPhoto(seed: item.path, width: px, height: px * 2 / 3) else { throw NASError.notFound }
-        return data
+        switch source(for: item.path) {
+        case let .uploaded(url):
+            guard let data = Self.thumbnail(of: url, maxPixel: px) else { throw NASError.notFound }
+            return data
+        case let .builtIn(path, _):
+            guard let data = Self.renderPhoto(seed: path, width: px, height: px * 2 / 3) else { throw NASError.notFound }
+            return data
+        }
     }
 
     public func download(_ item: RemoteItem) async throws -> URL {
-        guard let data = Self.content(path: item.path, name: item.name) else { throw NASError.notFound }
         let url = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + "." + item.fileExtension)
-        try data.write(to: url)
+        switch source(for: item.path) {
+        case let .uploaded(file):
+            try FileManager.default.copyItem(at: file, to: url)
+        case let .builtIn(path, name):
+            guard let data = Self.content(path: path, name: name) else { throw NASError.notFound }
+            try data.write(to: url)
+        }
         return url
     }
 
     public func signOut() async {}
+
+    // MARK: Changes (in memory only)
+
+    public func createFolder(named name: String, in parent: String) async throws -> RemoteItem {
+        guard RemoteItem.isValidName(name) else { throw NASError.invalidName }
+        try checkFree(name, in: parent)
+        let folder = RemoteItem(path: RemoteItem.join(parent, name), name: name, isDirectory: true, modified: .now)
+        tree[parent, default: []].append(folder)
+        tree[folder.path] = []
+        return folder
+    }
+
+    public func rename(_ item: RemoteItem, to name: String) async throws -> RemoteItem {
+        guard RemoteItem.isValidName(name) else { throw NASError.invalidName }
+        guard !item.isShare else { throw NASError.permissionDenied }
+        if name.lowercased() != item.name.lowercased() { try checkFree(name, in: item.parentPath) }
+        let renamed = item.with(path: RemoteItem.join(item.parentPath, name), name: name)
+        relocate(item, to: renamed)
+        return renamed
+    }
+
+    public func move(_ items: [RemoteItem], to folder: String) async throws {
+        guard tree[folder] != nil else { throw NASError.notFound }
+        for item in items {
+            guard !item.isShare, folder != item.path, !folder.hasPrefix(item.path + "/") else { throw NASError.permissionDenied }
+            guard item.parentPath != folder else { continue }
+            try checkFree(item.name, in: folder)
+        }
+        for item in items where item.parentPath != folder {
+            relocate(item, to: item.with(path: RemoteItem.join(folder, item.name), name: item.name))
+        }
+    }
+
+    public func delete(_ items: [RemoteItem]) async throws {
+        for item in items {
+            guard !item.isShare else { throw NASError.permissionDenied }
+            tree[item.parentPath]?.removeAll { $0.path == item.path }
+            let prefix = item.path + "/"
+            for key in tree.keys where key == item.path || key.hasPrefix(prefix) { tree[key] = nil }
+            for key in sources.keys where key == item.path || key.hasPrefix(prefix) {
+                if case let .uploaded(url) = sources[key] { try? FileManager.default.removeItem(at: url) }
+                sources[key] = nil
+            }
+        }
+    }
+
+    public func upload(
+        _ file: URL,
+        as name: String,
+        to folder: String,
+        replacing: Bool,
+        progress: @escaping @Sendable (Double) -> Void
+    ) async throws {
+        guard RemoteItem.isValidName(name) else { throw NASError.invalidName }
+        // Create missing parents, as the NAS does with create_parents.
+        var parent = "/"
+        for component in folder.split(separator: "/").map(String.init) {
+            let path = RemoteItem.join(parent, component)
+            if tree[path] == nil {
+                guard tree[parent] != nil else { throw NASError.notFound }
+                _ = try await createFolder(named: component, in: parent)
+            }
+            parent = path
+        }
+        let path = RemoteItem.join(folder, name)
+        if let existing = tree[folder]?.first(where: { $0.name.lowercased() == name.lowercased() }) {
+            guard replacing, !existing.isDirectory else { throw NASError.alreadyExists }
+            try await delete([existing])
+        }
+        try FileManager.default.createDirectory(at: uploads, withIntermediateDirectories: true)
+        let stored = uploads.appending(path: UUID().uuidString)
+        try FileManager.default.copyItem(at: file, to: stored)
+        // A short pause so progress is visible, as it would be on a real NAS.
+        for step in 1 ... 4 {
+            try await Task.sleep(for: .milliseconds(120))
+            progress(Double(step) / 4)
+        }
+        let size = (try? stored.resourceValues(forKeys: [.fileSizeKey]))?.fileSize.map(Int64.init)
+        sources[path] = .uploaded(stored)
+        tree[folder, default: []].append(RemoteItem(path: path, name: name, isDirectory: false, size: size, modified: .now))
+    }
+
+    private func checkFree(_ name: String, in folder: String) throws {
+        if tree[folder]?.contains(where: { $0.name.lowercased() == name.lowercased() }) == true {
+            throw NASError.alreadyExists
+        }
+    }
+
+    private func source(for path: String) -> Source {
+        sources[path] ?? .builtIn(path: path, name: (path as NSString).lastPathComponent)
+    }
+
+    /// Moves or renames an item, carrying its children and content along.
+    private func relocate(_ item: RemoteItem, to moved: RemoteItem) {
+        let old = item.path, new = moved.path
+        func remap(_ path: String) -> String? {
+            if path == old { return new }
+            if path.hasPrefix(old + "/") { return new + path.dropFirst(old.count) }
+            return nil
+        }
+        // Built-in files keep their original identity, so photos still draw the same.
+        var movedSources: [String: Source] = [:]
+        for child in tree.values.joined() where !child.isDirectory && remap(child.path) != nil {
+            movedSources[child.path] = source(for: child.path)
+        }
+        tree[item.parentPath]?.removeAll { $0.path == old }
+        var newTree: [String: [RemoteItem]] = [:]
+        for (key, items) in tree {
+            newTree[remap(key) ?? key] = items.map { child in
+                remap(child.path).map { child.with(path: $0, name: ($0 as NSString).lastPathComponent) } ?? child
+            }
+        }
+        newTree[moved.parentPath, default: []].append(moved)
+        tree = newTree
+        for (path, source) in movedSources {
+            sources[path] = nil
+            if let target = remap(path) { sources[target] = source }
+        }
+    }
+
+    /// A JPEG thumbnail of an uploaded image (or nil for other files).
+    private static func thumbnail(of url: URL, maxPixel: Int) -> Data? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                  kCGImageSourceCreateThumbnailFromImageAlways: true,
+                  kCGImageSourceCreateThumbnailWithTransform: true,
+                  kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+              ] as CFDictionary)
+        else { return nil }
+        let out = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(out, UTType.jpeg.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(dest, image, nil)
+        return CGImageDestinationFinalize(dest) ? out as Data : nil
+    }
 
     // MARK: Content
 
@@ -115,6 +276,8 @@ public struct DemoFileService: FileService {
             - Browse folders and switch between list and grid.
             - Open photos and documents to preview them.
             - Swipe a file (or right-click on Mac) and choose **Keep Offline**.
+            - Tap **+** to upload photos and files or make a folder. Rename, move
+              and delete from the same menus. Demo changes are undone when you leave.
 
             When you're ready, choose Add a NAS from the server menu.
             """

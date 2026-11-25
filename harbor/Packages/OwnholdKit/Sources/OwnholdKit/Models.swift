@@ -25,6 +25,45 @@ public struct RemoteItem: Identifiable, Hashable, Sendable, Codable {
 
     /// Whether the NAS can generate a thumbnail for this item.
     public var hasThumbnail: Bool { kind == .image || kind == .video }
+
+    /// The folder this item is in.
+    public var parentPath: String { (path as NSString).deletingLastPathComponent }
+
+    /// Shared folders (top level) can't be renamed, moved or deleted from
+    /// File Station; that's done in DSM's Control Panel.
+    public var isShare: Bool { path.split(separator: "/").count == 1 }
+
+    public func with(path: String, name: String) -> RemoteItem {
+        RemoteItem(path: path, name: name, isDirectory: isDirectory, size: size, modified: modified)
+    }
+
+    // MARK: Names
+
+    public static func join(_ folder: String, _ name: String) -> String {
+        folder.hasSuffix("/") ? folder + name : folder + "/" + name
+    }
+
+    /// File and folder names: not empty, no "/", not "." or "..", no control
+    /// characters, and at most 255 bytes (the limit on DSM's file systems).
+    public static func isValidName(_ name: String) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, trimmed != ".", trimmed != "..", name.utf8.count <= 255 else { return false }
+        return !name.contains("/") && !name.unicodeScalars.contains { CharacterSet.controlCharacters.contains($0) }
+    }
+
+    /// "Photo.jpg" → "Photo 2.jpg" (then 3, 4…) until it doesn't clash.
+    /// Comparison ignores case, as SMB clients and macOS do.
+    public static func uniqueName(for name: String, avoiding existing: Set<String>) -> String {
+        let taken = Set(existing.map { $0.lowercased() })
+        guard taken.contains(name.lowercased()) else { return name }
+        let ext = (name as NSString).pathExtension
+        let base = (name as NSString).deletingPathExtension
+        for n in 2... {
+            let candidate = ext.isEmpty ? "\(base) \(n)" : "\(base) \(n).\(ext)"
+            if !taken.contains(candidate.lowercased()) { return candidate }
+        }
+        return name
+    }
 }
 
 public enum FileKind: String, Sendable, Codable {

@@ -80,6 +80,32 @@ public actor OfflineStore {
         persist()
     }
 
+    /// Follows a rename or move on the NAS, so saved files stay saved under
+    /// their new path (and show their new name) without downloading again.
+    public func relocate(from old: String, to new: String) {
+        let prefix = old + "/"
+        let fm = FileManager.default
+        for key in Array(entries.keys) where key == old || key.hasPrefix(prefix) {
+            guard let entry = entries.removeValue(forKey: key) else { continue }
+            let path = new + key.dropFirst(old.count)
+            let item = entry.item.with(path: path, name: (path as NSString).lastPathComponent)
+            let safeName = item.name.replacingOccurrences(of: "/", with: "-")
+            let fileName = Self.hashedName(path) + "/" + safeName
+            let from = directory.appending(path: entry.fileName)
+            let to = directory.appending(path: fileName)
+            do {
+                try fm.createDirectory(at: to.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try fm.moveItem(at: from, to: to)
+                removeFile(entry.fileName) // the old, now empty, per-file folder
+                entries[path] = OfflineEntry(item: item, fileName: fileName, savedAt: entry.savedAt, byteCount: entry.byteCount)
+            } catch {
+                // Keep the copy where it is; it's still readable under the new path.
+                entries[path] = OfflineEntry(item: item, fileName: entry.fileName, savedAt: entry.savedAt, byteCount: entry.byteCount)
+            }
+        }
+        persist()
+    }
+
     public func removeAll() {
         entries.removeAll()
         try? FileManager.default.removeItem(at: directory)

@@ -24,6 +24,10 @@ final class AppModel {
     private(set) var offline: OfflineStore?
     private(set) var thumbnails: ThumbnailCache?
     private(set) var savedPaths: Set<String> = []
+    /// Bumped when a folder's contents change, so open folder views reload.
+    private(set) var folderRevisions: [String: Int] = [:]
+    /// Uploads the user started. Runs only while the app is open.
+    @ObservationIgnored private(set) lazy var uploads = UploadQueue(model: self)
 
     /// Set when the active server needs a password (first use or expired session).
     var signInRequest: ServerProfile?
@@ -57,6 +61,7 @@ final class AppModel {
         isLocked = requireUnlock
         servers = Self.loadServers()
         PreviewFiles.purge()
+        UploadQueue.purgeStaging()
     }
 
     // MARK: Launch
@@ -205,6 +210,79 @@ final class AppModel {
         guard let service else { throw NASError.unreachable }
         let temporary = try await service.download(item)
         return try PreviewFiles.adopt(temporary, named: item.name)
+    }
+
+    // MARK: Changes
+
+    func revision(of folder: String) -> Int { folderRevisions[folder] ?? 0 }
+
+    func folderChanged(_ folders: String...) {
+        for folder in Set(folders) { folderRevisions[folder, default: 0] += 1 }
+    }
+
+    @discardableResult
+    func createFolder(named name: String, in parent: String) async -> RemoteItem? {
+        guard let service else { return nil }
+        do {
+            let folder = try await service.createFolder(named: name.trimmingCharacters(in: .whitespaces), in: parent)
+            folderChanged(parent)
+            return folder
+        } catch {
+            handle(error)
+            return nil
+        }
+    }
+
+    func rename(_ item: RemoteItem, to name: String) async {
+        guard let service, name != item.name else { return }
+        do {
+            let renamed = try await service.rename(item, to: name.trimmingCharacters(in: .whitespaces))
+            await offline?.relocate(from: item.path, to: renamed.path)
+            savedPaths = await offline?.savedPaths() ?? []
+            folderChanged(item.parentPath)
+        } catch {
+            handle(error)
+        }
+    }
+
+    /// Returns false if nothing moved, so the caller can keep its selection.
+    @discardableResult
+    func move(_ items: [RemoteItem], to folder: String) async -> Bool {
+        let items = items.filter { $0.parentPath != folder }
+        guard let service, !items.isEmpty else { return false }
+        do {
+            try await service.move(items, to: folder)
+            for item in items {
+                await offline?.relocate(from: item.path, to: RemoteItem.join(folder, item.name))
+            }
+            savedPaths = await offline?.savedPaths() ?? []
+            for parent in Set(items.map(\.parentPath)) { folderChanged(parent) }
+            folderChanged(folder)
+            Haptics.success()
+            return true
+        } catch {
+            // Some items may have moved before the error.
+            for parent in Set(items.map(\.parentPath)) { folderChanged(parent) }
+            folderChanged(folder)
+            handle(error)
+            return false
+        }
+    }
+
+    @discardableResult
+    func delete(_ items: [RemoteItem]) async -> Bool {
+        guard let service, !items.isEmpty else { return false }
+        defer { for parent in Set(items.map(\.parentPath)) { folderChanged(parent) } }
+        do {
+            try await service.delete(items)
+            // The offline copies would be dropped at the next refresh anyway.
+            for item in items { await offline?.remove(item.path) }
+            savedPaths = await offline?.savedPaths() ?? []
+            return true
+        } catch {
+            handle(error)
+            return false
+        }
     }
 
     // MARK: Errors

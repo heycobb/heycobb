@@ -219,3 +219,105 @@ struct QuickConnectTests {
         #expect(!QuickConnectLookup.isValidID(""))
     }
 }
+
+@Suite("File changes")
+struct FileChangeTests {
+    @Test func validatesNames() {
+        #expect(RemoteItem.isValidName("Holiday 2026"))
+        #expect(RemoteItem.isValidName("Café.jpg"))
+        #expect(!RemoteItem.isValidName(""))
+        #expect(!RemoteItem.isValidName("   "))
+        #expect(!RemoteItem.isValidName("a/b"))
+        #expect(!RemoteItem.isValidName(".."))
+        #expect(!RemoteItem.isValidName("line\nbreak"))
+        #expect(!RemoteItem.isValidName(String(repeating: "é", count: 200)))
+    }
+
+    @Test func makesUniqueNames() {
+        #expect(RemoteItem.uniqueName(for: "IMG.jpg", avoiding: ["Other.jpg"]) == "IMG.jpg")
+        #expect(RemoteItem.uniqueName(for: "IMG.jpg", avoiding: ["img.JPG"]) == "IMG 2.jpg")
+        #expect(RemoteItem.uniqueName(for: "IMG.jpg", avoiding: ["IMG.jpg", "IMG 2.jpg"]) == "IMG 3.jpg")
+        #expect(RemoteItem.uniqueName(for: "Folder", avoiding: ["Folder"]) == "Folder 2")
+    }
+
+    @Test func mapsFileStationErrors() {
+        #expect(NASError.from(code: 1805, api: "SYNO.FileStation.Upload") == .alreadyExists)
+        #expect(NASError.from(code: 414, api: "SYNO.FileStation.CreateFolder") == .alreadyExists)
+        #expect(NASError.from(code: 416, api: "SYNO.FileStation.Upload") == .noSpace)
+        #expect(NASError.from(code: 419, api: "SYNO.FileStation.Rename") == .invalidName)
+        #expect(NASError.from(code: 407, api: "SYNO.FileStation.Delete") == .permissionDenied)
+    }
+
+    @Test func encodesPathLists() throws {
+        let items = [RemoteItem(path: "/Photos/a \"b\".jpg", name: "a", isDirectory: false), RemoteItem(path: "/Photos/Ç", name: "Ç", isDirectory: true)]
+        let json = try FileStationClient.pathList(items)
+        #expect(try JSONDecoder().decode([String].self, from: Data(json.utf8)) == items.map(\.path))
+        #expect(!json.contains("\\/"))
+    }
+
+    @Test func writesMultipartBodies() throws {
+        let source = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try Data("hello".utf8).write(to: source)
+        defer { try? FileManager.default.removeItem(at: source) }
+        let body = try Multipart.write(fields: [("path", "/Photos")], file: source, fileName: "a\"b.txt", boundary: "XX")
+        defer { try? FileManager.default.removeItem(at: body) }
+        let text = try String(contentsOf: body, encoding: .utf8)
+        #expect(text == "--XX\r\nContent-Disposition: form-data; name=\"path\"\r\n\r\n/Photos\r\n--XX\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a%22b.txt\"\r\nContent-Type: application/octet-stream\r\n\r\nhello\r\n--XX--\r\n")
+    }
+
+    @Test func demoCreatesRenamesMovesAndDeletes() async throws {
+        let demo = DemoFileService()
+        let folder = try await demo.createFolder(named: "Trip", in: "/Photos")
+        await #expect(throws: NASError.alreadyExists) { try await demo.createFolder(named: "trip", in: "/Photos") }
+
+        let photo = try await demo.list(folder: "/Photos", offset: 0, limit: 100, sort: .name, ascending: true).items.first { !$0.isDirectory }!
+        let before = try await demo.thumbnail(for: photo, size: .small)
+        try await demo.move([photo], to: folder.path)
+        let moved = try await demo.list(folder: folder.path, offset: 0, limit: 100, sort: .name, ascending: true).items
+        #expect(moved.map(\.name) == [photo.name])
+        #expect(try await demo.thumbnail(for: moved[0], size: .small) == before)
+
+        let renamed = try await demo.rename(folder, to: "Coast 2")
+        let inside = try await demo.list(folder: renamed.path, offset: 0, limit: 100, sort: .name, ascending: true).items
+        #expect(inside.first?.path == "/Photos/Coast 2/\(photo.name)")
+
+        await #expect(throws: NASError.permissionDenied) { try await demo.move([renamed], to: renamed.path) }
+        try await demo.delete([renamed])
+        let photos = try await demo.list(folder: "/Photos", offset: 0, limit: 100, sort: .name, ascending: true).items
+        #expect(!photos.contains { $0.name == "Coast 2" })
+        await #expect(throws: NASError.notFound) { try await demo.list(folder: renamed.path, offset: 0, limit: 10, sort: .name, ascending: true) }
+    }
+
+    @Test func demoUploadsAndReplaces() async throws {
+        let demo = DemoFileService()
+        let source = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try Data("first".utf8).write(to: source)
+        defer { try? FileManager.default.removeItem(at: source) }
+        try await demo.upload(source, as: "Note.txt", to: "/Documents/New/Deep", replacing: false) { _ in }
+        await #expect(throws: NASError.alreadyExists) {
+            try await demo.upload(source, as: "note.TXT", to: "/Documents/New/Deep", replacing: false) { _ in }
+        }
+        try Data("second".utf8).write(to: source)
+        try await demo.upload(source, as: "Note.txt", to: "/Documents/New/Deep", replacing: true) { _ in }
+        let items = try await demo.list(folder: "/Documents/New/Deep", offset: 0, limit: 10, sort: .name, ascending: true).items
+        #expect(items.count == 1)
+        let copy = try await demo.download(items[0])
+        defer { try? FileManager.default.removeItem(at: copy) }
+        #expect(try String(contentsOf: copy, encoding: .utf8) == "second")
+        #expect(items[0].size == 6)
+    }
+
+    @Test func offlineFilesFollowRenames() async throws {
+        let store = OfflineStore(namespace: "test-\(UUID().uuidString)")
+        let demo = DemoFileService()
+        let item = try await demo.list(folder: "/Documents", offset: 0, limit: 10, sort: .name, ascending: true).items.first { $0.name == "Read me.md" }!
+        try await store.save(item, using: demo)
+        await store.relocate(from: "/Documents", to: "/Docs")
+        #expect(await store.localURL(for: item.path) == nil)
+        let url = try #require(await store.localURL(for: "/Docs/Read me.md"))
+        #expect(url.lastPathComponent == "Read me.md")
+        await store.relocate(from: "/Docs/Read me.md", to: "/Docs/Welcome.md")
+        #expect(try #require(await store.localURL(for: "/Docs/Welcome.md")).lastPathComponent == "Welcome.md")
+        await store.removeAll()
+    }
+}

@@ -18,6 +18,9 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
     case malformedResponse
     case quickConnectNotFound
     case quickConnectUnavailable
+    case alreadyExists
+    case noSpace
+    case invalidName
 
     public var errorDescription: String? {
         switch self {
@@ -42,7 +45,7 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
         case .sessionExpired:
             "Your session expired. Sign in again."
         case .permissionDenied:
-            "You don't have permission to open this."
+            "Your account doesn't have permission for this. An administrator can change it in DSM."
         case .notFound:
             "This item no longer exists on the NAS."
         case let .server(code, api):
@@ -53,6 +56,12 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
             "That QuickConnect ID wasn't found. Check it in DSM under Control Panel › External Access › QuickConnect."
         case .quickConnectUnavailable:
             "Couldn't look up your NAS through QuickConnect right now. Ownhold will use your saved addresses."
+        case .alreadyExists:
+            "An item with that name already exists there."
+        case .noSpace:
+            "The NAS is out of space, or your account has reached its storage limit."
+        case .invalidName:
+            "That name isn't allowed. Names can't be empty, contain “/”, or be too long."
         }
     }
 
@@ -78,8 +87,11 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
         }
         if api.hasPrefix("SYNO.FileStation") {
             switch code {
-            case 407: return .permissionDenied
+            case 407, 411, 1803: return .permissionDenied
             case 408: return .notFound
+            case 412, 413, 418, 419, 420: return .invalidName
+            case 414, 1003, 1004, 1805: return .alreadyExists
+            case 415, 416, 1804: return .noSpace
             default: return .server(code: code, api: api)
             }
         }

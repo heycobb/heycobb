@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Support · Ownhold</title>
-<meta name="description" content="Help with Ownhold: setup, Tailscale, offline files and fixes for common messages.">
+<meta name="description" content="Help with Ownhold: setup, Tailscale, uploading, offline files and fixes for common messages.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -64,6 +64,17 @@
   <p>Most home NAS boxes use their own certificate rather than one from a public authority, so the first time you connect, Ownhold shows its fingerprint and asks you to trust it. If you set up the NAS yourself and you're at home, tap <strong>Trust</strong>. Ownhold remembers the certificate for all of that NAS's addresses.</p>
   <p>To double-check, open your NAS's address in Safari on a Mac at home (for example https://192.168.1.20:5001), choose <strong>Show Details › view the certificate</strong>, and compare the <strong>SHA-256</strong> fingerprint.</p>
   <p>If Ownhold later says the certificate <em>changed</em> and you didn't replace it in DSM, don't continue. Something may be intercepting the connection.</p>
+
+  <h2>Uploading and organising</h2>
+  <ul>
+    <li><strong>Upload:</strong> open a folder, tap <strong>+</strong>, then <strong>Upload Photos and Videos</strong> or <strong>Upload Files…</strong>. Photos keep their original format (for example HEIC). On a Mac or iPad you can also drag files or folders onto the list.</li>
+    <li>If a file with the same name is already there, Ownhold asks whether to <strong>Keep Both</strong> (the new one gets a number), <strong>Replace</strong> it, or <strong>Skip</strong> it.</li>
+    <li>Uploads run while Ownhold is open. On iPhone and iPad the screen stays on until they finish. Tap <strong>Details</strong> on the upload bar to see each file, cancel, or retry ones that failed.</li>
+    <li><strong>New folder:</strong> tap <strong>+</strong>, then <strong>New Folder</strong>.</li>
+    <li><strong>Rename, move or delete:</strong> touch and hold an item (right-click on a Mac). To work on several at once, open the view menu (the lines at the top right) and choose <strong>Select</strong>.</li>
+    <li>Deleting removes the item from your NAS. If the <strong>Recycle Bin</strong> is turned on for that shared folder in DSM (<strong>Control Panel › Shared Folder › Edit</strong>), you can restore it from there.</li>
+    <li>Shared folders themselves can only be created, renamed or removed in DSM.</li>
+  </ul>
 
   <h2>Keeping files offline</h2>
   <ul>
@@ -130,6 +141,18 @@
   <details>
     <summary>The certificate changed</summary>
     <p>If you renewed or replaced your NAS's certificate in DSM, trust the new one. If you didn't, don't continue, especially on public Wi-Fi, and check your NAS from home.</p>
+  </details>
+  <details>
+    <summary>An item with that name already exists there</summary>
+    <p>Choose a different name, or move or rename the existing item first. When uploading, Ownhold offers Keep Both or Replace instead.</p>
+  </details>
+  <details>
+    <summary>The NAS is out of space</summary>
+    <p>The volume is full, or your account has a storage quota in DSM (<strong>Control Panel › User &amp; Group › Edit › Quota</strong>). Free up space or ask the NAS's administrator to raise the quota.</p>
+  </details>
+  <details>
+    <summary>Your account doesn't have permission for this</summary>
+    <p>Uploading, renaming, moving and deleting need <strong>Read/Write</strong> permission for that shared folder. In DSM: <strong>Control Panel › Shared Folder</strong>, select it, <strong>Edit › Permissions</strong>.</p>
   </details>
   <details>
     <summary>That QuickConnect ID wasn't found</summary>
