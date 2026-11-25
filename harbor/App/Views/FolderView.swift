@@ -634,24 +634,21 @@ private struct ChangeDialogs: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            // Buttons check the name when tapped: an alert doesn't refresh a
+            // button's disabled state while you type, so `.disabled` would
+            // leave Create stuck off (or on).
             .alert("New Folder", isPresented: $creatingFolder) {
                 TextField("Name", text: $newName)
-                Button("Create") {
-                    let name = newName
-                    Task { await model.createFolder(named: name, in: folder.path) }
-                }
-                .disabled(!RemoteItem.isValidName(newName))
+                    .onSubmit { create() }
+                Button("Create") { create() }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("In “\(folder.name)”")
             }
             .alert("Rename", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } }), presenting: renaming) { item in
                 TextField("Name", text: $newName)
-                Button("Rename") {
-                    let name = newName
-                    Task { await model.rename(item, to: name) }
-                }
-                .disabled(!RemoteItem.isValidName(newName) || newName == item.name)
+                    .onSubmit { rename(item) }
+                Button("Rename") { rename(item) }
                 Button("Cancel", role: .cancel) {}
             } message: { item in
                 Text("Enter a new name for “\(item.name)”.")
@@ -703,6 +700,26 @@ private struct ChangeDialogs: ViewModifier {
                         .allowsHitTesting(false)
                 }
             }
+    }
+
+    private func create() {
+        let name = newName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        guard RemoteItem.isValidName(name) else {
+            model.banner = NASError.invalidName.errorDescription
+            return
+        }
+        Task { await model.createFolder(named: name, in: folder.path) }
+    }
+
+    private func rename(_ item: RemoteItem) {
+        let name = newName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, name != item.name else { return }
+        guard RemoteItem.isValidName(name) else {
+            model.banner = NASError.invalidName.errorDescription
+            return
+        }
+        Task { await model.rename(item, to: name) }
     }
 
     private var deleteTitle: String {
