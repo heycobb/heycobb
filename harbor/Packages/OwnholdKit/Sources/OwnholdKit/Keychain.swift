@@ -5,9 +5,13 @@ import Security
 /// (never synced to iCloud Keychain) and are readable after first unlock.
 public struct Keychain: Sendable {
     public let service: String
+    /// A shared access group (so the Files app extension can read sign-ins),
+    /// or nil for the app's own group.
+    public let accessGroup: String?
 
-    public init(service: String = "app.ownhold.keychain") {
+    public init(service: String = "app.ownhold.keychain", accessGroup: String? = nil) {
         self.service = service
+        self.accessGroup = accessGroup
     }
 
     private func baseQuery(_ key: String) -> [String: Any] {
@@ -38,8 +42,15 @@ public struct Keychain: Sendable {
         ]
         let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
         if status == errSecItemNotFound {
-            let insert = query.merging(attributes) { $1 }
-            return SecItemAdd(insert as CFDictionary, nil) == errSecSuccess
+            var insert = query.merging(attributes) { $1 }
+            if let accessGroup { insert[kSecAttrAccessGroup as String] = accessGroup }
+            let added = SecItemAdd(insert as CFDictionary, nil)
+            if added == errSecMissingEntitlement {
+                // Builds without the shared group (local, unsigned): keep it private.
+                insert.removeValue(forKey: kSecAttrAccessGroup as String)
+                return SecItemAdd(insert as CFDictionary, nil) == errSecSuccess
+            }
+            return added == errSecSuccess
         }
         return status == errSecSuccess
     }

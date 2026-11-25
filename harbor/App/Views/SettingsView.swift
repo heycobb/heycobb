@@ -18,11 +18,22 @@ struct SettingsView: View {
         Form {
             AppearanceSection()
 
-            Section("Privacy") {
+            Section {
                 Toggle(Platform.isMac ? "Lock with Touch ID or Password" : "Lock with Face ID or Passcode", isOn: $model.requireUnlock)
                 #if os(iOS)
                 Toggle("Hide Files in App Switcher", isOn: $model.hideInSwitcher)
                 #endif
+                Toggle(Platform.isMac ? "Show NAS in Finder" : "Show NAS in Files App", isOn: $model.showInFilesApp)
+                    .disabled(model.requireUnlock)
+            } header: {
+                Text("Privacy")
+            } footer: {
+                // Needed: otherwise the switch looks broken while it's disabled.
+                if model.requireUnlock {
+                    Text(Platform.isMac
+                        ? "Off while the app lock is on, because Finder can't ask for Touch ID."
+                        : "Off while the app lock is on, because the Files app can't ask for Face ID.")
+                }
             }
 
             #if os(macOS)

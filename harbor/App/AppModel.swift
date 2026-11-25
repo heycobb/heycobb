@@ -1,7 +1,9 @@
+import FileProvider
 import Foundation
 import OwnholdKit
 import LocalAuthentication
 import Observation
+import os
 import SwiftUI
 
 /// App-wide state: saved servers, the active connection, and settings.
@@ -44,15 +46,28 @@ final class AppModel {
 
     var isLocked = false
     var requireUnlock: Bool {
-        didSet { defaults.set(requireUnlock, forKey: Keys.requireUnlock) }
+        didSet {
+            defaults.set(requireUnlock, forKey: Keys.requireUnlock)
+            Task { await syncFilesApp() }
+        }
+    }
+    /// Settings › Privacy › Show NAS in Files App. Off unless turned on, and
+    /// off while the app lock is on (the Files app can't ask for Face ID).
+    var showInFilesApp: Bool {
+        didSet {
+            SharedContainer.isFilesAppEnabled = showInFilesApp
+            Task { await syncFilesApp() }
+        }
     }
     var hideInSwitcher: Bool {
         didSet { defaults.set(hideInSwitcher, forKey: Keys.hideInSwitcher) }
     }
 
     @ObservationIgnored private var started = false
-    let trust = CertificateTrust()
-    private let keychain = Keychain()
+    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "files-app")
+    /// Shared with the Files app extension (see SharedContainer).
+    private let keychain = SharedContainer.keychain
+    let trust = CertificateTrust(keychain: SharedContainer.keychain)
     private let defaults = UserDefaults.standard
 
     private enum Keys {
@@ -63,9 +78,10 @@ final class AppModel {
 
     init() {
         requireUnlock = defaults.bool(forKey: Keys.requireUnlock)
+        showInFilesApp = SharedContainer.isFilesAppEnabled
         hideInSwitcher = defaults.object(forKey: Keys.hideInSwitcher) as? Bool ?? true
         isLocked = requireUnlock
-        servers = Self.loadServers()
+        servers = SharedContainer.loadServers()
         PreviewFiles.purge()
         UploadQueue.purgeStaging()
     }
@@ -76,6 +92,7 @@ final class AppModel {
     func start() async {
         guard !started, activeServer == nil else { return }
         started = true
+        await syncFilesApp()
         #if DEBUG
         // `-demo` opens the demo library directly: used for screenshots.
         if CommandLine.arguments.contains("-demo") {
@@ -107,6 +124,7 @@ final class AppModel {
         if profile.isDemo {
             service = DemoFileService()
             connection = .online(nil)
+            await syncFilesApp()
             return
         }
         guard let session = keychain.codable(Session.self, for: sessionKey(profile)) else {
@@ -150,7 +168,12 @@ final class AppModel {
         }
         service = nil
         connection = .idle
-        if profile.isDemo { activeServer = nil } else { signInRequest = profile }
+        if profile.isDemo {
+            activeServer = nil
+            await syncFilesApp()
+        } else {
+            signInRequest = profile
+        }
     }
 
     func remove(_ profile: ServerProfile) async {
@@ -168,6 +191,7 @@ final class AppModel {
         }
         servers.removeAll { $0.id == profile.id }
         persistServers()
+        await syncFilesApp()
     }
 
     /// Saves edits to a server's name or addresses.
@@ -419,23 +443,44 @@ final class AppModel {
             servers.append(profile)
         }
         persistServers()
+        Task { await syncFilesApp() }
     }
 
-    private func sessionKey(_ profile: ServerProfile) -> String { "session.\(profile.id.uuidString)" }
+    // MARK: Files app
 
-    private static var serversURL: URL {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        try? FileManager.default.createDirectory(at: support, withIntermediateDirectories: true)
-        return support.appending(path: "servers.json")
+    /// Adds a Files app location for each NAS (and the demo library while
+    /// it's open) when the switch is on, and removes them when it's off.
+    /// Removing one also makes the system delete every file it cached for it.
+    func syncFilesApp() async {
+        let enabled = showInFilesApp && !requireUnlock
+        var wanted: [NSFileProviderDomain] = []
+        if enabled {
+            wanted = servers.map { NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier($0.id.uuidString), displayName: $0.name) }
+            if activeServer?.isDemo == true {
+                wanted.append(NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier("demo"), displayName: "Ownhold Demo"))
+            }
+        }
+        guard enabled else {
+            // Off: remove every Ownhold location, including any the system
+            // made on its own, along with everything it cached.
+            do { try await NSFileProviderManager.removeAllDomains() } catch { Self.log.error("Files app: remove all failed: \(error)") }
+            return
+        }
+        let existing = (try? await NSFileProviderManager.domains()) ?? []
+        let wantedIDs = Set(wanted.map(\.identifier))
+        for domain in existing where !wantedIDs.contains(domain.identifier) {
+            do { try await NSFileProviderManager.remove(domain) } catch { Self.log.error("Files app: remove failed: \(error)") }
+        }
+        for domain in wanted {
+            // Adding again updates the name if the NAS was renamed.
+            do { try await NSFileProviderManager.add(domain) } catch { Self.log.error("Files app: add failed: \(error)") }
+        }
     }
 
-    private static func loadServers() -> [ServerProfile] {
-        (try? Data(contentsOf: serversURL)).flatMap { try? JSONDecoder().decode([ServerProfile].self, from: $0) } ?? []
-    }
+    private func sessionKey(_ profile: ServerProfile) -> String { SharedContainer.sessionKey(profile.id) }
 
     private func persistServers() {
-        guard let data = try? JSONEncoder().encode(servers) else { return }
-        try? data.write(to: Self.serversURL, options: .atomic)
+        SharedContainer.saveServers(servers)
     }
 }
 

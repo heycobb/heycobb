@@ -1,0 +1,78 @@
+import FileProvider
+import Foundation
+import OwnholdKit
+
+/// Connects to one NAS for the Files app, reusing the app's sign-in and
+/// trusted certificates. It never asks for a password: if the session has
+/// expired, the Files app shows "Sign in in Ownhold".
+actor ProviderContext {
+    let domainID: String
+    private var cached: (any FileService)?
+
+    init(domainID: String) {
+        self.domainID = domainID
+    }
+
+    func service() async throws -> any FileService {
+        if let cached { return cached }
+        guard SharedContainer.isFilesAppEnabled else { throw NSFileProviderError(.notAuthenticated) }
+        if domainID == ProviderContext.demoDomain {
+            let demo = DemoFileService()
+            cached = demo
+            return demo
+        }
+        let keychain = SharedContainer.keychain
+        guard let id = UUID(uuidString: domainID),
+              let profile = SharedContainer.loadServers().first(where: { $0.id == id }),
+              let session = keychain.codable(Session.self, for: SharedContainer.sessionKey(id)),
+              !session.sid.isEmpty
+        else { throw NSFileProviderError(.notAuthenticated) }
+        let trust = CertificateTrust(keychain: keychain)
+        let endpoint: Endpoint
+        do {
+            endpoint = try await ConnectionResolver(trust: trust).resolve(profile.allEndpoints)
+        } catch {
+            throw Self.fileProviderError(error)
+        }
+        let client = FileStationClient(baseURL: endpoint.url, trust: trust, sid: session.sid)
+        cached = client
+        return client
+    }
+
+    /// Forget the connection after an error, so the next request picks the
+    /// best address again (for example after leaving home Wi-Fi).
+    func reset() { cached = nil }
+
+    /// Runs a request, translating Ownhold errors into ones the Files app understands.
+    func run<T: Sendable>(_ work: @Sendable (any FileService) async throws -> T) async throws -> T {
+        do {
+            return try await work(service())
+        } catch let error as NASError {
+            if error == .unreachable || error == .sessionExpired { reset() }
+            throw Self.fileProviderError(error)
+        }
+    }
+
+    static let demoDomain = "demo"
+
+    static func fileProviderError(_ error: Error) -> Error {
+        guard let error = error as? NASError else { return error }
+        switch error {
+        case .sessionExpired, .invalidCredentials, .twoFactorRequired, .passwordExpired,
+             .untrustedCertificate, .certificateChanged:
+            return NSFileProviderError(.notAuthenticated)
+        case .unreachable, .quickConnectUnavailable:
+            return NSFileProviderError(.serverUnreachable)
+        case .notFound:
+            return NSFileProviderError(.noSuchItem)
+        case .alreadyExists:
+            return NSFileProviderError(.filenameCollision)
+        case .noSpace:
+            return NSFileProviderError(.insufficientQuota)
+        case .permissionDenied:
+            return CocoaError(.fileWriteNoPermission)
+        default:
+            return NSFileProviderError(.cannotSynchronize)
+        }
+    }
+}

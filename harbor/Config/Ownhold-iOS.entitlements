@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict/>
+<dict>
+	<!-- Shared with the Files app extension: the NAS list and the Files app switch. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(OWNHOLD_APP_GROUP)</string>
+	</array>
+	<!-- Sign-in sessions and trusted certificates, shared with the extension. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)app.ownhold.shared</string>
+	</array>
+</dict>
 </plist>

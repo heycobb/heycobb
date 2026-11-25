@@ -3,6 +3,11 @@
 <plist version="1.0">
 <dict>
 	<!-- Merged with the generated Info.plist (GENERATE_INFOPLIST_FILE = YES). -->
+	<!-- Storage shared with the Files app extension (see SharedContainer.swift). -->
+	<key>OwnholdAppGroup</key>
+	<string>$(OWNHOLD_APP_GROUP)</string>
+	<key>OwnholdKeychainGroup</key>
+	<string>$(AppIdentifierPrefix)app.ownhold.shared</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Ownhold connects to your NAS on your home network.</string>
 	<key>NSFaceIDUsageDescription</key>

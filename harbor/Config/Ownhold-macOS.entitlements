@@ -11,5 +11,14 @@
 	<!-- Saving files the user picks (e.g. "Save to…"). -->
 	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>
+	<!-- Shared with the Files app (Finder) extension. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(OWNHOLD_APP_GROUP)</string>
+	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)app.ownhold.shared</string>
+	</array>
 </dict>
 </plist>
