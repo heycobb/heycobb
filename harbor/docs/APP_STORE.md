@@ -27,7 +27,7 @@ before submitting; they change.
 | **Encryption export compliance.** | ✅ `ITSAppUsesNonExemptEncryption = NO`. Standard HTTPS only. |
 | **Mac App Sandbox.** | ✅ `Config/Ownhold-macOS.entitlements` (network client + user-selected files). |
 | **4.2 Minimum functionality.** It has to feel like an app, not a web wrapper. | ✅ Native SwiftUI on every platform. |
-| **App icon.** | ⬜ Needed. Xcode 26 uses Icon Composer (`.icon`) for Liquid Glass icons. |
+| **App icon.** | ✅ `App/AppIcon.icon` (Icon Composer / Liquid Glass), the "oh" monogram on deep evergreen. Sources in `Design/AppIcon/`. |
 | **Screenshots.** iPhone 6.9", iPad 13", Mac. | ⬜ Take them in demo mode, so no personal files appear. |
 
 ## Name
