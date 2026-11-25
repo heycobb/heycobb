@@ -27,7 +27,7 @@
     <li>An iPhone or iPad with iOS / iPadOS 26 or later, or a Mac with macOS 26 or later.</li>
     <li>A Synology NAS running DSM 7, with HTTPS turned on. Port 5001 is the standard setting.</li>
     <li>A DSM account that's allowed to use File Station.</li>
-    <li>For access away from home (optional): Tailscale on your NAS and on your device.</li>
+    <li>For access away from home (optional): Tailscale or another VPN, Synology DDNS, or your QuickConnect ID. See below.</li>
   </ul>
   <p>Want to look around first? Tap <strong>Try the Demo Library</strong> on the welcome screen. It works without a NAS.</p>
 
@@ -49,9 +49,16 @@
     <li>On the NAS: in DSM, open <strong>Package Center</strong>, install <strong>Tailscale</strong>, open it and sign in.</li>
     <li>On your iPhone, iPad or Mac: install the Tailscale app, sign in with the same account and switch it on.</li>
     <li>In the Tailscale app, find your NAS. Its name looks like <em>nas.tailnet-name.ts.net</em>, or use its address that starts with 100.</li>
-    <li>In Ownhold, open <strong>Settings</strong>, tap your NAS, and enter that name as the <strong>Tailscale</strong> address.</li>
+    <li>In Ownhold, open <strong>Settings</strong>, tap your NAS, and enter that name as the <strong>Private network (VPN)</strong> address.</li>
   </ol>
   <p>Keep Tailscale switched on when you're out. Ownhold uses your home address when you're home and Tailscale everywhere else, automatically.</p>
+
+  <h3>Other ways to connect</h3>
+  <ul>
+    <li><strong>Another VPN:</strong> ZeroTier, NetBird, WireGuard (DSM's VPN Server package), Headscale and similar all work while their app is running. Enter the NAS's address on that network as the <strong>Private network (VPN)</strong> address.</li>
+    <li><strong>Synology DDNS</strong> (<em>yourname.synology.me</em>): set it up in DSM under <strong>Control Panel › External Access › DDNS</strong>, forward port 5001 on your router, add a free Let's Encrypt certificate (<strong>Control Panel › Security › Certificate</strong>), and enter the name as the <strong>Internet</strong> address. This makes DSM reachable from the internet, so turn on 2-factor sign-in and auto-block.</li>
+    <li><strong>QuickConnect ID:</strong> find it in DSM under <strong>Control Panel › External Access › QuickConnect</strong> and enter it when you add your NAS. Ownhold asks Synology for your NAS's current addresses, then connects directly. It never uses Synology's relay servers, so away from home it works only when your NAS can be reached directly (for example with port forwarding). Otherwise, use a VPN.</li>
+  </ul>
 
   <h2>The “Check Certificate” screen</h2>
   <p>Most home NAS boxes use their own certificate rather than one from a public authority, so the first time you connect, Ownhold shows its fingerprint and asks you to trust it. If you set up the NAS yourself and you're at home, tap <strong>Trust</strong>. Ownhold remembers the certificate for all of that NAS's addresses.</p>
@@ -81,10 +88,11 @@
 
   <details>
     <summary>Can't reach the NAS</summary>
-    <p class="msg">“Can't reach the NAS. Check that you're on your home network or that Tailscale is connected.”</p>
+    <p class="msg">“Can't reach the NAS. Check that you're on your home network, or that your VPN (such as Tailscale) is connected.”</p>
     <ul>
       <li>At home: check this device is on your home Wi-Fi, and that the address in Settings is right.</li>
-      <li>Away: open the Tailscale app and make sure it's switched on, and that your NAS shows as connected.</li>
+      <li>Away: make sure Tailscale (or your other VPN) is switched on and shows your NAS as connected.</li>
+      <li>Using QuickConnect away from home? It only finds direct routes to your NAS. If your router doesn't forward a port to it, add a VPN address instead.</li>
       <li>On iPhone and iPad, check <strong>Settings › Privacy & Security › Local Network</strong> allows Ownhold.</li>
       <li>Your saved offline files keep working in the meantime.</li>
     </ul>
@@ -122,6 +130,10 @@
   <details>
     <summary>The certificate changed</summary>
     <p>If you renewed or replaced your NAS's certificate in DSM, trust the new one. If you didn't, don't continue, especially on public Wi-Fi, and check your NAS from home.</p>
+  </details>
+  <details>
+    <summary>That QuickConnect ID wasn't found</summary>
+    <p>Check the ID in DSM under <strong>Control Panel › External Access › QuickConnect</strong>, and that QuickConnect is turned on there. IDs use only letters, numbers and hyphens. If the lookup service is briefly unavailable, Ownhold uses your saved addresses instead.</p>
   </details>
   <details>
     <summary>Something else</summary>

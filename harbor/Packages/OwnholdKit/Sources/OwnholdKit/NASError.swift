@@ -16,11 +16,13 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
     case notFound
     case server(code: Int, api: String)
     case malformedResponse
+    case quickConnectNotFound
+    case quickConnectUnavailable
 
     public var errorDescription: String? {
         switch self {
         case .unreachable:
-            "Can't reach the NAS. Check that you're on your home network or that Tailscale is connected."
+            "Can't reach the NAS. Check that you're on your home network, or that your VPN (such as Tailscale) is connected."
         case .untrustedCertificate:
             "This NAS uses a certificate your device doesn't recognize. Check the fingerprint before trusting it."
         case .certificateChanged:
@@ -47,6 +49,10 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
             "The NAS returned an error (\(api) \(code))."
         case .malformedResponse:
             "The NAS sent a response Ownhold didn't understand."
+        case .quickConnectNotFound:
+            "That QuickConnect ID wasn't found. Check it in DSM under Control Panel › External Access › QuickConnect."
+        case .quickConnectUnavailable:
+            "Couldn't look up your NAS through QuickConnect right now. Ownhold will use your saved addresses."
         }
     }
 

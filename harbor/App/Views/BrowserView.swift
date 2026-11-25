@@ -186,7 +186,8 @@ extension Platform {
     }
 }
 
-/// Shows how the app is connected right now: home network, Tailscale,
+/// Shows how the app is connected right now: home network, private network
+/// (named when known, e.g. Tailscale),
 /// internet, demo or offline.
 struct ConnectionBadge: View {
     let connection: AppModel.Connection
@@ -205,7 +206,7 @@ struct ConnectionBadge: View {
         switch connection {
         case .idle: "Not connected"
         case .connecting: "Connecting…"
-        case let .online(kind): kind?.label ?? "Demo library"
+        case let .online(endpoint): endpoint?.displayName ?? "Demo library"
         case .offline: "Offline"
         }
     }
@@ -214,7 +215,7 @@ struct ConnectionBadge: View {
         switch connection {
         case .idle: "circle.dashed"
         case .connecting: "ellipsis"
-        case let .online(kind): kind?.symbol ?? "shippingbox"
+        case let .online(endpoint): endpoint?.kind.symbol ?? "shippingbox"
         case .offline: "wifi.slash"
         }
     }

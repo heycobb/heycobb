@@ -68,7 +68,7 @@ extension Endpoint.Kind {
     var symbol: String {
         switch self {
         case .local: "house"
-        case .tailscale: "point.3.connected.trianglepath.dotted"
+        case .vpn: "point.3.connected.trianglepath.dotted"
         case .remote: "globe"
         }
     }

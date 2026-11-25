@@ -21,7 +21,7 @@ before submitting; they change.
 | **2.1 Demo access.** Reviewers can't use your NAS. Apple asks for a demo account or a fully featured demo mode. | ✅ Built-in demo library ("Try the demo library" on first launch). In the App Review notes, explain that it's a client for the user's own NAS and point to demo mode. Be ready to send a short video of the app on a real device with your NAS. |
 | **5.2 Intellectual property.** Don't use Synology's or Tailscale's names or logos so it looks like their app. | ✅ Independent name. ⚠️ Mention compatibility only in descriptive text ("works with Synology DSM 7"). Don't put a Synology logo in screenshots or the icon. The About screen carries a "not affiliated" line. |
 | **5.1.1 Privacy policy URL.** Required for every app. | ✅ Written: `site/privacy.html` (also linked in Settings › About as `https://ownhold.app/privacy`). ⬜ Fill in your name (yellow placeholder), host it at `ownhold.app/privacy`, and set up `privacy@ownhold.app`. |
-| **Support URL.** Required on the App Store listing. | ✅ Written: `site/support.html` (setup, Tailscale, certificates, offline files, fixes for every in-app error message; linked in Settings › About as `https://ownhold.app/support`). ⬜ Host it at `ownhold.app/support` and set up `support@ownhold.app`. |
+| **Support URL.** Required on the App Store listing. | ✅ Written: `site/support.html` (setup, Tailscale and other VPNs, DDNS, QuickConnect, certificates, offline files, fixes for every in-app error message; linked in Settings › About as `https://ownhold.app/support`). ⬜ Host it at `ownhold.app/support` and set up `support@ownhold.app`. |
 | **App Privacy "nutrition label".** | ✅ Answer "Data Not Collected". This matches `PrivacyInfo.xcprivacy`. |
 | **Privacy manifest** with reasons for "required reason" APIs. | ✅ `App/PrivacyInfo.xcprivacy` declares UserDefaults, file timestamps and disk space. |
 | **Purpose strings** for local network and Face ID. | ✅ `Config/Info.plist`. |
@@ -73,6 +73,7 @@ license. Re-check Synology's developer terms before launch.
 ## Before submitting
 
 - [ ] Test on a real NAS over LAN, Tailscale and (optionally) the internet
+- [ ] Test a QuickConnect ID lookup against a real NAS (success response shape is unverified)
 - [ ] Test 2-factor sign-in, including "remember this device"
 - [ ] Test with a self-signed certificate and with a Let's Encrypt certificate
 - [ ] VoiceOver pass, Dynamic Type at the largest sizes, Reduce Transparency

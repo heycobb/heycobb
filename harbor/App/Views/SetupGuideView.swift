@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Step-by-step setup for people who haven't connected to a NAS from a
-/// phone before, or haven't used Tailscale. Plain language, exact DSM menu
+/// phone before, or haven't used Tailscale or another VPN. Plain language, exact DSM menu
 /// paths, and what to do when something doesn't work.
 struct SetupGuideView: View {
     @Environment(\.dismiss) private var dismiss
@@ -20,6 +20,12 @@ struct SetupGuideView: View {
 
                     Divider()
 
+                    GuideSection(title: "Other ways to connect from away", symbol: "network") {
+                        Problem("Another VPN", "ZeroTier, NetBird, WireGuard (DSM's **VPN Server** package), Headscale and similar all work, as long as their app is running on this device. Enter your NAS's address on that network as the **Private network (VPN)** address.")
+                        Problem("Synology DDNS (yourname.synology.me)", "Set it up in DSM under **Control Panel › External Access › DDNS**, forward port **5001** on your router to the NAS, and get a free Let's Encrypt certificate in **Control Panel › Security › Certificate**. Enter the name as the **Internet** address. This makes DSM reachable from the internet, so turn on 2-factor sign-in and DSM's auto-block.")
+                        Problem("QuickConnect ID", "Find it in DSM under **Control Panel › External Access › QuickConnect** and enter it when you add your NAS. Ownhold asks Synology for your NAS's current addresses, then connects directly. It doesn't use Synology's relay servers, so away from home it works only if your NAS is reachable directly (for example with port forwarding). Otherwise, use a VPN.")
+                    }
+
                     GuideSection(title: "Optional: check the certificate fingerprint", symbol: "checkmark.shield") {
                         Paragraph("Ownhold shows a fingerprint the first time it connects. To confirm it really is your NAS:")
                         Bullet("On a Mac at home, open Safari and go to **https://** followed by your NAS's address and **:5001**, for example https://192.168.1.20:5001.")
@@ -29,7 +35,7 @@ struct SetupGuideView: View {
                     }
 
                     GuideSection(title: "If something doesn't work", symbol: "wrench.and.screwdriver") {
-                        Problem("“Can't reach the NAS”", "At home, check that this device is on your home Wi-Fi and the address is right. Away from home, check that Tailscale is switched on in the Tailscale app.")
+                        Problem("“Can't reach the NAS”", "At home, check that this device is on your home Wi-Fi and the address is right. Away from home, check that Tailscale (or your other VPN) is switched on.")
                         Problem("“Only connects over HTTPS”", "Turn on HTTPS in DSM (step 2), and use port 5001.")
                         Problem("“Incorrect account name or password”", "Use the same account and password you use to sign in to DSM in a browser.")
                         Problem("“Temporarily blocked”", "DSM blocks a device after several failed sign-ins. Wait for the block to expire, or remove it in DSM under **Control Panel › Security › Protection**.")
@@ -94,8 +100,8 @@ struct SetupGuideView: View {
             .bullet("**On the NAS:** in DSM, open **Package Center**, search for **Tailscale**, install it, open it, and sign in. You can create a Tailscale account there."),
             .bullet("**On this device:** install the Tailscale app, sign in with the same account, and switch it on."),
             .bullet("In the Tailscale app, find your NAS in the list of devices. Its name looks like **nas.tailnet-name.ts.net**. An address starting with **100.** also works."),
-            .bullet("In Ownhold, open **Settings**, select your NAS, and enter that name as the **Tailscale** address. (Or enter it when you first add the NAS.)"),
-            .text("Keep Tailscale switched on when you're away. Ownhold picks your home address at home and Tailscale everywhere else, automatically."),
+            .bullet("In Ownhold, open **Settings**, select your NAS, and enter that name as the **Private network (VPN)** address. (Or enter it when you first add the NAS.)"),
+            .text("Keep Tailscale switched on when you're away. Ownhold picks your home address at home and Tailscale everywhere else, automatically. Other ways to connect are below."),
             .link("Get Tailscale", URL(string: "https://tailscale.com/download")!),
         ]),
     ]

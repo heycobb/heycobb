@@ -45,7 +45,7 @@ struct WelcomeView: View {
     private var points: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.m) {
             Point(symbol: "lock", text: "Connects straight to your NAS. No accounts, no tracking.")
-            Point(symbol: "point.3.connected.trianglepath.dotted", text: "Your home network when you're home, Tailscale when you're away.")
+            Point(symbol: "point.3.connected.trianglepath.dotted", text: "Your home network when you're home. Tailscale or another VPN when you're away.")
             Point(symbol: "arrow.down.circle", text: "Keep files on this device for when you're offline.")
         }
     }

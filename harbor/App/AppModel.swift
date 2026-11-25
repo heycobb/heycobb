@@ -11,8 +11,8 @@ final class AppModel {
     enum Connection: Equatable {
         case idle
         case connecting
-        /// `nil` kind means the built-in demo library.
-        case online(Endpoint.Kind?)
+        /// The address in use; `nil` means the built-in demo library.
+        case online(Endpoint?)
         /// Server unreachable: offline files still work.
         case offline
     }
@@ -106,7 +106,7 @@ final class AppModel {
 
     /// Signs in with a password, saving the server on success.
     func signIn(to profile: ServerProfile, credentials: Credentials, rememberDevice: Bool) async throws {
-        let endpoint = try await resolve(profile)
+        let (endpoint, profile) = try await resolve(profile)
         let client = FileStationClient(baseURL: endpoint.url, trust: trust)
         let previous = keychain.codable(Session.self, for: sessionKey(profile))
         let session = try await client.signIn(
@@ -145,7 +145,7 @@ final class AppModel {
         await OfflineStore(namespace: profile.id.uuidString).removeAll()
         await ThumbnailCache(namespace: profile.id.uuidString).removeAll()
         keychain.remove(sessionKey(profile))
-        for endpoint in profile.endpoints {
+        for endpoint in profile.allEndpoints {
             trust.forget(host: CertificateTrustKey.make(endpoint.url))
         }
         servers.removeAll { $0.id == profile.id }
@@ -154,7 +154,10 @@ final class AppModel {
 
     /// Saves edits to a server's name or addresses.
     func update(_ profile: ServerProfile) async {
+        var profile = profile
         guard let old = servers.first(where: { $0.id == profile.id }) else { return }
+        // A different QuickConnect ID means the old lookup results don't apply.
+        if old.quickConnectID != profile.quickConnectID { profile.discoveredEndpoints = [] }
         let oldKeys = old.endpoints.map { CertificateTrustKey.make($0.url) }
         let newKeys = profile.endpoints.map { CertificateTrustKey.make($0.url) }
         trust.extendPin(from: oldKeys, to: newKeys)
@@ -162,7 +165,7 @@ final class AppModel {
         save(profile)
         if activeServer?.id == profile.id {
             activeServer = profile
-            if old.endpoints != profile.endpoints { await reconnect() }
+            if old.endpoints != profile.endpoints || old.quickConnectID != profile.quickConnectID { await reconnect() }
         }
     }
 
@@ -224,7 +227,7 @@ final class AppModel {
     }
 
     func trustCertificate(_ review: CertificateReview) async {
-        let addresses = activeServer?.endpoints.map { CertificateTrustKey.make($0.url) } ?? []
+        let addresses = activeServer?.allEndpoints.map { CertificateTrustKey.make($0.url) } ?? []
         trust.trust(review.info, alsoFor: addresses)
         certificateReview = nil
         await reconnect()
@@ -254,12 +257,16 @@ final class AppModel {
     private func connect(_ profile: ServerProfile, session: Session) async {
         connection = .connecting
         do {
-            let endpoint = try await resolve(profile)
+            let (endpoint, updated) = try await resolve(profile)
+            if updated != profile {
+                save(updated)
+                if activeServer?.id == updated.id { activeServer = updated }
+            }
             guard !session.sid.isEmpty else { throw NASError.sessionExpired }
             let client = FileStationClient(baseURL: endpoint.url, trust: trust, sid: session.sid)
             try await client.validateSession()
             service = client
-            connection = .online(endpoint.kind)
+            connection = .online(endpoint)
             await refreshOffline()
         } catch {
             service = nil
@@ -268,8 +275,27 @@ final class AppModel {
         }
     }
 
-    private func resolve(_ profile: ServerProfile) async throws -> Endpoint {
-        try await ConnectionResolver(trust: trust).resolve(profile.endpoints)
+    /// Refreshes the NAS's QuickConnect addresses (if it has an ID), then
+    /// picks the best address that answers. Returns the profile with any
+    /// newly discovered addresses, for saving.
+    private func resolve(_ profile: ServerProfile) async throws -> (Endpoint, ServerProfile) {
+        var profile = profile
+        if let id = profile.quickConnectID, !id.isEmpty {
+            do {
+                profile.discoveredEndpoints = try await QuickConnectLookup().endpoints(for: id)
+            } catch {
+                // Lookup failed: carry on with saved and last-known addresses,
+                // unless there's nothing else to try.
+                if profile.allEndpoints.isEmpty { throw error }
+            }
+        }
+        // A certificate trusted at any of this NAS's addresses covers the
+        // others too. Pinning only narrows what each address may present, so
+        // a wrong lookup answer can't redirect the app to another server.
+        let keys = profile.allEndpoints.map { CertificateTrustKey.make($0.url) }
+        trust.extendPin(from: keys, to: keys)
+        let endpoint = try await ConnectionResolver(trust: trust).resolve(profile.allEndpoints)
+        return (endpoint, profile)
     }
 
     private func save(_ profile: ServerProfile) {

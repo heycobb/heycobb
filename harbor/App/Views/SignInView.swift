@@ -10,7 +10,8 @@ struct SignInView: View {
 
     @State private var name = ""
     @State private var homeAddress = ""
-    @State private var tailscaleAddress = ""
+    @State private var vpnAddress = ""
+    @State private var quickConnectID = ""
     @State private var internetAddress = ""
     @State private var account = ""
     @State private var password = ""
@@ -23,7 +24,7 @@ struct SignInView: View {
     @State private var showingGuide = false
     @FocusState private var focus: Field?
 
-    private enum Field { case name, home, tailscale, internet, account, password, code }
+    private enum Field { case name, home, vpn, internet, account, password, code }
 
     var body: some View {
         NavigationStack {
@@ -42,13 +43,17 @@ struct SignInView: View {
                     }
                     Section {
                         addressField("Home network", text: $homeAddress, prompt: "192.168.1.20 or nas.local", field: .home)
-                        addressField("Tailscale", text: $tailscaleAddress, prompt: "nas.tailnet-name.ts.net", field: .tailscale)
+                        addressField("Private network (VPN)", text: $vpnAddress, prompt: "Tailscale, ZeroTier or WireGuard address", field: .vpn)
                         addressField("Internet", text: $internetAddress, prompt: "Optional", field: .internet)
                     } header: {
                         Text("Addresses")
                     } footer: {
-                        Text("Ownhold tries them all at once and uses the highest one on this list that answers, so your home network wins when you're home. HTTPS only; port 5001 is assumed if you don't give one.")
+                        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                            AddressHints(endpoints: endpoints)
+                            Text("Ownhold tries them all at once and uses the highest one on this list that answers, so your home network wins when you're home. HTTPS only; port 5001 is assumed if you don't give one.")
+                        }
                     }
+                    QuickConnectSection(id: $quickConnectID) { showingGuide = true }
                 } else if let existing {
                     Section {
                         LabeledContent("NAS", value: existing.name)
@@ -145,26 +150,30 @@ struct SignInView: View {
     private var endpoints: [Endpoint] {
         [
             Endpoint.parse(homeAddress, kind: .local),
-            Endpoint.parse(tailscaleAddress, kind: .tailscale),
+            Endpoint.parse(vpnAddress, kind: .vpn),
             Endpoint.parse(internetAddress, kind: .remote),
         ].compactMap { $0 }
     }
 
     private var canSubmit: Bool {
         guard !password.isEmpty, !needsCode || otpCode.count >= 6 else { return false }
-        return existing != nil || (!account.isEmpty && !endpoints.isEmpty)
+        guard existing == nil else { return true }
+        let qc = quickConnectID.trimmingCharacters(in: .whitespaces)
+        let hasAddress = !endpoints.isEmpty || QuickConnectLookup.isValidID(qc)
+        return !account.isEmpty && hasAddress && (qc.isEmpty || QuickConnectLookup.isValidID(qc))
     }
 
     private func submit() {
         guard canSubmit, !working else { return }
-        if existing == nil, [homeAddress, tailscaleAddress, internetAddress].contains(where: { $0.lowercased().hasPrefix("http://") }) {
+        if existing == nil, [homeAddress, vpnAddress, internetAddress].contains(where: { $0.lowercased().hasPrefix("http://") }) {
             errorText = "Ownhold only connects over HTTPS. Turn on HTTPS in DSM (Control Panel > Login Portal) and use port 5001."
             return
         }
         let profile = existing ?? ServerProfile(
             name: name.isEmpty ? "NAS" : name,
             account: account,
-            endpoints: endpoints
+            endpoints: endpoints,
+            quickConnectID: quickConnectID.trimmingCharacters(in: .whitespaces).isEmpty ? nil : quickConnectID.trimmingCharacters(in: .whitespaces)
         )
         let credentials = Credentials(
             account: profile.account,
