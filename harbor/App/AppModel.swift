@@ -212,6 +212,23 @@ final class AppModel {
         return try PreviewFiles.adopt(temporary, named: item.name)
     }
 
+    /// Local copies ready for the share sheet: files as they are (offline
+    /// copies if saved), folders as zips made by the NAS.
+    func shareableCopies(of items: [RemoteItem]) async throws -> [URL] {
+        var urls: [URL] = []
+        for item in items {
+            try Task.checkCancellation()
+            if item.isDirectory {
+                guard let service else { throw NASError.unreachable }
+                let zip = try await service.download(item)
+                urls.append(try PreviewFiles.adopt(zip, named: item.name + ".zip"))
+            } else {
+                urls.append(try await localCopy(of: item))
+            }
+        }
+        return urls
+    }
+
     // MARK: Changes
 
     func revision(of folder: String) -> Int { folderRevisions[folder] ?? 0 }

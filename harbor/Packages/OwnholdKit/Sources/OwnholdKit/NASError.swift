@@ -21,6 +21,7 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
     case alreadyExists
     case noSpace
     case invalidName
+    case streamingUnsupported
 
     public var errorDescription: String? {
         switch self {
@@ -62,6 +63,8 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
             "The NAS is out of space, or your account has reached its storage limit."
         case .invalidName:
             "That name isn't allowed. Names can't be empty, contain “/”, or be too long."
+        case .streamingUnsupported:
+            "This NAS can't stream that file, so Ownhold will download it instead."
         }
     }
 

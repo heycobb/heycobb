@@ -40,6 +40,8 @@ struct FolderView: View {
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var conflictBatch: UploadBatch?
     @State private var dropTargeted = false
+    @State private var shareTask: Task<Void, Never>?
+    @State private var playing: MediaPlayback?
 
     typealias MoveRequest = FolderViewMoveRequest
     typealias UploadBatch = FolderViewUploadBatch
@@ -69,7 +71,10 @@ struct FolderView: View {
             .sheet(item: $info) { item in
                 ItemInfoView(item: item)
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) { ActivityBar(working: working) }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                ActivityBar(working: working, onCancel: shareTask == nil ? nil : { shareTask?.cancel() })
+            }
+            .mediaPlayer($playing)
             .modifier(changeSheets)
     }
 
@@ -118,6 +123,27 @@ struct FolderView: View {
     private func endSelecting() {
         selecting = false
         selection = []
+    }
+
+    /// Downloads (or zips) the items, then opens the share sheet.
+    private func share(_ items: [RemoteItem]) {
+        guard shareTask == nil, !items.isEmpty else { return }
+        working = items.count == 1 ? "Preparing “\(items[0].name)”…" : "Preparing \(items.count) items…"
+        shareTask = Task {
+            defer {
+                working = nil
+                shareTask = nil
+            }
+            do {
+                let urls = try await model.shareableCopies(of: items)
+                try Task.checkCancellation()
+                endSelecting()
+                SharePresenter.present(urls)
+            } catch is CancellationError {
+            } catch {
+                model.handle(error)
+            }
+        }
     }
 
     private func askToDelete(_ items: [RemoteItem]) {
@@ -375,8 +401,10 @@ struct FolderView: View {
             Label(saved ? "Remove from Offline" : "Keep Offline", systemImage: saved ? "minus.circle" : "arrow.down.circle")
         }
         if !item.isDirectory {
-            Button("Quick Look", systemImage: "eye") { open(item) }
+            Button(item.isStreamable ? "Play" : "Quick Look", systemImage: item.isStreamable ? "play" : "eye") { open(item) }
         }
+        Button("Share…", systemImage: "square.and.arrow.up") { share([item]) }
+            .disabled(model.service == nil && !saved)
         Button("Get Info", systemImage: "info.circle") { info = item }
         Button("Copy Path", systemImage: "doc.on.doc") {
             #if os(iOS)
@@ -404,7 +432,7 @@ struct FolderView: View {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button("Upload Photos and Videos", systemImage: "photo.on.rectangle") { showingPhotos = true }
-                    Button("Upload Files…", systemImage: "square.and.arrow.up") { showingFiles = true }
+                    Button("Upload Files…", systemImage: "arrow.up.doc") { showingFiles = true }
                     Divider()
                     Button("New Folder", systemImage: "folder.badge.plus") {
                         newName = ""
@@ -443,6 +471,11 @@ struct FolderView: View {
 
     @ViewBuilder private var selectionActions: some View {
         let chosen = selectedItems
+        Button("Share", systemImage: "square.and.arrow.up") { share(chosen) }
+            .disabled(chosen.isEmpty || model.service == nil || shareTask != nil)
+        #if os(iOS)
+        Spacer()
+        #endif
         Button("Move", systemImage: "folder") { moveRequest = MoveRequest(items: chosen) }
             .disabled(chosen.isEmpty || !canChange)
         #if os(iOS)
@@ -540,6 +573,20 @@ struct FolderView: View {
         opening = item.path
         Task {
             defer { opening = nil }
+            // Video and audio stream straight from the NAS, unless saved offline.
+            if item.isStreamable, !model.savedPaths.contains(item.path), let service = model.service {
+                let loader = StreamingLoader(item: item, service: service)
+                do {
+                    try await loader.probe()
+                    playing = MediaPlayback(item: item, loader: loader)
+                    return
+                } catch NASError.streamingUnsupported {
+                    // Fall back to downloading it for Quick Look.
+                } catch {
+                    model.handle(error)
+                    return
+                }
+            }
             do {
                 previewURL = try await model.localCopy(of: item)
             } catch {

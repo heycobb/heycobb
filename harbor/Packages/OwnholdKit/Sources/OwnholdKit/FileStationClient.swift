@@ -156,6 +156,40 @@ public actor FileStationClient: FileService {
         return url
     }
 
+    /// Ranged GET on the Download API ("open" mode serves the file inline).
+    /// If DSM ignores the Range header it would send the whole file, so the
+    /// guard cancels any answer that isn't 206 Partial Content.
+    public func read(_ item: RemoteItem, from offset: Int64, length: Int) async throws -> ByteRange {
+        var request = try await getRequest("SYNO.FileStation.Download", method: "download", preferredVersion: 2, params: [
+            "path": item.path,
+            "mode": "open",
+        ])
+        request.setValue("bytes=\(offset)-\(offset + Int64(max(length, 1)) - 1)", forHTTPHeaderField: "Range")
+        let guardian = RangeGuard()
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request, delegate: guardian)
+        } catch {
+            if guardian.rejected { throw NASError.streamingUnsupported }
+            return try await perform { throw error }
+        }
+        if (response as? HTTPURLResponse)?.statusCode != 206 {
+            try Self.checkBinary(response: response, body: data, api: "SYNO.FileStation.Download")
+            throw NASError.streamingUnsupported
+        }
+        guard let http = response as? HTTPURLResponse,
+              let total = Self.totalLength(contentRange: http.value(forHTTPHeaderField: "Content-Range"))
+        else { throw NASError.streamingUnsupported }
+        return ByteRange(data: data, totalLength: total)
+    }
+
+    /// "bytes 0-1/12345" → 12345.
+    static func totalLength(contentRange: String?) -> Int64? {
+        guard let contentRange, let slash = contentRange.lastIndex(of: "/") else { return nil }
+        return Int64(contentRange[contentRange.index(after: slash)...].trimmingCharacters(in: .whitespaces))
+    }
+
     // MARK: Changes
 
     public func createFolder(named name: String, in parent: String) async throws -> RemoteItem {
@@ -444,6 +478,22 @@ struct FolderList: Decodable, Sendable {
     struct Folder: Decodable, Sendable {
         let path: String
         let name: String
+    }
+}
+
+/// Lets a ranged read continue only if the server answered 206.
+final class RangeGuard: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    private let lock = NSLock()
+    private var _rejected = false
+    var rejected: Bool { lock.withLock { _rejected } }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse) async -> URLSession.ResponseDisposition {
+        let partial = (response as? HTTPURLResponse)?.statusCode == 206
+        // A small JSON error body is fine to read; a whole file is not.
+        let small = response.expectedContentLength >= 0 && response.expectedContentLength < 4096
+        if partial || small { return .allow }
+        lock.withLock { _rejected = true }
+        return .cancel
     }
 }
 

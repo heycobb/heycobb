@@ -5,6 +5,8 @@ import SwiftUI
 struct ActivityBar: View {
     /// A move or delete in progress, e.g. "Deleting 3 items…".
     let working: String?
+    /// Shown as a Cancel button while `working` is set.
+    var onCancel: (() -> Void)? = nil
 
     @Environment(AppModel.self) private var model
     @State private var showingDetails = false
@@ -16,6 +18,9 @@ struct ActivityBar: View {
                 ProgressView().controlSize(.small)
                 Text(working).font(.callout)
                 Spacer()
+                if let onCancel {
+                    Button("Cancel", action: onCancel).font(.callout)
+                }
             }
         } else if !uploads.isEmpty {
             bar {

@@ -7,6 +7,7 @@ Your files and photos, owned, not rented. Formerly "Harbor" (working name).
 - NAS-generated thumbnails with an on-device cache
 - Quick Look previews for photos, video, PDFs, Office/iWork files and text
 - Upload photos (original format), files and folders; new folder, rename, move, delete, multi-select
+- Share several files at once (folders as zips); stream video and audio over the pinned connection
 - Keep files or whole folders offline (encrypted at rest, no background sync)
 - Picks the best address automatically: home network → private network (Tailscale, ZeroTier, WireGuard…) → internet
 - Optional QuickConnect ID lookup (finds the NAS's direct addresses; never uses Synology's relay)

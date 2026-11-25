@@ -1,3 +1,4 @@
+import AVFoundation
 import CoreGraphics
 import Foundation
 import ImageIO
@@ -51,7 +52,7 @@ public actor DemoFileService: FileService {
                 + photoNames.prefix(4).enumerated().map { i, n in file("/Photos/\(n).jpg", days: 30 + Double(i) * 3) },
             "/Photos/Coast trip": photoNames.enumerated().map { i, n in
                 file("/Photos/Coast trip/IMG_\(4100 + i) \(n).jpg", days: 3.2 - Double(i) * 0.1)
-            },
+            } + [file("/Photos/Coast trip/IMG_4112 Evening tide.mov", days: 2.1)],
             "/Documents": [
                 file("/Documents/Read me.md", days: 5),
                 file("/Documents/Packing list.txt", days: 12),
@@ -107,7 +108,21 @@ public actor DemoFileService: FileService {
         }
     }
 
+    public func read(_ item: RemoteItem, from offset: Int64, length: Int) async throws -> ByteRange {
+        let data: Data
+        switch source(for: item.path) {
+        case let .uploaded(file): data = try Data(contentsOf: file, options: .mappedIfSafe)
+        case let .builtIn(path, name):
+            guard let bytes = Self.content(path: path, name: name) else { throw NASError.notFound }
+            data = bytes
+        }
+        let start = Int(min(max(offset, 0), Int64(data.count)))
+        let end = min(data.count, start + max(length, 0))
+        return ByteRange(data: data.subdata(in: start ..< end), totalLength: Int64(data.count))
+    }
+
     public func download(_ item: RemoteItem) async throws -> URL {
+        if item.isDirectory { return try zip(item) }
         let url = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + "." + item.fileExtension)
         switch source(for: item.path) {
         case let .uploaded(file):
@@ -202,6 +217,45 @@ public actor DemoFileService: FileService {
         tree[folder, default: []].append(RemoteItem(path: path, name: name, isDirectory: false, size: size, modified: .now))
     }
 
+    /// A folder downloads as a zip, as it does from DSM.
+    private func zip(_ folder: RemoteItem) throws -> URL {
+        let fm = FileManager.default
+        let staging = fm.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? fm.removeItem(at: staging) }
+        let root = staging.appending(path: folder.name, directoryHint: .isDirectory)
+        func copy(_ path: String, into directory: URL) throws {
+            try fm.createDirectory(at: directory, withIntermediateDirectories: true)
+            for child in tree[path] ?? [] {
+                let target = directory.appending(path: child.name)
+                if child.isDirectory {
+                    try copy(child.path, into: target)
+                } else {
+                    switch source(for: child.path) {
+                    case let .uploaded(file): try fm.copyItem(at: file, to: target)
+                    case let .builtIn(original, name): try (Self.content(path: original, name: name) ?? Data()).write(to: target)
+                    }
+                }
+            }
+        }
+        try copy(folder.path, into: root)
+        var result: URL?
+        var copyError: Error?
+        var coordinationError: NSError?
+        // Reading a folder "for uploading" gives a zip of it.
+        NSFileCoordinator().coordinate(readingItemAt: root, options: .forUploading, error: &coordinationError) { zipped in
+            let destination = fm.temporaryDirectory.appending(path: UUID().uuidString + ".zip")
+            do {
+                try fm.copyItem(at: zipped, to: destination)
+                result = destination
+            } catch {
+                copyError = error
+            }
+        }
+        if let error = coordinationError ?? copyError { throw error }
+        guard let result else { throw NASError.notFound }
+        return result
+    }
+
     private func checkFree(_ name: String, in folder: String) throws {
         if tree[folder]?.contains(where: { $0.name.lowercased() == name.lowercased() }) == true {
             throw NASError.alreadyExists
@@ -259,6 +313,9 @@ public actor DemoFileService: FileService {
 
     /// The bytes behind a demo file. Photos are drawn on the fly.
     private static func content(path: String, name: String) -> Data? {
+        if name.hasSuffix(".mov") {
+            return DemoVideo.url.flatMap { try? Data(contentsOf: $0, options: .mappedIfSafe) }
+        }
         if FileKind(extension: (name as NSString).pathExtension.lowercased()) == .image {
             return renderPhoto(seed: path, width: 2400, height: 1600)
         }
@@ -382,5 +439,102 @@ public actor DemoFileService: FileService {
         CGImageDestinationAddImage(dest, image, [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary)
         guard CGImageDestinationFinalize(dest) else { return nil }
         return out as Data
+    }
+}
+
+/// A short clip for the demo library, drawn frame by frame on first use and
+/// cached, so nothing large ships in the app: the tide comes in as the sun
+/// sets over the same flat hills as the demo photos.
+enum DemoVideo {
+    static let url: URL? = {
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let url = caches.appending(path: "DemoMedia/evening-tide-v1.mov")
+        if FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) { return url }
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        return render(to: url) ? url : nil
+    }()
+
+    private static func render(to url: URL) -> Bool {
+        let width = 960, height = 540, fps: Int32 = 24, frames = 24 * 6
+        try? FileManager.default.removeItem(at: url)
+        guard let writer = try? AVAssetWriter(outputURL: url, fileType: .mov) else { return false }
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
+            AVVideoCodecKey: AVVideoCodecType.h264,
+            AVVideoWidthKey: width,
+            AVVideoHeightKey: height,
+            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 1_500_000],
+        ])
+        input.expectsMediaDataInRealTime = false
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32ARGB,
+            kCVPixelBufferWidthKey as String: width,
+            kCVPixelBufferHeightKey as String: height,
+        ])
+        guard writer.canAdd(input) else { return false }
+        writer.add(input)
+        guard writer.startWriting() else { return false }
+        writer.startSession(atSourceTime: .zero)
+
+        for frame in 0 ..< frames {
+            while !input.isReadyForMoreMediaData { usleep(500) }
+            guard let pool = adaptor.pixelBufferPool else { return false }
+            var buffer: CVPixelBuffer?
+            CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buffer)
+            guard let buffer else { return false }
+            draw(into: buffer, t: Double(frame) / Double(frames - 1), width: width, height: height)
+            adaptor.append(buffer, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: fps))
+        }
+        input.markAsFinished()
+        let done = DispatchSemaphore(value: 0)
+        writer.finishWriting { done.signal() }
+        done.wait()
+        return writer.status == .completed
+    }
+
+    private static func draw(into buffer: CVPixelBuffer, t: Double, width: Int, height: Int) {
+        CVPixelBufferLockBaseAddress(buffer, [])
+        defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
+        guard let ctx = CGContext(
+            data: CVPixelBufferGetBaseAddress(buffer), width: width, height: height, bitsPerComponent: 8,
+            bytesPerRow: CVPixelBufferGetBytesPerRow(buffer), space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue
+        ) else { return }
+        let w = CGFloat(width), h = CGFloat(height), t = CGFloat(t)
+        func mix(_ a: CGFloat, _ b: CGFloat) -> CGFloat { a + (b - a) * t }
+        // Sky dims from warm sand to dusk blue.
+        ctx.setFillColor(red: mix(0.93, 0.62), green: mix(0.80, 0.66), blue: mix(0.66, 0.76), alpha: 1)
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        // The sun sinks behind the hills.
+        ctx.setFillColor(red: 0.99, green: mix(0.78, 0.62), blue: mix(0.52, 0.42), alpha: 1)
+        let sun = h * 0.16
+        ctx.fillEllipse(in: CGRect(x: w * 0.62, y: h * (0.78 - 0.5 * t), width: sun, height: sun))
+        // Two layers of hills.
+        for (layer, color) in [(0, (0.55, 0.62, 0.60)), (1, (0.24, 0.31, 0.33))] {
+            ctx.setFillColor(red: color.0, green: color.1, blue: color.2, alpha: 1)
+            let base = h * (layer == 0 ? 0.46 : 0.36)
+            ctx.move(to: CGPoint(x: 0, y: 0))
+            ctx.addLine(to: CGPoint(x: 0, y: base))
+            let peaks = layer == 0 ? 4 : 3
+            for i in 1 ... peaks {
+                let x = w * CGFloat(i) / CGFloat(peaks)
+                let lift = h * (layer == 0 ? 0.10 : 0.14) * (i % 2 == 0 ? 0.6 : 1)
+                ctx.addLine(to: CGPoint(x: x - w / CGFloat(peaks * 2), y: base + lift))
+                ctx.addLine(to: CGPoint(x: x, y: base))
+            }
+            ctx.addLine(to: CGPoint(x: w, y: 0))
+            ctx.closePath()
+            ctx.fillPath()
+        }
+        // The tide rises, with a slow swell.
+        let water = h * (0.16 + 0.08 * t) + sin(t * .pi * 6) * h * 0.01
+        ctx.setFillColor(red: 0.18, green: 0.30, blue: 0.36, alpha: 1)
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: water))
+        ctx.setFillColor(red: 0.93, green: 0.90, blue: 0.82, alpha: 0.5)
+        for i in 0 ..< 5 {
+            let y = water * CGFloat(i + 1) / 6
+            let shift = (t * w * 0.4 + CGFloat(i) * 97).truncatingRemainder(dividingBy: w)
+            ctx.fill(CGRect(x: shift - w * 0.2, y: y, width: w * 0.12, height: 2))
+            ctx.fill(CGRect(x: shift + w * 0.35, y: y, width: w * 0.08, height: 2))
+        }
     }
 }

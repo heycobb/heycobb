@@ -26,6 +26,12 @@ public struct RemoteItem: Identifiable, Hashable, Sendable, Codable {
     /// Whether the NAS can generate a thumbnail for this item.
     public var hasThumbnail: Bool { kind == .image || kind == .video }
 
+    /// Formats Apple's player plays natively, so they can stream from the
+    /// NAS instead of downloading first. (MKV, AVI, WMV and WebM can't.)
+    public var isStreamable: Bool {
+        !isDirectory && ["mov", "mp4", "m4v", "mp3", "m4a", "aac", "wav", "aif", "aiff", "flac", "caf"].contains(fileExtension)
+    }
+
     /// The folder this item is in.
     public var parentPath: String { (path as NSString).deletingLastPathComponent }
 
@@ -87,6 +93,17 @@ public enum FileKind: String, Sendable, Codable {
         case "txt", "md", "markdown", "log": self = .text
         default: self = .other
         }
+    }
+}
+
+/// Part of a file, plus the whole file's length.
+public struct ByteRange: Sendable {
+    public let data: Data
+    public let totalLength: Int64
+
+    public init(data: Data, totalLength: Int64) {
+        self.data = data
+        self.totalLength = totalLength
     }
 }
 

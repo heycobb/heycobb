@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import Testing
 @testable import OwnholdKit
@@ -319,5 +320,56 @@ struct FileChangeTests {
         await store.relocate(from: "/Docs/Read me.md", to: "/Docs/Welcome.md")
         #expect(try #require(await store.localURL(for: "/Docs/Welcome.md")).lastPathComponent == "Welcome.md")
         await store.removeAll()
+    }
+}
+
+@Suite("Sharing and streaming")
+struct StreamingTests {
+    @Test func parsesContentRange() {
+        #expect(FileStationClient.totalLength(contentRange: "bytes 0-1/12345") == 12345)
+        #expect(FileStationClient.totalLength(contentRange: "bytes 100-199/*") == nil)
+        #expect(FileStationClient.totalLength(contentRange: nil) == nil)
+    }
+
+    @Test func knowsWhatCanStream() {
+        #expect(RemoteItem(path: "/a.MOV", name: "a.MOV", isDirectory: false).isStreamable)
+        #expect(RemoteItem(path: "/a.m4a", name: "a.m4a", isDirectory: false).isStreamable)
+        #expect(!RemoteItem(path: "/a.mkv", name: "a.mkv", isDirectory: false).isStreamable)
+        #expect(!RemoteItem(path: "/a.mp4", name: "a.mp4", isDirectory: true).isStreamable)
+    }
+
+    @Test func demoVideoStreamsInRanges() async throws {
+        let demo = DemoFileService()
+        let video = try #require(try await demo.list(folder: "/Photos/Coast trip", offset: 0, limit: 100, sort: .name, ascending: true)
+            .items.first { $0.isStreamable })
+        let first = try await demo.read(video, from: 0, length: 2)
+        #expect(first.data.count == 2)
+        #expect(first.totalLength == video.size)
+        let tail = try await demo.read(video, from: first.totalLength - 10, length: 100)
+        #expect(tail.data.count == 10)
+        // A real, playable movie.
+        let asset = AVURLAsset(url: try await demo.download(video))
+        #expect(try await asset.load(.duration).seconds > 5)
+    }
+
+    @Test func loaderServesThePlayer() async throws {
+        let demo = DemoFileService()
+        let video = try #require(try await demo.list(folder: "/Photos/Coast trip", offset: 0, limit: 100, sort: .name, ascending: true)
+            .items.first { $0.isStreamable })
+        let loader = StreamingLoader(item: video, service: demo)
+        try await loader.probe()
+        let asset = loader.makeAsset()
+        #expect(try await asset.load(.isPlayable))
+        #expect(try await asset.load(.duration).seconds > 5)
+        withExtendedLifetime(loader) {}
+    }
+
+    @Test func demoFolderDownloadsAsZip() async throws {
+        let demo = DemoFileService()
+        let folder = RemoteItem(path: "/Documents", name: "Documents", isDirectory: true)
+        let zip = try await demo.download(folder)
+        defer { try? FileManager.default.removeItem(at: zip) }
+        let head = try FileHandle(forReadingFrom: zip).read(upToCount: 4)
+        #expect(head == Data([0x50, 0x4B, 0x03, 0x04])) // "PK\u{3}\u{4}"
     }
 }

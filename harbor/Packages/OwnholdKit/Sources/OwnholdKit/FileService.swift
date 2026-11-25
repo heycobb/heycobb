@@ -9,7 +9,11 @@ public protocol FileService: Sendable {
     func search(in folder: String, matching pattern: String) async throws -> [RemoteItem]
     func thumbnail(for item: RemoteItem, size: ThumbnailSize) async throws -> Data
     /// Downloads a file and returns a temporary local URL the caller must move.
+    /// A folder comes back as a zip archive of its contents.
     func download(_ item: RemoteItem) async throws -> URL
+    /// Reads part of a file, for streaming video and audio. Throws
+    /// `.streamingUnsupported` if the server won't serve byte ranges.
+    func read(_ item: RemoteItem, from offset: Int64, length: Int) async throws -> ByteRange
 
     // MARK: Changes (each one is started by the user; nothing syncs in the background)
 
