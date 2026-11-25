@@ -74,7 +74,7 @@ public actor OfflineStore {
         let prefix = path.hasSuffix("/") ? path : path + "/"
         for key in entries.keys where key == path || key.hasPrefix(prefix) {
             if let entry = entries.removeValue(forKey: key) {
-                try? FileManager.default.removeItem(at: directory.appending(path: entry.fileName))
+                removeFile(entry.fileName)
             }
         }
         persist()
@@ -113,18 +113,32 @@ public actor OfflineStore {
 
     private func saveFile(_ item: RemoteItem, using service: any FileService) async throws {
         let temporary = try await service.download(item)
-        let ext = item.fileExtension
-        let fileName = Self.hashedName(item.path) + (ext.isEmpty ? "" : ".\(ext)")
+        // Stored as <hash of NAS path>/<real name>: the hash keeps same-named
+        // files from different folders apart, and the real name is what
+        // Quick Look and the share sheet show.
+        let safeName = item.name.replacingOccurrences(of: "/", with: "-")
+        let fileName = Self.hashedName(item.path) + "/" + safeName
         let destination = directory.appending(path: fileName)
         let fm = FileManager.default
-        if fm.fileExists(atPath: destination.path(percentEncoded: false)) {
-            try fm.removeItem(at: destination)
+        if let previous = entries[item.path] {
+            removeFile(previous.fileName)
         }
+        try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
         try fm.moveItem(at: temporary, to: destination)
         Self.protect(destination)
         let size = (try? destination.resourceValues(forKeys: [.fileSizeKey]))?.fileSize.map(Int64.init) ?? item.size ?? 0
         entries[item.path] = OfflineEntry(item: item, fileName: fileName, savedAt: .now, byteCount: size)
         persist()
+    }
+
+    /// Deletes a stored file, and its per-file folder if it has one.
+    private func removeFile(_ fileName: String) {
+        let url = directory.appending(path: fileName)
+        try? FileManager.default.removeItem(at: url)
+        let parent = url.deletingLastPathComponent()
+        if parent.standardizedFileURL != directory.standardizedFileURL {
+            try? FileManager.default.removeItem(at: parent)
+        }
     }
 
     private func persist() {

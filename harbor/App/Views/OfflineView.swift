@@ -43,7 +43,7 @@ struct OfflineView: View {
             }
         }
         .navigationTitle("Offline")
-        .quickLookPreview($previewURL)
+        .filePreview($previewURL)
         .task(id: model.savedPaths) { await load() }
         .refreshable {
             await model.refreshOffline()

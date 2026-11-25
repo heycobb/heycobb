@@ -9,14 +9,20 @@ import UniformTypeIdentifiers
 public struct DemoFileService: FileService {
     public init() {}
 
-    private static let now = Date(timeIntervalSince1970: 1_763_000_000)
+    /// Dates count back from this morning, so the library always looks
+    /// recently used and nothing is ever dated in the future.
+    private static let now = Calendar.current.startOfDay(for: Date()).addingTimeInterval(9 * 3600)
 
     private static let tree: [String: [RemoteItem]] = {
         func folder(_ path: String, days: Double) -> RemoteItem {
             RemoteItem(path: path, name: (path as NSString).lastPathComponent, isDirectory: true, modified: now.addingTimeInterval(-days * 86400))
         }
-        func file(_ path: String, size: Int64, days: Double) -> RemoteItem {
-            RemoteItem(path: path, name: (path as NSString).lastPathComponent, isDirectory: false, size: size, modified: now.addingTimeInterval(-days * 86400))
+        // Sizes are the real byte counts of what `download` returns, so the
+        // size in the list matches the file you get (App Review may check).
+        func file(_ path: String, days: Double) -> RemoteItem {
+            let name = (path as NSString).lastPathComponent
+            let size = Int64(content(path: path, name: name)?.count ?? 0)
+            return RemoteItem(path: path, name: name, isDirectory: false, size: size, modified: now.addingTimeInterval(-days * 86400))
         }
         let photoNames = [
             "Harbor at dawn", "Breakwater", "North ridge", "Kitchen window", "Ferry crossing",
@@ -24,23 +30,24 @@ public struct DemoFileService: FileService {
         ]
         var tree: [String: [RemoteItem]] = [
             "/": [folder("/Photos", days: 2), folder("/Documents", days: 5), folder("/Projects", days: 1)],
-            "/Photos": [folder("/Photos/Coast 2026", days: 2)]
-                + photoNames.prefix(4).enumerated().map { i, n in file("/Photos/\(n).jpg", size: 2_400_000 + Int64(i) * 310_000, days: 30 + Double(i)) },
-            "/Photos/Coast 2026": photoNames.enumerated().map { i, n in
-                file("/Photos/Coast 2026/IMG_\(4100 + i) \(n).heic", size: 3_100_000 + Int64(i) * 120_000, days: 2 + Double(i) * 0.1)
+            // A folder's date is its newest item's date, as on a real NAS.
+            "/Photos": [folder("/Photos/Coast trip", days: 2.1)]
+                + photoNames.prefix(4).enumerated().map { i, n in file("/Photos/\(n).jpg", days: 30 + Double(i) * 3) },
+            "/Photos/Coast trip": photoNames.enumerated().map { i, n in
+                file("/Photos/Coast trip/IMG_\(4100 + i) \(n).jpg", days: 3.2 - Double(i) * 0.1)
             },
             "/Documents": [
-                file("/Documents/Read me.md", size: 1_420, days: 5),
-                file("/Documents/Packing list.txt", size: 512, days: 12),
-                file("/Documents/Home network notes.md", size: 2_048, days: 40),
+                file("/Documents/Read me.md", days: 5),
+                file("/Documents/Packing list.txt", days: 12),
+                file("/Documents/Home network notes.md", days: 40),
             ],
             "/Projects": [
                 folder("/Projects/Website", days: 1),
-                file("/Projects/Ideas.md", size: 880, days: 3),
+                file("/Projects/Ideas.md", days: 3),
             ],
             "/Projects/Website": [
-                file("/Projects/Website/index.html", size: 4_200, days: 1),
-                file("/Projects/Website/hero.png", size: 980_000, days: 1),
+                file("/Projects/Website/index.html", days: 1),
+                file("/Projects/Website/hero.jpg", days: 1),
             ],
         ]
         tree["/"]?.sort { $0.name < $1.name }
@@ -79,16 +86,8 @@ public struct DemoFileService: FileService {
     }
 
     public func download(_ item: RemoteItem) async throws -> URL {
-        let data: Data
-        switch item.kind {
-        case .image:
-            guard let image = Self.renderPhoto(seed: item.path, width: 2400, height: 1600) else { throw NASError.notFound }
-            data = image
-        default:
-            data = Data(Self.text(for: item).utf8)
-        }
-        let ext = item.kind == .image ? "jpg" : item.fileExtension
-        let url = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + "." + ext)
+        guard let data = Self.content(path: item.path, name: item.name) else { throw NASError.notFound }
+        let url = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + "." + item.fileExtension)
         try data.write(to: url)
         return url
     }
@@ -97,8 +96,16 @@ public struct DemoFileService: FileService {
 
     // MARK: Content
 
-    private static func text(for item: RemoteItem) -> String {
-        switch item.name {
+    /// The bytes behind a demo file. Photos are drawn on the fly.
+    private static func content(path: String, name: String) -> Data? {
+        if FileKind(extension: (name as NSString).pathExtension.lowercased()) == .image {
+            return renderPhoto(seed: path, width: 2400, height: 1600)
+        }
+        return Data(text(named: name).utf8)
+    }
+
+    private static func text(named name: String) -> String {
+        switch name {
         case "Read me.md":
             """
             # Welcome to the demo library
@@ -109,12 +116,58 @@ public struct DemoFileService: FileService {
             - Open photos and documents to preview them.
             - Swipe a file (or right-click on Mac) and choose **Keep Offline**.
 
-            When you're ready, add your own Synology NAS from the server menu.
+            When you're ready, choose Sign Out from the server menu, then Add a NAS.
+            """
+        case "Home network notes.md":
+            """
+            # Home network
+
+            | Device | Address | Notes |
+            |---|---|---|
+            | Router | 192.168.1.1 | Firmware updated in spring |
+            | NAS | 192.168.1.20 | HTTPS on 5001, nightly snapshots |
+            | Printer | 192.168.1.42 | Reserved address |
+
+            ## Away from home
+            - Tailscale on the NAS and every phone and laptop.
+            - MagicDNS name: nas.example-tailnet.ts.net
+            - No ports forwarded on the router.
+
+            ## Backups
+            - Photos and Documents: nightly snapshots, kept 30 days.
+            - Offsite copy every Sunday at 2:00.
+            """
+        case "Ideas.md":
+            """
+            # Ideas
+
+            - Print a photo book from the coast trip
+            - Move old scans into Documents/Archive
+            - Rename camera files by date
+            - Try a justified grid for photo folders
+            """
+        case "index.html":
+            """
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <title>Coast trip</title>
+              <link rel="stylesheet" href="style.css">
+            </head>
+            <body>
+              <header><h1>Coast trip</h1></header>
+              <main>
+                <img src="hero.jpg" alt="Hills above the harbor at first light">
+                <p>Five days along the coast, mostly on foot.</p>
+              </main>
+            </body>
+            </html>
             """
         case "Packing list.txt":
             "Passport\nCharger\nRain shell\nWool socks ×3\nCamera + spare battery\nPaperback\n"
         default:
-            "Sample file: \(item.name)\n"
+            "Sample file: \(name)\n"
         }
     }
 

@@ -81,6 +81,50 @@ struct DemoTests {
 
     @Test func searchFindsNestedFiles() async throws {
         let results = try await DemoFileService().search(in: "/", matching: "lighthouse")
-        #expect(results.contains { $0.path.hasPrefix("/Photos/Coast 2026/") })
+        #expect(results.contains { $0.path.hasPrefix("/Photos/Coast trip/") })
+    }
+
+    /// The size shown in the list must match the file you actually get.
+    @Test func listedSizesMatchDownloads() async throws {
+        let service = DemoFileService()
+        for folder in ["/Photos", "/Documents", "/Projects/Website"] {
+            let page = try await service.list(folder: folder, offset: 0, limit: 100, sort: .name, ascending: true)
+            for item in page.items where !item.isDirectory {
+                let url = try await service.download(item)
+                defer { try? FileManager.default.removeItem(at: url) }
+                let bytes = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int64
+                #expect(bytes == item.size, "\(item.path)")
+            }
+        }
+    }
+
+    @Test func nothingIsDatedInTheFuture() async throws {
+        let service = DemoFileService()
+        for folder in ["/", "/Photos", "/Photos/Coast trip", "/Documents", "/Projects"] {
+            let page = try await service.list(folder: folder, offset: 0, limit: 100, sort: .name, ascending: true)
+            #expect(page.items.allSatisfy { ($0.modified ?? .distantPast) <= Date() })
+        }
+    }
+}
+
+@Suite("Offline store")
+struct OfflineStoreTests {
+    /// Saved files keep their real name (Quick Look and the share sheet show
+    /// it), and removing one leaves nothing behind.
+    @Test func keepsRealNameAndCleansUp() async throws {
+        let store = OfflineStore(namespace: "test-\(UUID().uuidString)")
+        let service = DemoFileService()
+        let item = try await service.list(folder: "/Documents", offset: 0, limit: 10, sort: .name, ascending: true)
+            .items.first { $0.name == "Read me.md" }!
+
+        try await store.save(item, using: service)
+        let url = try #require(await store.localURL(for: item.path))
+        #expect(url.lastPathComponent == "Read me.md")
+        #expect(await store.totalBytes() == item.size)
+
+        await store.remove(item.path)
+        #expect(await store.localURL(for: item.path) == nil)
+        #expect(!FileManager.default.fileExists(atPath: url.deletingLastPathComponent().path(percentEncoded: false)))
+        await store.removeAll()
     }
 }

@@ -41,7 +41,7 @@ struct FolderView: View {
                 await reload()
             }
             .refreshable { await reload() }
-            .quickLookPreview($previewURL)
+            .filePreview($previewURL)
             .sheet(item: $info) { item in
                 ItemInfoView(item: item)
             }
