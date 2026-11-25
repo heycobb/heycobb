@@ -83,6 +83,11 @@ struct BrowserView: View {
             .scrollContentBackground(.hidden)
             .background(Theme.Sidebar.background)
         .navigationTitle(model.activeServer?.name ?? "Ownhold")
+        #if os(iOS)
+        // The NAS name gets its own line under the toolbar buttons, in both
+        // one and two columns, so it isn't cut short beside them.
+        .navigationBarTitleDisplayMode(.large)
+        #endif
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 200, ideal: 230)
         #else
