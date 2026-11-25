@@ -76,6 +76,7 @@ struct FolderView: View {
             }
             .mediaPlayer($playing)
             .modifier(changeSheets)
+            .focusedSceneValue(\.folderCommands, menuCommands)
     }
 
     // MARK: Change dialogs
@@ -109,6 +110,31 @@ struct FolderView: View {
     }
 
     private var selectedItems: [RemoteItem] { shown.filter { selection.contains($0.path) } }
+
+    /// What the Mac menu bar's File, Edit and View commands act on.
+    private var menuCommands: FolderCommands {
+        let chosen = selectedItems
+        let writable = canChange
+        return FolderCommands(
+            canChange: writable,
+            isSelecting: selecting,
+            newFolder: {
+                newName = ""
+                creatingFolder = true
+            },
+            uploadFiles: { showingFiles = true },
+            rename: writable && chosen.count == 1 ? {
+                let item = chosen[0]
+                endSelecting()
+                newName = item.name
+                renaming = item
+            } : nil,
+            delete: writable && !chosen.isEmpty ? { askToDelete(chosen) } : nil,
+            toggleSelecting: {
+                if selecting { endSelecting() } else { selecting = true }
+            }
+        )
+    }
 
     private var canChange: Bool {
         guard model.service != nil, case .online = model.connection else { return false }
@@ -774,4 +800,20 @@ struct FolderViewUploadBatch {
     let uploads: [PendingUpload]
     let existing: Set<String>
     let conflicts: [String]
+}
+
+/// Folder actions published to the Mac menu bar (see `FolderMenuCommands`).
+/// A nil action shows its menu item as unavailable.
+struct FolderCommands {
+    var canChange: Bool
+    var isSelecting: Bool
+    var newFolder: () -> Void
+    var uploadFiles: () -> Void
+    var rename: (() -> Void)?
+    var delete: (() -> Void)?
+    var toggleSelecting: () -> Void
+}
+
+extension FocusedValues {
+    @Entry var folderCommands: FolderCommands?
 }

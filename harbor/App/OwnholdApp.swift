@@ -20,6 +20,7 @@ struct OwnholdApp: App {
                 .task { await model.start() }
         }
         .defaultSize(width: 1100, height: 720)
+        .commands { FolderMenuCommands() }
         // Open the window at every launch, even if it was closed (to the
         // menu bar) when Ownhold last quit.
         .defaultLaunchBehavior(.presented)
@@ -38,6 +39,8 @@ struct OwnholdApp: App {
                 .environment(model)
                 .task { await model.start() }
         }
+        // iPad's menu bar and keyboard shortcuts.
+        .commands { FolderMenuCommands() }
         #endif
 
         #if os(macOS)
