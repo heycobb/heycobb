@@ -69,6 +69,7 @@ struct SettingsView: View {
             }
 
             Section("About") {
+                Link("Privacy Policy", destination: URL(string: "https://ownhold.app/privacy")!)
                 LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")
                 Text("Ownhold is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.")
                     .font(.footnote)
