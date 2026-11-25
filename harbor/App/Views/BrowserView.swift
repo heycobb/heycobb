@@ -41,7 +41,17 @@ struct BrowserView: View {
         .onChange(of: sizeClass) {
             // Unfolding an iPhone Duo, or widening an iPad window, makes
             // room for the second column: fill it rather than leave it empty.
-            if showsTwoColumns { selectInitialShare() }
+            guard showsTwoColumns else { return }
+            selectInitialShare()
+            // Collapsing to one column hides the sidebar inside the split view
+            // without updating `visibility`, so setting .all again would be a
+            // no-op. Reset it, then ask for both columns once the new width
+            // has settled.
+            visibility = .automatic
+            Task {
+                try? await Task.sleep(for: .milliseconds(100))
+                visibility = .all
+            }
         }
         .onChange(of: model.navigationRequest, initial: true) {
             // From the Mac menu bar: show a share or the Offline list.
