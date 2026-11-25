@@ -20,6 +20,9 @@ every element has a job.
    solid evergreen selection (cream text, `OnAccent`). The file list stays
    neutral, so photo thumbnails carry the color. ("Tinted glass", chosen
    from four mockups in 2026-11; earlier: burnt orange, then teal.)
+   Settings › Appearance offers three more accents (Harbor Blue, Graphite,
+   Rosewood), a Plain sidebar, and matching alternate app icons
+   (`ThemeSettings.swift`, `App/AppIcon-*.icon`). Evergreen stays the default.
 
 4. **Type does the work.** San Francisco at system sizes, with full Dynamic
    Type. Sizes, dates and paths use monospaced digits or SF Mono, which

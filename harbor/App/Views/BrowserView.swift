@@ -80,8 +80,9 @@ struct BrowserView: View {
 
     private var sidebar: some View {
         sidebarList
-            .scrollContentBackground(.hidden)
-            .background(Theme.Sidebar.background)
+            // Tinted: the accent's light tint. Plain: the system's sidebar.
+            .scrollContentBackground(Theme.Sidebar.isTinted ? .hidden : .automatic)
+            .background(Theme.Sidebar.isTinted ? Theme.Sidebar.background : .clear)
         .navigationTitle(model.activeServer?.name ?? "Ownhold")
         #if os(iOS)
         // The NAS name is shown as a heading in the list instead (see
@@ -237,14 +238,14 @@ struct BrowserView: View {
 
     /// The same solid evergreen selection as the Mac, instead of the
     /// system's gray (which it uses whenever the file list has focus).
-    @ViewBuilder private func rowBackground(_ item: SidebarItem) -> some View {
+    /// nil keeps the system's row background (the Plain sidebar).
+    private func rowBackground(_ item: SidebarItem) -> AnyView? {
         if isHighlighted(item) {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            return AnyView(RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Theme.accent)
-                .padding(.horizontal, 10)
-        } else {
-            Color.clear
+                .padding(.horizontal, 10))
         }
+        return Theme.Sidebar.isTinted ? AnyView(Color.clear) : nil
     }
     #endif
 

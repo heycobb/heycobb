@@ -66,6 +66,7 @@ private struct MenuBarLabel: View {
             .task {
                 guard !Self.didLaunch else { return }
                 Self.didLaunch = true
+                ThemeSettings.shared.appIcon.apply() // the Dock icon chosen in Settings
                 try? await Task.sleep(for: .milliseconds(300))
                 let hasWindow = NSApp.windows.contains { $0.isVisible && $0.canBecomeMain }
                 if !hasWindow { openWindow(id: OwnholdApp.mainWindowID) }

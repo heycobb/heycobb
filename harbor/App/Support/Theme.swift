@@ -10,15 +10,17 @@ import AppKit
 enum Theme {
     /// Deep evergreen, defined in the asset catalog (light + dark variants).
     /// Named explicitly: on the Mac it isn't the app's global accent.
-    static let accent = Color("AccentColor")
-    /// Text and icons on a solid accent fill (cream in light, deep green in dark).
-    static let onAccent = Color("OnAccent")
+    /// The accent chosen in Settings › Appearance (Evergreen by default).
+    static var accent: Color { ThemeSettings.shared.accent.accent }
+    /// Text and icons on a solid accent fill.
+    static var onAccent: Color { ThemeSettings.shared.accent.onAccent }
 
-    /// The sidebar: a light evergreen tint, with green-toned text.
+    /// The sidebar: tinted with the accent, or the system's plain sidebar.
     enum Sidebar {
-        static let background = Color("SidebarBackground")
-        static let text = Color("SidebarText")
-        static let secondary = Color("SidebarSecondary")
+        static var isTinted: Bool { ThemeSettings.shared.sidebarStyle == .tinted }
+        static var background: Color { ThemeSettings.shared.accent.sidebarTint }
+        static var text: Color { isTinted ? ThemeSettings.shared.accent.sidebarText : .primary }
+        static var secondary: Color { isTinted ? ThemeSettings.shared.accent.sidebarSecondary : .secondary }
     }
 
     enum Spacing {
