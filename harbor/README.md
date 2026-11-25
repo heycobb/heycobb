@@ -34,6 +34,13 @@ In Xcode, pick your team under Signing & Capabilities, then run on "My Mac",
 an iPhone/iPad simulator, or a device. The project file is generated from
 `project.yml`, so make project changes there.
 
+The Files app / Finder extension (`OwnholdFiles`) shares the NAS list,
+sign-in and trusted certificates with the app through an app group and a
+keychain group, so it only runs in builds signed with a team. On a Mac,
+approve it once in System Settings › General › Login Items & Extensions ›
+File Providers. Unsigned local builds can pass
+`OWNHOLD_APP_GROUP= OWNHOLD_ENTITLEMENTS_SUFFIX=-local` to build without it.
+
 Run the core tests with `swift test` in `Packages/OwnholdKit`, or with ⌘U in Xcode.
 
 ## NAS setup
