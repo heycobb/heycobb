@@ -16,29 +16,23 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var model = model
         Form {
-            Section {
-                Toggle(Platform.isMac ? "Require Touch ID or Password" : "Require Face ID or Passcode", isOn: $model.requireUnlock)
+            Section("Privacy") {
+                Toggle(Platform.isMac ? "Lock with Touch ID or Password" : "Lock with Face ID or Passcode", isOn: $model.requireUnlock)
                 #if os(iOS)
-                Toggle("Hide Content in App Switcher", isOn: $model.hideInSwitcher)
+                Toggle("Hide Files in App Switcher", isOn: $model.hideInSwitcher)
                 #endif
-            } header: {
-                Text("Privacy")
-            } footer: {
-                Text("Ownhold never collects analytics or sends data anywhere except your NAS.")
             }
 
             #if os(macOS)
-            Section {
-                Toggle("Show in Menu Bar", isOn: $showMenuBarItem)
-            } footer: {
-                Text("Connection status, uploads and quick access to your shared folders.")
+            Section("Menu Bar") {
+                Toggle("Show Ownhold in Menu Bar", isOn: $showMenuBarItem)
             }
             #endif
 
-            Section("Storage on This Device") {
-                LabeledContent("Offline files", value: offlineBytes == 0 ? "None" : Format.bytes(offlineBytes))
-                LabeledContent("Thumbnail cache", value: thumbnailBytes == 0 ? "None" : Format.bytes(thumbnailBytes))
-                Button("Clear Thumbnail Cache") {
+            Section("Storage") {
+                LabeledContent("Offline Files", value: offlineBytes == 0 ? "None" : Format.bytes(offlineBytes))
+                LabeledContent("Thumbnails", value: thumbnailBytes == 0 ? "None" : Format.bytes(thumbnailBytes))
+                Button("Clear Thumbnails") {
                     Task {
                         await model.thumbnails?.removeAll()
                         await measure()
@@ -50,20 +44,13 @@ struct SettingsView: View {
                 Section("Servers") {
                     ForEach(model.servers) { server in
                         Button { editing = server } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(server.name)
-                                    Text(server.endpoints.map { $0.url.host() ?? "" }.joined(separator: "  ·  "))
-                                        .font(.path)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Text("Edit").foregroundStyle(.secondary)
+                            LabeledContent(server.name) {
+                                Text("Edit…").foregroundStyle(.secondary)
                             }
                             .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityHint("Edit name and addresses")
+                        .accessibilityLabel("Edit \(server.name)")
                         .contextMenu {
                             Button("Edit", systemImage: "pencil") { editing = server }
                             Button("Remove", systemImage: "trash", role: .destructive) { confirmRemove = server }
@@ -76,11 +63,11 @@ struct SettingsView: View {
             }
 
             Section("Help") {
-                Button("Setup Guide") { showingGuide = true }
+                Button("Open Setup Guide") { showingGuide = true }
             }
 
             Section("About") {
-                Link("Support", destination: URL(string: "https://ownhold.app/support")!)
+                Link("Get Support", destination: URL(string: "https://ownhold.app/support")!)
                 Link("Privacy Policy", destination: URL(string: "https://ownhold.app/privacy")!)
                 LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")
                 Text("Ownhold is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.")
