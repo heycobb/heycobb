@@ -1,4 +1,4 @@
-import HarborKit
+import OwnholdKit
 import SwiftUI
 
 /// First screen. On iPhone the actions sit at the bottom, within thumb
@@ -33,7 +33,7 @@ struct WelcomeView: View {
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
-            Text("Harbor")
+            Text("Ownhold")
                 .font(.system(.largeTitle, weight: .semibold))
             Text("Your NAS on your iPhone, iPad and Mac. At home or away.")
                 .font(.title3)

@@ -1,9 +1,9 @@
-# Generates Harbor.xcodeproj with XcodeGen (https://github.com/yonaskolb/XcodeGen).
+# Generates Ownhold.xcodeproj with XcodeGen (https://github.com/yonaskolb/XcodeGen).
 #   brew install xcodegen && xcodegen generate
 # The .xcodeproj is generated, so it isn't committed; edit this file instead.
-name: Harbor
+name: Ownhold
 options:
-  bundleIdPrefix: app.harbor
+  bundleIdPrefix: app.ownhold
   deploymentTarget:
     iOS: "26.0"
     macOS: "26.0"
@@ -11,8 +11,8 @@ options:
   developmentLanguage: en
 
 packages:
-  HarborKit:
-    path: Packages/HarborKit
+  OwnholdKit:
+    path: Packages/OwnholdKit
 
 settings:
   base:
@@ -26,7 +26,7 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
 
 targets:
-  Harbor:
+  Ownhold:
     type: application
     platform: auto
     # One native SwiftUI target for iPhone, iPad and Mac (not Mac Catalyst).
@@ -34,16 +34,16 @@ targets:
     sources:
       - path: App
     dependencies:
-      - package: HarborKit
+      - package: OwnholdKit
     settings:
       base:
-        PRODUCT_NAME: Harbor
-        PRODUCT_BUNDLE_IDENTIFIER: app.harbor.Harbor
+        PRODUCT_NAME: Ownhold
+        PRODUCT_BUNDLE_IDENTIFIER: app.ownhold.Ownhold
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: Config/Info.plist
-        INFOPLIST_KEY_CFBundleDisplayName: Harbor
+        INFOPLIST_KEY_CFBundleDisplayName: Ownhold
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
@@ -51,18 +51,18 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         # On the Mac, selection highlights follow the accent color the user
-        # picked in System Settings (as in Finder and Mail); Harbor's teal is
+        # picked in System Settings (as in Finder and Mail); Ownhold's teal is
         # applied explicitly through Theme.accent instead.
         "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME[sdk=macosx*]": ""
-        CODE_SIGN_ENTITLEMENTS: Config/Harbor-iOS.entitlements
-        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Config/Harbor-macOS.entitlements
+        CODE_SIGN_ENTITLEMENTS: Config/Ownhold-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Config/Ownhold-macOS.entitlements
         ENABLE_HARDENED_RUNTIME: YES
 
 schemes:
-  Harbor:
+  Ownhold:
     build:
       targets:
-        Harbor: all
+        Ownhold: all
     test:
       targets:
-        - package: HarborKit/HarborKitTests
+        - package: OwnholdKit/OwnholdKitTests

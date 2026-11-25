@@ -1,4 +1,4 @@
-import HarborKit
+import OwnholdKit
 import SwiftUI
 
 struct SettingsView: View {
@@ -21,7 +21,7 @@ struct SettingsView: View {
             } header: {
                 Text("Privacy")
             } footer: {
-                Text("Harbor never collects analytics or sends data anywhere except your NAS.")
+                Text("Ownhold never collects analytics or sends data anywhere except your NAS.")
             }
 
             Section("Storage on This Device") {
@@ -70,7 +70,7 @@ struct SettingsView: View {
 
             Section("About") {
                 LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")
-                Text("Harbor is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.")
+                Text("Ownhold is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

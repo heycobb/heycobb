@@ -1,11 +1,11 @@
-import HarborKit
+import OwnholdKit
 import SwiftUI
 
 /// Design tokens. One accent color, system typography, monospaced digits for
 /// data. Everything else comes from the system so the app feels native on
 /// each platform. See docs/DESIGN.md for the reasoning.
 enum Theme {
-    /// Harbor teal, defined in the asset catalog (light + dark variants).
+    /// Ownhold teal, defined in the asset catalog (light + dark variants).
     /// Named explicitly: on the Mac it isn't the app's global accent.
     static let accent = Color("AccentColor")
 

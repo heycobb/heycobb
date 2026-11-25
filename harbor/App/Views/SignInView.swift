@@ -1,4 +1,4 @@
-import HarborKit
+import OwnholdKit
 import SwiftUI
 
 /// Add a NAS, or sign back in to a saved one.
@@ -47,7 +47,7 @@ struct SignInView: View {
                     } header: {
                         Text("Addresses")
                     } footer: {
-                        Text("Harbor tries them all at once and uses the highest one on this list that answers, so your home network wins when you're home. HTTPS only; port 5001 is assumed if you don't give one.")
+                        Text("Ownhold tries them all at once and uses the highest one on this list that answers, so your home network wins when you're home. HTTPS only; port 5001 is assumed if you don't give one.")
                     }
                 } else if let existing {
                     Section {
@@ -85,7 +85,7 @@ struct SignInView: View {
                     if needsCode {
                         Text("Your NAS uses 2-factor sign-in. If you remember this device, you won't be asked for a code here again.")
                     } else {
-                        Text("Your password goes only to your NAS and isn't stored by Harbor.")
+                        Text("Your password goes only to your NAS and isn't stored by Ownhold.")
                     }
                 }
 
@@ -158,7 +158,7 @@ struct SignInView: View {
     private func submit() {
         guard canSubmit, !working else { return }
         if existing == nil, [homeAddress, tailscaleAddress, internetAddress].contains(where: { $0.lowercased().hasPrefix("http://") }) {
-            errorText = "Harbor only connects over HTTPS. Turn on HTTPS in DSM (Control Panel > Login Portal) and use port 5001."
+            errorText = "Ownhold only connects over HTTPS. Turn on HTTPS in DSM (Control Panel > Login Portal) and use port 5001."
             return
         }
         let profile = existing ?? ServerProfile(
@@ -220,7 +220,7 @@ struct CertificateReviewView: View {
                 } footer: {
                     Text(review.changed
                          ? "If you didn't renew or replace the certificate in DSM, don't continue. Someone may be intercepting the connection."
-                         : "This is normal for a NAS using DSM's built-in self-signed certificate. Harbor will remember this certificate and refuse to connect if it ever changes unexpectedly.")
+                         : "This is normal for a NAS using DSM's built-in self-signed certificate. Ownhold will remember this certificate and refuse to connect if it ever changes unexpectedly.")
                 }
                 Section {
                     LabeledContent("Server", value: review.info.host)

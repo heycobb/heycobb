@@ -12,7 +12,7 @@ every element has a job.
    platform conventions closely is what makes an app feel finished.
 2. **Glass is for navigation only.** Toolbars, tab bars and transient banners.
    Never on content and never on list rows. This is Apple's own guidance.
-3. **One accent color, used rarely.** Harbor teal (`AccentColor` in the
+3. **One accent color, used rarely.** Ownhold teal (`AccentColor` in the
    asset catalog: #1E6E78 light, #4CB4C0 dark). It marks folders, the
    offline badge and primary buttons. Sidebar selection stays the system's
    neutral gray. Everything else is neutral, so photo thumbnails carry the

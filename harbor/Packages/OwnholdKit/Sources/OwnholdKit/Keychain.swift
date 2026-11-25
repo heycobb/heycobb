@@ -6,7 +6,7 @@ import Security
 public struct Keychain: Sendable {
     public let service: String
 
-    public init(service: String = "app.harbor.keychain") {
+    public init(service: String = "app.ownhold.keychain") {
         self.service = service
     }
 

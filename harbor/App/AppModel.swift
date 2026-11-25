@@ -1,5 +1,5 @@
 import Foundation
-import HarborKit
+import OwnholdKit
 import LocalAuthentication
 import Observation
 import SwiftUI
@@ -237,7 +237,7 @@ final class AppModel {
         context.localizedFallbackTitle = "Use Passcode"
         do {
             // Falls back to the device passcode if Face ID / Touch ID fails.
-            if try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Unlock Harbor") {
+            if try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Unlock Ownhold") {
                 isLocked = false
             }
         } catch {

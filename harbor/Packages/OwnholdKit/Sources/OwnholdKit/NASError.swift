@@ -46,7 +46,7 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
         case let .server(code, api):
             "The NAS returned an error (\(api) \(code))."
         case .malformedResponse:
-            "The NAS sent a response Harbor didn't understand."
+            "The NAS sent a response Ownhold didn't understand."
         }
     }
 
@@ -86,7 +86,7 @@ public struct CertificateInfo: Equatable, Sendable, Codable {
     public let host: String
     public let subject: String
     /// SHA-256 of the certificate's public key, as colon-separated hex.
-    /// This is what Harbor pins: it survives a certificate renewal that
+    /// This is what Ownhold pins: it survives a certificate renewal that
     /// keeps the same key.
     public let fingerprint: String
     /// SHA-256 of the whole certificate, as colon-separated hex. This is the

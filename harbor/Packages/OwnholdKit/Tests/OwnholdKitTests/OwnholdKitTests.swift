@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import HarborKit
+@testable import OwnholdKit
 
 @Suite("Endpoint parsing")
 struct EndpointTests {

@@ -21,11 +21,11 @@ struct SetupGuideView: View {
                     Divider()
 
                     GuideSection(title: "Optional: check the certificate fingerprint", symbol: "checkmark.shield") {
-                        Paragraph("Harbor shows a fingerprint the first time it connects. To confirm it really is your NAS:")
+                        Paragraph("Ownhold shows a fingerprint the first time it connects. To confirm it really is your NAS:")
                         Bullet("On a Mac at home, open Safari and go to **https://** followed by your NAS's address and **:5001**, for example https://192.168.1.20:5001.")
                         Bullet("Safari warns that the connection isn't private. Click **Show Details**, then **view the certificate**.")
-                        Bullet("Open **Details** and find **SHA-256** under Fingerprints. It should match the fingerprint in Harbor.")
-                        Paragraph("If you set up your NAS yourself and you're at home, it's fine to skip this. Harbor remembers the certificate and warns you if it ever changes.")
+                        Bullet("Open **Details** and find **SHA-256** under Fingerprints. It should match the fingerprint in Ownhold.")
+                        Paragraph("If you set up your NAS yourself and you're at home, it's fine to skip this. Ownhold remembers the certificate and warns you if it ever changes.")
                     }
 
                     GuideSection(title: "If something doesn't work", symbol: "wrench.and.screwdriver") {
@@ -75,18 +75,18 @@ struct SetupGuideView: View {
             .text("Tip: so the address never changes, set a fixed address in DSM under **Control Panel › Network › Network Interface**, or reserve it in your router's settings."),
         ]),
         Step(title: "Make sure HTTPS is on", symbol: "lock", lines: [
-            .text("Harbor only uses encrypted connections, so your password and files are never sent in the clear."),
+            .text("Ownhold only uses encrypted connections, so your password and files are never sent in the clear."),
             .bullet("In DSM, open **Control Panel › Login Portal**, then the **DSM** tab."),
             .bullet("Check that the HTTPS port is **5001** (the standard setting)."),
         ]),
         Step(title: "Check your account", symbol: "person.crop.circle", lines: [
             .bullet("Use the account and password you use to sign in to DSM."),
             .bullet("If the account isn't an administrator, allow File Station: **Control Panel › User & Group**, select the account, **Edit › Applications**, and allow **File Station**."),
-            .bullet("If you use 2-factor sign-in, Harbor asks for the code. Turn on **Remember this device** so you only enter it once."),
+            .bullet("If you use 2-factor sign-in, Ownhold asks for the code. Turn on **Remember this device** so you only enter it once."),
         ]),
-        Step(title: "Add your NAS in Harbor", symbol: "plus.circle", lines: [
+        Step(title: "Add your NAS in Ownhold", symbol: "plus.circle", lines: [
             .bullet("Tap **Add a NAS**. Give it a name, enter the home address from step 1, your account and your password."),
-            .bullet("The first time, Harbor shows **Check Certificate**. That's normal: most home NAS boxes use their own certificate instead of one from a public authority. Tap **Trust**."),
+            .bullet("The first time, Ownhold shows **Check Certificate**. That's normal: most home NAS boxes use their own certificate instead of one from a public authority. Tap **Trust**."),
             .text("At home, you're done. To reach your NAS from anywhere else, set up Tailscale (step 5)."),
         ]),
         Step(title: "Use it away from home with Tailscale", symbol: "point.3.connected.trianglepath.dotted", lines: [
@@ -94,8 +94,8 @@ struct SetupGuideView: View {
             .bullet("**On the NAS:** in DSM, open **Package Center**, search for **Tailscale**, install it, open it, and sign in. You can create a Tailscale account there."),
             .bullet("**On this device:** install the Tailscale app, sign in with the same account, and switch it on."),
             .bullet("In the Tailscale app, find your NAS in the list of devices. Its name looks like **nas.tailnet-name.ts.net**. An address starting with **100.** also works."),
-            .bullet("In Harbor, open **Settings**, select your NAS, and enter that name as the **Tailscale** address. (Or enter it when you first add the NAS.)"),
-            .text("Keep Tailscale switched on when you're away. Harbor picks your home address at home and Tailscale everywhere else, automatically."),
+            .bullet("In Ownhold, open **Settings**, select your NAS, and enter that name as the **Tailscale** address. (Or enter it when you first add the NAS.)"),
+            .text("Keep Tailscale switched on when you're away. Ownhold picks your home address at home and Tailscale everywhere else, automatically."),
             .link("Get Tailscale", URL(string: "https://tailscale.com/download")!),
         ]),
     ]

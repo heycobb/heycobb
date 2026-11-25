@@ -1,4 +1,4 @@
-import HarborKit
+import OwnholdKit
 import SwiftUI
 
 struct RootView: View {
@@ -77,7 +77,7 @@ struct LockView: View {
             Image(systemName: "lock.fill")
                 .font(.system(size: 40, weight: .regular))
                 .foregroundStyle(.secondary)
-            Text("Harbor is locked")
+            Text("Ownhold is locked")
                 .font(.headline)
             Button("Unlock") { Task { await model.unlock() } }
                 .buttonStyle(.borderedProminent)

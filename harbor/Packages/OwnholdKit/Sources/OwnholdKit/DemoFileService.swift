@@ -110,7 +110,7 @@ public struct DemoFileService: FileService {
             """
             # Welcome to the demo library
 
-            This is sample content built into Harbor so you can try the app without a NAS.
+            This is sample content built into Ownhold so you can try the app without a NAS.
 
             - Browse folders and switch between list and grid.
             - Open photos and documents to preview them.

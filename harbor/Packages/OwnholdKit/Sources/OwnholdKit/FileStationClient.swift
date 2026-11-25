@@ -19,7 +19,7 @@ public actor FileStationClient: FileService {
         let config = URLSessionConfiguration.ephemeral // no on-disk cache or cookies
         config.timeoutIntervalForRequest = 20
         config.timeoutIntervalForResource = 60 * 60
-        config.httpAdditionalHeaders = ["User-Agent": "Harbor"]
+        config.httpAdditionalHeaders = ["User-Agent": "Ownhold"]
         self.session = URLSession(configuration: config, delegate: trust, delegateQueue: nil)
     }
 

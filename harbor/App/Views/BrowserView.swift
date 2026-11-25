@@ -1,4 +1,4 @@
-import HarborKit
+import OwnholdKit
 import SwiftUI
 
 enum SidebarItem: Hashable {
@@ -66,10 +66,10 @@ struct BrowserView: View {
                 }
             }
         }
-        // Icons keep Harbor's teal; on the Mac the selection highlight
+        // Icons keep Ownhold's teal; on the Mac the selection highlight
         // follows the system accent color (see project.yml).
         .listItemTint(.fixed(Theme.accent))
-        .navigationTitle(model.activeServer?.name ?? "Harbor")
+        .navigationTitle(model.activeServer?.name ?? "Ownhold")
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 200, ideal: 230)
         #endif

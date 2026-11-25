@@ -1,8 +1,8 @@
-import HarborKit
+import OwnholdKit
 import SwiftUI
 
 @main
-struct HarborApp: App {
+struct OwnholdApp: App {
     @State private var model = AppModel()
 
     var body: some Scene {

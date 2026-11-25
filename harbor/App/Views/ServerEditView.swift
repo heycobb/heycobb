@@ -1,4 +1,4 @@
-import HarborKit
+import OwnholdKit
 import SwiftUI
 
 /// Rename a saved NAS or change its addresses, for example to add a
@@ -30,7 +30,7 @@ struct ServerEditView: View {
                 } footer: {
                     VStack(alignment: .leading, spacing: Theme.Spacing.s) {
                         if hasPlainHTTP {
-                            Text("Harbor only connects over HTTPS. Remove “http://” and use port 5001.")
+                            Text("Ownhold only connects over HTTPS. Remove “http://” and use port 5001.")
                                 .foregroundStyle(.red)
                         }
                         Button("How do I find my Tailscale address?") { showingGuide = true }
