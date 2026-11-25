@@ -14,8 +14,8 @@
 		<string>com.apple.fileprovider-nonui</string>
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).FileProviderExtension</string>
-		<key>NSExtensionFileProviderDocumentGroup</key>
-		<string>$(OWNHOLD_APP_GROUP)</string>
+		<key>NSExtensionFileProviderSupportsEnumeration</key>
+		<true/>
 	</dict>
 </dict>
 </plist>

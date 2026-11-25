@@ -49,11 +49,15 @@ final class FileProviderItem: NSObject, NSFileProviderItem {
 /// The root (the list of shared folders).
 final class RootItem: NSObject, NSFileProviderItem {
     let name: String
-    init(name: String) { self.name = name }
+    let readOnly: Bool
+    init(name: String, readOnly: Bool = false) {
+        self.name = name
+        self.readOnly = readOnly
+    }
     var itemIdentifier: NSFileProviderItemIdentifier { .rootContainer }
     var parentItemIdentifier: NSFileProviderItemIdentifier { .rootContainer }
     var filename: String { name }
     var contentType: UTType { .folder }
-    var capabilities: NSFileProviderItemCapabilities { [.allowsReading, .allowsContentEnumerating] }
+    var capabilities: NSFileProviderItemCapabilities { readOnly ? [.allowsContentEnumerating] : [.allowsReading, .allowsContentEnumerating] }
     var itemVersion: NSFileProviderItemVersion { NSFileProviderItemVersion(contentVersion: Data("root".utf8), metadataVersion: Data("root".utf8)) }
 }

@@ -13,6 +13,13 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
     private let context: ProviderContext
     private let snapshots = SnapshotStore()
 
+    /// iOS keeps a default "Ownhold" location whenever Ownhold has none of
+    /// its own (Settings › Privacy › Show NAS in Files App is off), and apps
+    /// can't remove it. It stays empty: no NAS names, no files, no network.
+    private var isPlaceholder: Bool {
+        domain.identifier.rawValue == "NSFileProviderDomainDefaultIdentifier" || !SharedContainer.isFilesAppEnabled
+    }
+
     required init(domain: NSFileProviderDomain) {
         self.domain = domain
         self.context = ProviderContext(domainID: domain.identifier.rawValue)
@@ -26,7 +33,11 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
     func item(for identifier: NSFileProviderItemIdentifier, request: NSFileProviderRequest, completionHandler: @escaping (NSFileProviderItem?, Error?) -> Void) -> Progress {
         let reply = Reply(completionHandler)
         if identifier == .rootContainer {
-            reply.handler(RootItem(name: domain.displayName), nil)
+            reply.handler(RootItem(name: domain.displayName, readOnly: isPlaceholder), nil)
+            return Progress()
+        }
+        if isPlaceholder {
+            reply.handler(nil, NSFileProviderError(.noSuchItem))
             return Progress()
         }
         return task { [self] in
@@ -122,6 +133,7 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
 
     func enumerator(for containerItemIdentifier: NSFileProviderItemIdentifier, request: NSFileProviderRequest) throws -> NSFileProviderEnumerator {
         guard containerItemIdentifier != .trashContainer else { throw NSFileProviderError(.noSuchItem) }
+        if isPlaceholder { return EmptyEnumerator() }
         return FileProviderEnumerator(container: containerItemIdentifier, context: context, snapshots: snapshots)
     }
 
