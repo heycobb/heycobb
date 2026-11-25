@@ -21,7 +21,6 @@ struct WelcomeView: View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xl) {
             if isCompact { Spacer(minLength: Theme.Spacing.xl) }
             intro
-            points
             if isCompact { Spacer(minLength: Theme.Spacing.xl) }
             actions
         }
@@ -35,18 +34,10 @@ struct WelcomeView: View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
             Text("Ownhold")
                 .font(.system(.largeTitle, weight: .semibold))
-            Text("Your NAS on your iPhone, iPad and Mac. At home or away.")
+            Text("Browse, open and save the files and photos on your Synology NAS, at home or through your VPN when you're out.")
                 .font(.title3)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var points: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
-            Point(symbol: "lock", text: "Connects straight to your NAS. No accounts, no tracking.")
-            Point(symbol: "point.3.connected.trianglepath.dotted", text: "Your home network when you're home. Tailscale or another VPN when you're away.")
-            Point(symbol: "arrow.down.circle", text: "Keep files on this device for when you're offline.")
         }
     }
 
@@ -86,21 +77,5 @@ struct WelcomeView: View {
         }
         .tint(Theme.accent)
         .sheet(isPresented: $showingGuide) { SetupGuideView() }
-    }
-
-    private struct Point: View {
-        let symbol: String
-        let text: String
-
-        var body: some View {
-            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.m) {
-                Image(systemName: symbol)
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: 22)
-                    .accessibilityHidden(true)
-                Text(text)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
     }
 }

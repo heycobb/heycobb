@@ -38,6 +38,15 @@ every element has a job.
 - Placeholder copy. Every string says something specific, such as
   "Signs in directly to your NAS. Nothing passes through our servers."
 - Gradient text, heavy drop shadows, glassmorphism on content
+- Icon-plus-one-liner benefit lists (the "three feature bullets"), and an
+  icon beside every heading. Icons appear only where they identify something
+  (a folder, a file type, a connection), not as decoration.
+- Tinted callout boxes and colored stripes on the side of boxes
+- Slogan fragments ("Your cloud. Owned."), rhetorical triplets, em dashes in
+  UI text, and words like seamless, effortless, unlock or powerful
+- Sparkle icons, shimmering loading text, cream-and-terracotta palettes
+- Bare empty states: an empty screen offers the next useful action (an empty
+  folder offers Upload Files and New Folder)
 
 ## Platform notes
 

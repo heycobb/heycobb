@@ -35,8 +35,9 @@ before submitting; they change.
 
 **Ownhold** (chosen 2026-11-25; replaces the working name "Harbor").
 Own + hold, echoing *freehold* and *stronghold*: your cloud is owned, not
-rented. Tagline idea: "Your cloud. Owned." Suggested App Store subtitle:
-"Files and photos from your NAS".
+rented. App Store subtitle: "Files and photos from your NAS". Keep
+marketing copy plain and specific; avoid slogan fragments ("Your cloud.
+Owned.") and stock phrases, which read as AI-written.
 
 Domains (checked 2026-11-25): `ownhold.app`, `getownhold.com` and
 `ownholdapp.com` were free; `ownhold.com` is registered (since 2025, no site).

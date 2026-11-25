@@ -20,13 +20,13 @@ struct SetupGuideView: View {
 
                     Divider()
 
-                    GuideSection(title: "Other ways to connect from away", symbol: "network") {
+                    GuideSection(title: "Other ways to connect from away") {
                         Problem("Another VPN", "ZeroTier, NetBird, WireGuard (DSM's **VPN Server** package), Headscale and similar all work, as long as their app is running on this device. Enter your NAS's address on that network as the **Private network (VPN)** address.")
                         Problem("Synology DDNS (yourname.synology.me)", "Set it up in DSM under **Control Panel › External Access › DDNS**, forward port **5001** on your router to the NAS, and get a free Let's Encrypt certificate in **Control Panel › Security › Certificate**. Enter the name as the **Internet** address. This makes DSM reachable from the internet, so turn on 2-factor sign-in and DSM's auto-block.")
                         Problem("QuickConnect ID", "Find it in DSM under **Control Panel › External Access › QuickConnect** and enter it when you add your NAS. Ownhold asks Synology for your NAS's current addresses, then connects directly. It doesn't use Synology's relay servers, so away from home it works only if your NAS is reachable directly (for example with port forwarding). Otherwise, use a VPN.")
                     }
 
-                    GuideSection(title: "Optional: check the certificate fingerprint", symbol: "checkmark.shield") {
+                    GuideSection(title: "Optional: check the certificate fingerprint") {
                         Paragraph("Ownhold shows a fingerprint the first time it connects. To confirm it really is your NAS:")
                         Bullet("On a Mac at home, open Safari and go to **https://** followed by your NAS's address and **:5001**, for example https://192.168.1.20:5001.")
                         Bullet("Safari warns that the connection isn't private. Click **Show Details**, then **view the certificate**.")
@@ -34,7 +34,7 @@ struct SetupGuideView: View {
                         Paragraph("If you set up your NAS yourself and you're at home, it's fine to skip this. Ownhold remembers the certificate and warns you if it ever changes.")
                     }
 
-                    GuideSection(title: "If something doesn't work", symbol: "wrench.and.screwdriver") {
+                    GuideSection(title: "If something doesn't work") {
                         Problem("“Can't reach the NAS”", "At home, check that this device is on your home Wi-Fi and the address is right. Away from home, check that Tailscale (or your other VPN) is switched on.")
                         Problem("“Only connects over HTTPS”", "Turn on HTTPS in DSM (step 2), and use port 5001.")
                         Problem("“Incorrect account name or password”", "Use the same account and password you use to sign in to DSM in a browser.")
@@ -63,7 +63,6 @@ struct SetupGuideView: View {
 
     struct Step {
         let title: String
-        let symbol: String
         let lines: [Line]
     }
 
@@ -74,28 +73,28 @@ struct SetupGuideView: View {
     }
 
     static let steps: [Step] = [
-        Step(title: "Find your NAS's address", symbol: "magnifyingglass", lines: [
+        Step(title: "Find your NAS's address", lines: [
             .text("Your NAS has an address on your home network, usually something like 192.168.1.20."),
             .bullet("On a computer at home, open **find.synology.com** in a web browser. It lists the NAS and its address."),
             .bullet("Or, if you already open DSM in a browser, use the address you type there, without “http://” and without the port number."),
             .text("Tip: so the address never changes, set a fixed address in DSM under **Control Panel › Network › Network Interface**, or reserve it in your router's settings."),
         ]),
-        Step(title: "Make sure HTTPS is on", symbol: "lock", lines: [
+        Step(title: "Make sure HTTPS is on", lines: [
             .text("Ownhold only uses encrypted connections, so your password and files are never sent in the clear."),
             .bullet("In DSM, open **Control Panel › Login Portal**, then the **DSM** tab."),
             .bullet("Check that the HTTPS port is **5001** (the standard setting)."),
         ]),
-        Step(title: "Check your account", symbol: "person.crop.circle", lines: [
+        Step(title: "Check your account", lines: [
             .bullet("Use the account and password you use to sign in to DSM."),
             .bullet("If the account isn't an administrator, allow File Station: **Control Panel › User & Group**, select the account, **Edit › Applications**, and allow **File Station**."),
             .bullet("If you use 2-factor sign-in, Ownhold asks for the code. Turn on **Remember this device** so you only enter it once."),
         ]),
-        Step(title: "Add your NAS in Ownhold", symbol: "plus.circle", lines: [
+        Step(title: "Add your NAS in Ownhold", lines: [
             .bullet("Tap **Add a NAS**. Give it a name, enter the home address from step 1, your account and your password."),
             .bullet("The first time, Ownhold shows **Check Certificate**. That's normal: most home NAS boxes use their own certificate instead of one from a public authority. Tap **Trust**."),
             .text("At home, you're done. To reach your NAS from anywhere else, set up Tailscale (step 5)."),
         ]),
-        Step(title: "Use it away from home with Tailscale", symbol: "point.3.connected.trianglepath.dotted", lines: [
+        Step(title: "Use it away from home with Tailscale", lines: [
             .text("Tailscale connects your devices to your NAS over a private, encrypted network, without opening anything on your router. It's free for personal use."),
             .bullet("**On the NAS:** in DSM, open **Package Center**, search for **Tailscale**, install it, open it, and sign in. You can create a Tailscale account there."),
             .bullet("**On this device:** install the Tailscale app, sign in with the same account, and switch it on."),
@@ -147,12 +146,11 @@ private struct StepView: View {
 
 private struct GuideSection<Content: View>: View {
     let title: String
-    let symbol: String
     @ViewBuilder let content: Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
-            Label(title, systemImage: symbol)
+            Text(title)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
             content

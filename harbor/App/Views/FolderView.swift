@@ -221,7 +221,18 @@ struct FolderView: View {
             if searchResults != nil {
                 ContentUnavailableView.search(text: query)
             } else {
-                ContentUnavailableView("Empty Folder", systemImage: "folder")
+                ContentUnavailableView {
+                    Label("Empty Folder", systemImage: "folder")
+                } actions: {
+                    if canChange {
+                        Button("Upload Files…") { showingFiles = true }
+                            .buttonStyle(.borderedProminent)
+                        Button("New Folder") {
+                            newName = ""
+                            creatingFolder = true
+                        }
+                    }
+                }
             }
         } else if layout == .grid {
             grid

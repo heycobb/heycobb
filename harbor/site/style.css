@@ -1,11 +1,11 @@
 /* Shared styles for ownhold.app pages. */
 :root {
   --bg: #FAF8F3; --text: #1C211E; --muted: #5B6560; --line: #E3E0D8;
-  --accent: #1D4B3C; --accent-soft: #E7F0EB;
+  --accent: #1D4B3C;
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #0F1A16; --text: #E8EEEA; --muted: #9AA8A1; --line: #24322C;
-          --accent: #6FBF9A; --accent-soft: #16261F; }
+          --accent: #6FBF9A; }
 }
 * { box-sizing: border-box; }
 body {
@@ -22,7 +22,7 @@ h1 { font-size: 34px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.01e
 h2 { font-size: 20px; margin: 40px 0 8px; }
 p, li { margin: 0 0 12px; }
 ul { padding-left: 22px; }
-.summary { background: var(--accent-soft); border-radius: 14px; padding: 18px 20px; margin: 24px 0 8px; }
+.summary { margin: 24px 0 8px; font-size: 1.05em; }
 .summary p:last-child { margin-bottom: 0; }
 a { color: var(--accent); }
 .placeholder { background: #FFE9A8; color: #3B2F00; padding: 0 4px; border-radius: 4px; }
