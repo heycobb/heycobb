@@ -8,6 +8,7 @@ struct FolderView: View {
     let folder: RemoteItem
 
     @Environment(AppModel.self) private var model
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @AppStorage("layout") private var layout: BrowseLayout = .list
     @AppStorage("sortField") private var sort: SortField = .name
     @AppStorage("sortAscending") private var ascending = true
@@ -112,7 +113,7 @@ struct FolderView: View {
 
     private var grid: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: Theme.gridMinimum), spacing: Theme.Spacing.m)], spacing: Theme.Spacing.l) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: sizeClass == .regular ? Theme.gridMinimumRegular : Theme.gridMinimum), spacing: Theme.Spacing.m, alignment: .top)], spacing: Theme.Spacing.l) {
                 ForEach(shown) { item in
                     tile(for: item)
                         .onAppear { loadMoreIfNeeded(item) }

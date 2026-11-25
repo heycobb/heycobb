@@ -19,7 +19,13 @@ enum Theme {
     /// Thumbnails use small, consistent corners. Big pill-shaped cards are
     /// one of the clearest "generated UI" tells.
     static let thumbnailRadius: CGFloat = 6
+    #if os(macOS)
+    static let gridMinimum: CGFloat = 150
+    #else
     static let gridMinimum: CGFloat = 104
+    #endif
+    /// iPad (regular width) and Mac.
+    static let gridMinimumRegular: CGFloat = 150
 }
 
 extension Font {

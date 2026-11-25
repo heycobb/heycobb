@@ -28,7 +28,7 @@ struct OfflineView: View {
                     }
                     .onDelete { offsets in offsets.map { entries[$0] }.forEach(remove) }
                 } footer: {
-                    Text("\(entries.count) files · \(Format.bytes(totalBytes)) on this device")
+                    Text("\(entries.count == 1 ? "1 file" : "\(entries.count) files") · \(Format.bytes(totalBytes)) on this device")
                         .font(.meta)
                 }
             }

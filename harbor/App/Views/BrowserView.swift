@@ -70,6 +70,12 @@ struct BrowserView: View {
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 200, ideal: 230)
         #endif
+        #if os(macOS)
+        // The Mac sidebar is too narrow for toolbar items next to the window
+        // controls, so connection status and the server menu live in a footer,
+        // like the account switcher at the bottom of Mail's sidebar.
+        .safeAreaInset(edge: .bottom) { macFooter }
+        #else
         .toolbar {
             ToolbarItem(placement: .automatic) {
                 ConnectionBadge(connection: model.connection)
@@ -78,6 +84,7 @@ struct BrowserView: View {
                 serverMenu
             }
         }
+        #endif
         .refreshable { await loadShares() }
         .overlay {
             if shares.isEmpty, model.connection == .connecting {
@@ -93,6 +100,26 @@ struct BrowserView: View {
             }
         }
     }
+
+    #if os(macOS)
+    private var macFooter: some View {
+        HStack(spacing: Theme.Spacing.s) {
+            ConnectionBadge(connection: model.connection)
+                .labelStyle(.titleAndIcon)
+                .font(.caption)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            serverMenu
+                .menuStyle(.button)
+                .buttonStyle(.borderless)
+                .labelStyle(.iconOnly)
+                .menuIndicator(.hidden)
+                .fixedSize()
+        }
+        .padding(.horizontal, Theme.Spacing.m)
+        .padding(.vertical, Theme.Spacing.s)
+    }
+    #endif
 
     private var serverMenu: some View {
         Menu {
@@ -128,8 +155,15 @@ struct BrowserView: View {
         }
         do {
             shares = try await service.listShares()
-            if selection == nil, let first = shares.first, !Platform.isCompactDefault {
-                selection = .share(first)
+            if selection == nil, !Platform.isCompactDefault {
+                var initial = shares.first
+                #if DEBUG
+                // `-share Photos` opens a specific share: used for screenshots.
+                if let name = UserDefaults.standard.string(forKey: "share") {
+                    initial = shares.first { $0.name == name } ?? initial
+                }
+                #endif
+                if let initial { selection = .share(initial) }
             }
         } catch {
             model.handle(error)
@@ -155,7 +189,9 @@ struct ConnectionBadge: View {
 
     var body: some View {
         Label(title, systemImage: symbol)
+            #if os(iOS)
             .labelStyle(.iconOnly)
+            #endif
             .foregroundStyle(connection == .offline ? .orange : .secondary)
             .help(title)
             .accessibilityLabel("Connection: \(title)")
@@ -174,7 +210,7 @@ struct ConnectionBadge: View {
         switch connection {
         case .idle: "circle.dashed"
         case .connecting: "ellipsis"
-        case let .online(kind): kind?.symbol ?? "sparkles.rectangle.stack"
+        case let .online(kind): kind?.symbol ?? "shippingbox"
         case .offline: "wifi.slash"
         }
     }

@@ -97,7 +97,7 @@ struct ThumbnailView: View {
                 Rectangle()
                     .fill(.quaternary.opacity(item.isDirectory ? 0 : 0.6))
                 Image(systemName: item.kind.symbol)
-                    .font(side.map { Font.system(size: $0 * 0.45) } ?? Font.system(size: 34))
+                    .font(side.map { Font.system(size: $0 * 0.45) } ?? Font.system(size: Platform.isMac ? 60 : 44))
                     .foregroundStyle(item.kind.tint)
             }
         }
@@ -107,7 +107,7 @@ struct ThumbnailView: View {
         .animation(.easeOut(duration: 0.15), value: image != nil)
         .task(id: item.id) {
             guard item.hasThumbnail, let cache = model.thumbnails, let service = model.service else { return }
-            let pixels = Int((side ?? Theme.gridMinimum * 1.6) * scale)
+            let pixels = Int((side ?? Theme.gridMinimumRegular * 1.4) * scale)
             image = await cache.image(for: item, size: size, maxPixel: pixels, service: service)
         }
     }

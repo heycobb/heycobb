@@ -39,7 +39,7 @@ struct SignInView: View {
                     } header: {
                         Text("Addresses")
                     } footer: {
-                        Text("Harbor tries all of them and uses the fastest one that answers. HTTPS only; port 5001 is assumed if you don't give one.")
+                        Text("Harbor tries them all at once and uses the highest one on this list that answers, so your home network wins when you're home. HTTPS only; port 5001 is assumed if you don't give one.")
                     }
                 } else if let existing {
                     Section {

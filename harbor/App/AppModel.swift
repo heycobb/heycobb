@@ -61,6 +61,13 @@ final class AppModel {
 
     func start() async {
         guard activeServer == nil else { return }
+        #if DEBUG
+        // `-demo` opens the demo library directly: used for screenshots.
+        if CommandLine.arguments.contains("-demo") {
+            await startDemo()
+            return
+        }
+        #endif
         let lastID = defaults.string(forKey: Keys.lastServer).flatMap(UUID.init)
         if let profile = servers.first(where: { $0.id == lastID }) ?? servers.first {
             await activate(profile)

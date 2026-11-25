@@ -30,7 +30,7 @@ struct RootView: View {
         .overlay {
             if model.isLocked {
                 LockView()
-            } else if model.hideInSwitcher, scenePhase != .active {
+            } else if !Platform.isMac, model.hideInSwitcher, scenePhase != .active {
                 PrivacyShield()
             }
         }
@@ -94,7 +94,8 @@ struct BannerView: View {
             .padding(.horizontal, Theme.Spacing.l)
             .padding(.vertical, Theme.Spacing.m)
             .glassEffect(.regular, in: .capsule)
-            .padding(.bottom, Theme.Spacing.xl)
+            // Clears the floating search field / toolbar at the bottom on iOS.
+            .padding(.bottom, Platform.isMac ? Theme.Spacing.xl : 72)
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .onTapGesture(perform: dismiss)
             .task {

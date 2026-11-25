@@ -13,7 +13,9 @@ struct SettingsView: View {
         Form {
             Section {
                 Toggle(Platform.isMac ? "Require Touch ID or Password" : "Require Face ID or Passcode", isOn: $model.requireUnlock)
+                #if os(iOS)
                 Toggle("Hide Content in App Switcher", isOn: $model.hideInSwitcher)
+                #endif
             } header: {
                 Text("Privacy")
             } footer: {
@@ -21,8 +23,8 @@ struct SettingsView: View {
             }
 
             Section("Storage on This Device") {
-                LabeledContent("Offline files", value: Format.bytes(offlineBytes))
-                LabeledContent("Thumbnail cache", value: Format.bytes(thumbnailBytes))
+                LabeledContent("Offline files", value: offlineBytes == 0 ? "None" : Format.bytes(offlineBytes))
+                LabeledContent("Thumbnail cache", value: thumbnailBytes == 0 ? "None" : Format.bytes(thumbnailBytes))
                 Button("Clear Thumbnail Cache") {
                     Task {
                         await model.thumbnails?.removeAll()
@@ -31,19 +33,21 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Servers") {
-                ForEach(model.servers) { server in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(server.name)
-                        Text(server.endpoints.map { $0.url.host() ?? "" }.joined(separator: "  ·  "))
-                            .font(.path)
-                            .foregroundStyle(.secondary)
-                    }
-                    .contextMenu {
-                        Button("Remove", systemImage: "trash", role: .destructive) { confirmRemove = server }
-                    }
-                    .swipeActions {
-                        Button("Remove", role: .destructive) { confirmRemove = server }
+            if !model.servers.isEmpty {
+                Section("Servers") {
+                    ForEach(model.servers) { server in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(server.name)
+                            Text(server.endpoints.map { $0.url.host() ?? "" }.joined(separator: "  ·  "))
+                                .font(.path)
+                                .foregroundStyle(.secondary)
+                        }
+                        .contextMenu {
+                            Button("Remove", systemImage: "trash", role: .destructive) { confirmRemove = server }
+                        }
+                        .swipeActions {
+                            Button("Remove", role: .destructive) { confirmRemove = server }
+                        }
                     }
                 }
             }
