@@ -185,7 +185,7 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
             let parents = Set(paths.map { ($0 as NSString).deletingLastPathComponent })
             SharedChanges.record(domain: domainID, folders: Array(parents))
             let manager = NSFileProviderManager(for: domain)
-            manager?.signalEnumerator(for: .workingSet) { _ in }
+            try? await manager?.signalEnumerator(for: .workingSet)
             // The keep policy alone leaves downloads to a background scheduler
             // that can wait a long time; ask for each file now instead. Done
             // before replying: the system may stop the extension once it has.

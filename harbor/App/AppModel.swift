@@ -638,7 +638,7 @@ final class AppModel {
                       !NetworkStatus.shared.isConstrained else { continue }
                 let domains = (try? await NSFileProviderManager.domains()) ?? []
                 for domain in domains {
-                    NSFileProviderManager(for: domain)?.signalEnumerator(for: .workingSet) { _ in }
+                    try? await NSFileProviderManager(for: domain)?.signalEnumerator(for: .workingSet)
                 }
                 #if os(macOS)
                 await KeptDownloader.downloadKeptFiles()
