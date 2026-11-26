@@ -129,6 +129,8 @@ struct FolderView: View {
             uploadFiles: { showingFiles = true },
             canRename: writable && chosen.count == 1,
             canDelete: writable && !chosen.isEmpty,
+            canExtract: writable && chosen.count == 1 && chosen[0].isArchive,
+            canShareLink: model.service != nil && chosen.count == 1,
             rename: {
                 guard let item = chosen.first, chosen.count == 1 else { return }
                 endSelecting()
@@ -136,6 +138,13 @@ struct FolderView: View {
                 renaming = item
             },
             delete: { if !chosen.isEmpty { askToDelete(chosen) } },
+            compress: { if !chosen.isEmpty { Task { await compress(chosen) } } },
+            extract: { if let archive = chosen.first, chosen.count == 1 { Task { await extract(archive) } } },
+            shareLink: {
+                guard let item = chosen.first, chosen.count == 1 else { return }
+                endSelecting()
+                linkItem = item
+            },
             toggleSelecting: {
                 if selecting { endSelecting() } else { selecting = true }
             }
@@ -614,6 +623,9 @@ struct FolderView: View {
             items = page.items
             total = page.total
             failed = nil
+            // Something changed here: refresh open search results too, so
+            // they don't keep showing deleted or renamed items.
+            if searchResults != nil, !query.isEmpty { await runSearch() }
         } catch is CancellationError {
         } catch {
             failed = error as? NASError ?? .malformedResponse
@@ -841,8 +853,13 @@ struct FolderCommands {
     var uploadFiles: () -> Void
     var canRename: Bool
     var canDelete: Bool
+    var canExtract: Bool
+    var canShareLink: Bool
     var rename: () -> Void
     var delete: () -> Void
+    var compress: () -> Void
+    var extract: () -> Void
+    var shareLink: () -> Void
     var toggleSelecting: () -> Void
 }
 

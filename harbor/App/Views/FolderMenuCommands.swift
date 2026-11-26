@@ -18,6 +18,13 @@ struct FolderMenuCommands: Commands {
             Divider()
             Button("Rename…") { folder?.rename() }
                 .disabled(folder?.canRename != true)
+            Button("Share Link…") { folder?.shareLink() }
+                .disabled(folder?.canShareLink != true)
+            Button("Compress") { folder?.compress() }
+                .disabled(folder?.canDelete != true)
+            Button("Extract Here") { folder?.extract() }
+                .disabled(folder?.canExtract != true)
+            Divider()
             Button("Delete…") { folder?.delete() }
                 .keyboardShortcut(.delete, modifiers: .command)
                 .disabled(folder?.canDelete != true)

@@ -433,6 +433,7 @@ final class AppModel {
             try await client.validateSession()
             service = client
             connection = .online(endpoint)
+            await filesAppSignedIn(profile)
             await refreshOffline()
         } catch {
             service = nil
@@ -479,6 +480,19 @@ final class AppModel {
     /// Adds a Files app location for each NAS (and the demo library while
     /// it's open) when the switch is on, and removes them when it's off.
     /// Removing one also makes the system delete every file it cached for it.
+    /// Tells the Files app / Finder that sign-in works again, so uploads and
+    /// downloads it had put on hold (with "sign in in Ownhold") retry now.
+    private func filesAppSignedIn(_ profile: ServerProfile) async {
+        guard showInFilesApp, !requireUnlock else { return }
+        let domain = NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(profile.id.uuidString), displayName: profile.name)
+        guard let manager = NSFileProviderManager(for: domain) else { return }
+        do {
+            try await manager.signalErrorResolved(NSFileProviderError(.notAuthenticated))
+        } catch {
+            Self.log.error("Files app: signal resolved failed: \(error)")
+        }
+    }
+
     func syncFilesApp() async {
         let enabled = showInFilesApp && !requireUnlock
         var wanted: [NSFileProviderDomain] = []

@@ -1,5 +1,8 @@
 import Foundation
+import OSLog
 import OwnholdKit
+
+private let libraryLog = Logger(subsystem: "app.ownhold.Ownhold", category: "changes")
 
 /// Favorites, recent files, archives and share links.
 extension AppModel {
@@ -88,13 +91,24 @@ extension AppModel {
         guard let service, !items.isEmpty else { return false }
         let base = items.count == 1 ? items[0].name : "Archive"
         let name = RemoteItem.uniqueName(for: base + ".zip", avoiding: existing)
+        libraryLog.debug("Compressing \(items.count) item(s) to \(name, privacy: .private)")
         do {
-            try await service.compress(items, to: RemoteItem.join(folder, name))
+            do {
+                try await service.compress(items, to: RemoteItem.join(folder, name))
+            } catch NASError.permissionDenied {
+                // Some NAS setups refuse File Station's Compress for apps.
+                // Zip on this device instead, then upload the archive.
+                libraryLog.debug("NAS refused Compress; zipping on device")
+                let zip = try await LocalArchive.zip(items, named: name, using: service)
+                defer { try? FileManager.default.removeItem(at: zip.deletingLastPathComponent()) }
+                try await service.upload(zip, as: name, to: folder, replacing: false) { _ in }
+            }
             folderChanged(folder)
             Haptics.success()
             banner = "Compressed to “\(name)”"
             return true
         } catch {
+            libraryLog.error("Compress failed: \(String(describing: error), privacy: .public)")
             handle(error)
             return false
         }
@@ -224,5 +238,56 @@ enum FolderCopy {
             throw error
         }
         return root
+    }
+}
+
+/// Zips NAS items on this device: used when the NAS won't compress them
+/// itself. Same size limits as copying a folder for the share sheet.
+@MainActor
+enum LocalArchive {
+    static func zip(_ items: [RemoteItem], named name: String, using service: any FileService) async throws -> URL {
+        let fm = FileManager.default
+        let staging = fm.temporaryDirectory.appending(path: "Compress-" + UUID().uuidString, directoryHint: .isDirectory)
+        try fm.createDirectory(at: staging, withIntermediateDirectories: true)
+        do {
+            // One folder zips as itself; anything else goes in a folder
+            // named after the archive (extracting gives that folder back).
+            let root: URL
+            if items.count == 1, items[0].isDirectory {
+                guard let copy = try await FolderCopy.make(of: items[0], using: service, progress: { _, _ in }) else { throw NASError.noSpace }
+                root = staging.appending(path: items[0].name, directoryHint: .isDirectory)
+                try fm.moveItem(at: copy, to: root)
+                try? fm.removeItem(at: copy.deletingLastPathComponent())
+            } else {
+                root = staging.appending(path: (name as NSString).deletingPathExtension, directoryHint: .isDirectory)
+                try fm.createDirectory(at: root, withIntermediateDirectories: true)
+                let bytes = items.reduce(Int64(0)) { $0 + ($1.isDirectory ? 0 : $1.size ?? 0) }
+                guard bytes <= FolderCopy.maxBytes else { throw NASError.noSpace }
+                for item in items {
+                    try Task.checkCancellation()
+                    if item.isDirectory {
+                        guard let copy = try await FolderCopy.make(of: item, using: service, progress: { _, _ in }) else { throw NASError.noSpace }
+                        try fm.moveItem(at: copy, to: root.appending(path: item.name, directoryHint: .isDirectory))
+                        try? fm.removeItem(at: copy.deletingLastPathComponent())
+                    } else {
+                        let temporary = try await service.download(item)
+                        try fm.moveItem(at: temporary, to: root.appending(path: item.name))
+                    }
+                }
+            }
+            let zip = staging.appending(path: name)
+            var coordinationError: NSError?
+            var copyError: Error?
+            // Reading a folder "for uploading" gives a zip of it.
+            NSFileCoordinator().coordinate(readingItemAt: root, options: .forUploading, error: &coordinationError) { zipped in
+                do { try fm.copyItem(at: zipped, to: zip) } catch { copyError = error }
+            }
+            if let error = coordinationError ?? copyError { throw error }
+            try? fm.removeItem(at: root)
+            return zip
+        } catch {
+            try? fm.removeItem(at: staging)
+            throw error
+        }
     }
 }

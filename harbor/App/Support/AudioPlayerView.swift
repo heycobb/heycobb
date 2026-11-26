@@ -336,8 +336,8 @@ final class AudioController {
         for tag in items {
             guard current?.path == item.path else { return }
             switch tag.commonKey {
-            case .commonKeyTitle: title = try? await tag.load(.stringValue)
-            case .commonKeyArtist: artist = try? await tag.load(.stringValue)
+            case .commonKeyTitle: title = Self.nonEmpty(try? await tag.load(.stringValue))
+            case .commonKeyArtist: artist = Self.nonEmpty(try? await tag.load(.stringValue))
             case .commonKeyArtwork:
                 if let data = try? await tag.load(.dataValue) {
                     artwork = ImageDecoding.downsample(data, maxPixel: 600)
@@ -346,6 +346,12 @@ final class AudioController {
             }
         }
         updateNowPlaying()
+    }
+
+    /// Tags are sometimes present but blank: fall back to the file's name and folder then.
+    private static func nonEmpty(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
+        return value
     }
 
     // MARK: Lock Screen and Control Center

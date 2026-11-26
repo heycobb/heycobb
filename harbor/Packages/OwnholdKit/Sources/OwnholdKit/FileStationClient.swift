@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// Client for Synology's File Station Web API (DSM 7.x).
 ///
@@ -6,6 +7,7 @@ import Foundation
 /// All requests go over HTTPS. The password is sent once, in a POST body,
 /// to obtain a session ID; it is never put in a URL or stored by this type.
 public actor FileStationClient: FileService {
+    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "nas")
     public nonisolated let baseURL: URL
     private let trust: CertificateTrust
     private let session: URLSession
@@ -97,7 +99,7 @@ public actor FileStationClient: FileService {
     public func search(in folder: String, matching pattern: String) async throws -> [RemoteItem] {
         let started: SearchStart = try await call("SYNO.FileStation.Search", method: "start", preferredVersion: 2, params: [
             "folder_path": folder,
-            "pattern": pattern,
+            "pattern": Self.searchPattern(pattern),
             "recursive": "true",
         ])
         defer {
@@ -117,6 +119,15 @@ public actor FileStationClient: FileService {
             try await Task.sleep(for: .milliseconds(500))
         }
         return result?.files.map(\.item) ?? []
+    }
+
+    /// DSM matches names against a glob, so plain text only finds an exact
+    /// name. "tax" becomes "*tax*" (anywhere in the name), unless the person
+    /// typed their own * or ?.
+    static func searchPattern(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        if trimmed.contains("*") || trimmed.contains("?") { return trimmed }
+        return "*\(trimmed)*"
     }
 
     // MARK: Content
@@ -410,6 +421,7 @@ public actor FileStationClient: FileService {
             throw NASError.malformedResponse
         }
         let error = NASError.from(code: envelope.error?.code ?? 100, api: api)
+        Self.log.debug("\(api, privacy: .public).\(method, privacy: .public) failed with code \(envelope.error?.code ?? -1)")
         if error == .sessionExpired { sid = nil }
         throw error
     }

@@ -329,6 +329,13 @@ struct FileChangeTests {
         #expect(link.url.host() == "nas.example.com")
     }
 
+    @Test func searchPatterns() {
+        #expect(FileStationClient.searchPattern("tax") == "*tax*")
+        #expect(FileStationClient.searchPattern(" Ownhold Extract ") == "*Ownhold Extract*")
+        #expect(FileStationClient.searchPattern("*.pdf") == "*.pdf")
+        #expect(FileStationClient.searchPattern("IMG_00??") == "IMG_00??")
+    }
+
     @Test func archiveNames() {
         #expect(RemoteItem(path: "/a/b.tar.gz", name: "b.tar.gz", isDirectory: false).isArchive)
         #expect(RemoteItem(path: "/a/b.7Z", name: "b.7Z", isDirectory: false).isArchive)
