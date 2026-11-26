@@ -123,13 +123,15 @@ struct FolderView: View {
                 creatingFolder = true
             },
             uploadFiles: { showingFiles = true },
-            rename: writable && chosen.count == 1 ? {
-                let item = chosen[0]
+            canRename: writable && chosen.count == 1,
+            canDelete: writable && !chosen.isEmpty,
+            rename: {
+                guard let item = chosen.first, chosen.count == 1 else { return }
                 endSelecting()
                 newName = item.name
                 renaming = item
-            } : nil,
-            delete: writable && !chosen.isEmpty ? { askToDelete(chosen) } : nil,
+            },
+            delete: { if !chosen.isEmpty { askToDelete(chosen) } },
             toggleSelecting: {
                 if selecting { endSelecting() } else { selecting = true }
             }
@@ -807,14 +809,17 @@ struct FolderViewUploadBatch {
 }
 
 /// Folder actions published to the Mac menu bar (see `FolderMenuCommands`).
-/// A nil action shows its menu item as unavailable.
+/// The Bools decide which items are available: SwiftUI can't compare
+/// closures, so a change carried only by a closure never reaches the menu.
 struct FolderCommands {
     var canChange: Bool
     var isSelecting: Bool
     var newFolder: () -> Void
     var uploadFiles: () -> Void
-    var rename: (() -> Void)?
-    var delete: (() -> Void)?
+    var canRename: Bool
+    var canDelete: Bool
+    var rename: () -> Void
+    var delete: () -> Void
     var toggleSelecting: () -> Void
 }
 

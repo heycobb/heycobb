@@ -20,10 +20,22 @@ extension View {
     /// Plays `playback` in the system player: full screen on iPhone and iPad,
     /// a sheet on the Mac.
     func mediaPlayer(_ playback: Binding<MediaPlayback?>) -> some View {
+        // Audio gets its own player (title, artwork, scrubber); the system
+        // video player only shows a QuickTime logo for audio.
+        let video = Binding<MediaPlayback?>(
+            get: { playback.wrappedValue?.item.kind == .audio ? nil : playback.wrappedValue },
+            set: { playback.wrappedValue = $0 }
+        )
+        let audio = Binding<MediaPlayback?>(
+            get: { playback.wrappedValue?.item.kind == .audio ? playback.wrappedValue : nil },
+            set: { playback.wrappedValue = $0 }
+        )
         #if os(iOS)
-        background(PlayerPresenter(playback: playback))
+        return background(PlayerPresenter(playback: video))
+            .sheet(item: audio) { AudioPlayerView(playback: $0) }
         #else
-        sheet(item: playback) { MacPlayerSheet(playback: $0) }
+        return sheet(item: video) { MacPlayerSheet(playback: $0) }
+            .background(Color.clear.sheet(item: audio) { AudioPlayerView(playback: $0) })
         #endif
     }
 }
