@@ -231,8 +231,13 @@ final class AppModel {
         if activeServer == nil { folderBackup.load(for: nil) }
         #endif
         keychain.remove(sessionKey(profile))
+        // Keep certificates another saved NAS still uses at the same address
+        // (two entries for one NAS): forgetting them would make that one ask
+        // to trust its certificate again.
+        let stillUsed = Set(servers.filter { $0.id != profile.id }.flatMap(\.allEndpoints).map { CertificateTrustKey.make($0.url) })
         for endpoint in profile.allEndpoints {
-            trust.forget(host: CertificateTrustKey.make(endpoint.url))
+            let key = CertificateTrustKey.make(endpoint.url)
+            if !stillUsed.contains(key) { trust.forget(host: key) }
         }
         servers.removeAll { $0.id == profile.id }
         persistServers()

@@ -104,6 +104,8 @@ struct SettingsView: View {
                         }
                         .swipeActions {
                             Button("Remove", role: .destructive) { confirmRemove = server }
+                                // Red, as a delete: the app's accent tint would otherwise win.
+                                .tint(.red)
                         }
                     }
                 }
