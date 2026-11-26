@@ -133,3 +133,16 @@ subscription. No free trial of Pro for now.
   controls, iPhone Picture in Picture.
 - Photo Backup on the Mac (reads the Mac's Photos library: ask first).
 - NAS status at a glance (item 6), share with NAS users, file versions.
+
+## Feedback to do (2026-11-26)
+
+1. **Folder spinner flash.** The small spinner when opening a folder shows for a split second and looks like a stutter. Only show it after a short delay (about 0.4 s), and keep it up long enough not to flicker once it does appear.
+2. **Sync activity indicator.** Live Activity on iPhone and/or a Mac menu bar indicator. Recommendation below.
+3. **Photos tab empty state.** The description shown when no folder is chosen reads like filler. Rewrite it short and plain.
+4. **`.local` name sign-in fails.** Connecting to a NAS found on the network by its `.local` name always fails after entering the username and password. Investigate Bonjour name resolution, IPv6 link-local addresses and certificate host matching.
+5. **Two sign-ins on iPhone.** After typing the IP address and signing in in the app, a second sign-in pop-up appears. Find what shows it (system prompt, password AutoFill, or a second auth step) and remove it.
+
+### Sync indicator recommendation
+
+- **iPhone: Live Activity, only for long jobs.** Show it for Photo Backup, Folder Backup and large background uploads that are actually running, never for routine browsing or small transfers. It shows progress on the Lock Screen and Dynamic Island, ends when the job finishes, and has an on/off toggle in Settings.
+- **Mac: no permanent menu bar icon.** Most people won't want another icon there. Show progress on the Dock icon while a job runs, and Finder already shows sync status. Offer an optional menu bar item (off by default) for people who like one.
