@@ -13,6 +13,8 @@ public actor FileStationClient: FileService {
     private let session: URLSession
     private var sid: String?
     private var apis: [String: APIInfo] = [:]
+    /// API lookups already made (File Station's under "SYNO.FileStation.").
+    private var lookedUp: Set<String> = []
 
     public init(baseURL: URL, trust: CertificateTrust, sid: String? = nil) {
         self.baseURL = baseURL
@@ -377,19 +379,50 @@ public actor FileStationClient: FileService {
 
     private func apiInfo(_ api: String) async throws -> APIInfo {
         if let info = apis[api] { return info }
+        // Sign-in and File Station are looked up together, the first time;
+        // anything else (for example DSM's system info) on its own.
+        let isFileStation = api == "SYNO.API.Auth" || api.hasPrefix("SYNO.FileStation.")
+        // Asked already and the NAS doesn't have it.
+        if lookedUp.contains(isFileStation ? "SYNO.FileStation." : api) { throw NASError.server(code: 102, api: api) }
         var components = URLComponents(url: baseURL.appending(path: "webapi/query.cgi"), resolvingAgainstBaseURL: false)!
         components.queryItems = [
             URLQueryItem(name: "api", value: "SYNO.API.Info"),
             URLQueryItem(name: "version", value: "1"),
             URLQueryItem(name: "method", value: "query"),
-            URLQueryItem(name: "query", value: "SYNO.API.Auth,SYNO.FileStation."),
+            URLQueryItem(name: "query", value: isFileStation ? "SYNO.API.Auth,SYNO.FileStation." : api),
         ]
         let (data, _) = try await perform { [url = components.url!] in try await self.session.data(from: url) }
         let envelope = try Self.decode(Envelope<[String: APIInfo]>.self, from: data)
         guard envelope.success, let infos = envelope.data else { throw NASError.malformedResponse }
-        apis = infos
-        guard let info = infos[api] else { throw NASError.server(code: 102, api: api) }
+        apis.merge(infos) { _, new in new }
+        lookedUp.insert(isFileStation ? "SYNO.FileStation." : api)
+        guard let info = apis[api] else { throw NASError.server(code: 102, api: api) }
         return info
+    }
+
+    /// The NAS's wired MAC address, for Wake NAS. DSM only shows it to
+    /// administrators; nil for everyone else (and on any error).
+    public func macAddress() async -> String? {
+        struct Interface: Decodable { let mac: String? }
+        struct SystemNetwork: Decodable { let nif: [Interface]? }
+        // DSM's Info Center: network ports with their MAC addresses.
+        do {
+            let info: SystemNetwork = try await call("SYNO.Core.System", method: "info", preferredVersion: 1, params: ["type": "network"])
+            if let mac = Self.firstMAC(info.nif ?? [], \.mac) { return mac }
+        } catch {
+            Self.log.notice("MAC address unavailable (system info): \(String(describing: error), privacy: .public)")
+        }
+        do {
+            let interfaces: [Interface] = try await call("SYNO.Core.Network.Ethernet", method: "list", preferredVersion: 2, params: [:])
+            return Self.firstMAC(interfaces, \.mac)
+        } catch {
+            Self.log.notice("MAC address unavailable (ethernet): \(String(describing: error), privacy: .public)")
+            return nil
+        }
+    }
+
+    private static func firstMAC<T>(_ items: [T], _ mac: KeyPath<T, String?>) -> String? {
+        items.lazy.compactMap { $0[keyPath: mac].flatMap(WakeOnLAN.parseMAC) }.first.map(WakeOnLAN.format)
     }
 
     private func call<T: Decodable>(

@@ -266,6 +266,48 @@ final class AppModel {
         await activate(profile)
     }
 
+    // MARK: Wake NAS
+
+    /// True while Wake NAS is waiting for the NAS to answer.
+    var isWaking = false
+
+    /// Wake NAS is offered once the NAS's MAC address is known.
+    var canWake: Bool {
+        guard let profile = activeServer, !profile.isDemo else { return false }
+        return profile.macAddress.flatMap(WakeOnLAN.parseMAC) != nil
+    }
+
+    /// Sends a Wake-on-LAN packet, then tries to connect every 10 seconds
+    /// for about a minute (a NAS takes a while to spin up its drives).
+    func wakeNAS() async {
+        guard let profile = activeServer, let mac = profile.macAddress.flatMap(WakeOnLAN.parseMAC), !isWaking else { return }
+        isWaking = true
+        defer { isWaking = false }
+        let hosts = profile.allEndpoints.filter { $0.kind == .local }.compactMap { $0.url.host() }
+            .filter { $0.split(separator: ".").count == 4 && $0.allSatisfy { $0.isNumber || $0 == "." } }
+        for _ in 0..<6 {
+            WakeOnLAN.send(mac: mac, to: hosts)
+            try? await Task.sleep(for: .seconds(10))
+            guard activeServer?.id == profile.id else { return }
+            await reconnect()
+            if case .online = connection { return }
+        }
+        banner = "\(profile.name) didn't answer. Wake NAS works only on your home network."
+    }
+
+    /// Asks DSM for the MAC address on the home network, once, so Wake NAS
+    /// is ready for next time. Only admin accounts can read it.
+    private func learnMACAddress(of profile: ServerProfile, from client: FileStationClient, via endpoint: Endpoint) {
+        guard profile.macAddress == nil, endpoint.kind == .local, !profile.isDemo else { return }
+        Task {
+            guard let mac = await client.macAddress(),
+                  var current = servers.first(where: { $0.id == profile.id }), current.macAddress == nil else { return }
+            current.macAddress = mac
+            save(current)
+            if activeServer?.id == current.id { activeServer = current }
+        }
+    }
+
     // MARK: Offline
 
     func toggleOffline(_ item: RemoteItem) async {
@@ -478,6 +520,7 @@ final class AppModel {
             service = client
             connection = .online(endpoint)
             await filesAppSignedIn(profile)
+            learnMACAddress(of: profile, from: client, via: endpoint)
             #if os(iOS)
             backup.runIfAutomatic()
             #else

@@ -13,6 +13,7 @@ struct ServerEditView: View {
     @State private var vpnAddress = ""
     @State private var quickConnectID = ""
     @State private var internetAddress = ""
+    @State private var macAddress = ""
     @State private var showingGuide = false
 
     var body: some View {
@@ -40,6 +41,20 @@ struct ServerEditView: View {
                     }
                 }
                 QuickConnectSection(id: $quickConnectID) { showingGuide = true }
+                Section {
+                    TextField("MAC Address", text: $macAddress, prompt: Text("00:11:32:AA:BB:CC"))
+                        .font(.path)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                        .textInputAutocapitalization(.characters)
+                        #endif
+                } header: {
+                    Text("Wake NAS")
+                } footer: {
+                    if !macAddressIsValid {
+                        Text("Use the format 00:11:32:AA:BB:CC.").foregroundStyle(.red)
+                    }
+                }
             }
             .formStyle(.grouped)
             .navigationTitle("Edit NAS")
@@ -54,6 +69,7 @@ struct ServerEditView: View {
                         updated.name = name.isEmpty ? server.name : name
                         updated.endpoints = endpoints
                         updated.quickConnectID = trimmedQuickConnectID.isEmpty ? nil : trimmedQuickConnectID
+                        updated.macAddress = WakeOnLAN.parseMAC(macAddress).map(WakeOnLAN.format)
                         Task { await model.update(updated) }
                         dismiss()
                     }
@@ -81,7 +97,11 @@ struct ServerEditView: View {
     private var canSave: Bool {
         let qcValid = trimmedQuickConnectID.isEmpty || QuickConnectLookup.isValidID(trimmedQuickConnectID)
         let hasAddress = !endpoints.isEmpty || !trimmedQuickConnectID.isEmpty
-        return hasAddress && qcValid && !hasPlainHTTP
+        return hasAddress && qcValid && !hasPlainHTTP && macAddressIsValid
+    }
+
+    private var macAddressIsValid: Bool {
+        macAddress.trimmingCharacters(in: .whitespaces).isEmpty || WakeOnLAN.parseMAC(macAddress) != nil
     }
 
     private var hasPlainHTTP: Bool {
@@ -98,6 +118,7 @@ struct ServerEditView: View {
         vpnAddress = address(.vpn)
         quickConnectID = server.quickConnectID ?? ""
         internetAddress = address(.remote)
+        macAddress = server.macAddress ?? ""
     }
 }
 

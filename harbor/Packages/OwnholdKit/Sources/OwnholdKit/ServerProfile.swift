@@ -14,6 +14,9 @@ public struct ServerProfile: Codable, Identifiable, Hashable, Sendable {
     /// Addresses found by the last QuickConnect lookup, kept so the app can
     /// still connect if the lookup service is unavailable.
     public var discoveredEndpoints: [Endpoint]
+    /// For Wake NAS: "00:11:32:AA:BB:CC". Read from DSM when the account may
+    /// see it (admins), or typed in Edit NAS.
+    public var macAddress: String?
 
     public init(
         id: UUID = UUID(),
@@ -21,7 +24,8 @@ public struct ServerProfile: Codable, Identifiable, Hashable, Sendable {
         account: String,
         endpoints: [Endpoint],
         quickConnectID: String? = nil,
-        discoveredEndpoints: [Endpoint] = []
+        discoveredEndpoints: [Endpoint] = [],
+        macAddress: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -29,6 +33,7 @@ public struct ServerProfile: Codable, Identifiable, Hashable, Sendable {
         self.endpoints = endpoints
         self.quickConnectID = quickConnectID
         self.discoveredEndpoints = discoveredEndpoints
+        self.macAddress = macAddress
     }
 
     public init(from decoder: Decoder) throws {
@@ -39,6 +44,7 @@ public struct ServerProfile: Codable, Identifiable, Hashable, Sendable {
         endpoints = try c.decode([Endpoint].self, forKey: .endpoints)
         quickConnectID = try c.decodeIfPresent(String.self, forKey: .quickConnectID)
         discoveredEndpoints = try c.decodeIfPresent([Endpoint].self, forKey: .discoveredEndpoints) ?? []
+        macAddress = try c.decodeIfPresent(String.self, forKey: .macAddress)
     }
 
     public static let demo = ServerProfile(

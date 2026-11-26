@@ -45,6 +45,10 @@ struct MenuBarMenu: View {
             Text(statusLine)
             if model.connection == .offline {
                 Button("Reconnect") { Task { await model.reconnect() } }
+                if model.canWake {
+                    Button(model.isWaking ? "Waking…" : "Wake NAS") { Task { await model.wakeNAS() } }
+                        .disabled(model.isWaking)
+                }
             }
         } else {
             Text("No NAS Added")

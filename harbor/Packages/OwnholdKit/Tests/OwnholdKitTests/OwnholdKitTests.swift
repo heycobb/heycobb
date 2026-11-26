@@ -593,3 +593,30 @@ struct NetworkPolicyTests {
         #expect(!NetworkPolicy.isCellularAllowed(.keptDownloads, defaults: defaults))
     }
 }
+
+@Suite("Wake on LAN")
+struct WakeOnLANTests {
+    @Test func parsesCommonMACFormats() {
+        let expected: [UInt8] = [0x00, 0x11, 0x32, 0xAA, 0xBB, 0xCC]
+        #expect(WakeOnLAN.parseMAC("00:11:32:aa:bb:cc") == expected)
+        #expect(WakeOnLAN.parseMAC("00-11-32-AA-BB-CC") == expected)
+        #expect(WakeOnLAN.parseMAC("001132AABBCC") == expected)
+        #expect(WakeOnLAN.parseMAC("00:11:32:aa:bb") == nil)
+        #expect(WakeOnLAN.parseMAC("not a mac addr") == nil)
+        #expect(WakeOnLAN.format(expected) == "00:11:32:AA:BB:CC")
+    }
+
+    @Test func magicPacketLayout() {
+        let mac: [UInt8] = [1, 2, 3, 4, 5, 6]
+        let packet = WakeOnLAN.packet(for: mac)
+        #expect(packet.count == 102)
+        #expect(Array(packet.prefix(6)) == [UInt8](repeating: 0xFF, count: 6))
+        #expect(Array(packet.suffix(6)) == mac)
+    }
+
+    @Test func oldSavedProfilesDecodeWithoutMAC() throws {
+        let json = #"{"id":"00000000-0000-0000-0000-000000000001","name":"NAS","account":"a","endpoints":[]}"#
+        let profile = try JSONDecoder().decode(ServerProfile.self, from: Data(json.utf8))
+        #expect(profile.macAddress == nil)
+    }
+}

@@ -150,9 +150,21 @@ struct BrowserView: View {
                 Text("Offline files are still available.")
                     .font(.subheadline)
                     .foregroundStyle(Theme.Sidebar.secondary)
-                Button("Try Again") { Task { await model.reconnect() } }
-                    .buttonStyle(.borderless)
-                    .padding(.top, Theme.Spacing.xs)
+                HStack(spacing: Theme.Spacing.l) {
+                    Button("Try Again") { Task { await model.reconnect() } }
+                    if model.canWake {
+                        if model.isWaking {
+                            HStack(spacing: Theme.Spacing.xs) {
+                                ProgressView().controlSize(.small)
+                                Text("Waking…").foregroundStyle(Theme.Sidebar.secondary)
+                            }
+                        } else {
+                            Button("Wake NAS") { Task { await model.wakeNAS() } }
+                        }
+                    }
+                }
+                .buttonStyle(.borderless)
+                .padding(.top, Theme.Spacing.xs)
             }
             .padding(.vertical, Theme.Spacing.xs)
             .listRowBackground(Color.clear)
@@ -396,6 +408,10 @@ struct BrowserView: View {
                 }
             }
             Button("Add a NAS…", systemImage: "plus") { model.isAddingServer = true }
+            if model.canWake, model.connection == .offline {
+                Button("Wake NAS", systemImage: "power") { Task { await model.wakeNAS() } }
+                    .disabled(model.isWaking)
+            }
             Divider()
             #if os(iOS)
             Button("Settings", systemImage: "gearshape") { showingSettings = true }
