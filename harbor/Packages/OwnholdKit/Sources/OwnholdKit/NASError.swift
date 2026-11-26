@@ -24,6 +24,8 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
     case streamingUnsupported
     case archiveNeedsPassword
     case archiveUnreadable
+    /// The NAS's file-sharing protocol (SMB or WebDAV) can't do this.
+    case unsupported
 
     public var errorDescription: String? {
         switch self {
@@ -71,6 +73,8 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
             "This archive is protected with a password. Extract it in DSM's File Station."
         case .archiveUnreadable:
             "The NAS couldn't open this archive. It may be damaged or in a format it doesn't support."
+        case .unsupported:
+            "This NAS can't do that over its file-sharing connection."
         }
     }
 

@@ -201,12 +201,13 @@ final class AppModel {
     /// Signs in with a password, saving the server on success.
     func signIn(to profile: ServerProfile, credentials: Credentials, rememberDevice: Bool) async throws {
         let (endpoint, profile) = try await resolve(profile)
-        let client = FileStationClient(baseURL: endpoint.url, trust: trust)
-        let previous = keychain.codable(Session.self, for: sessionKey(profile))
-        let session = try await client.signIn(
-            credentials,
+        let session = try await Connector.signIn(
+            profile,
+            at: endpoint,
+            credentials: credentials,
+            trust: trust,
             deviceName: Platform.deviceName,
-            deviceToken: previous?.deviceToken,
+            previous: keychain.codable(Session.self, for: sessionKey(profile)),
             rememberDevice: rememberDevice
         )
         keychain.setCodable(session, for: sessionKey(profile))
@@ -541,13 +542,11 @@ final class AppModel {
                 save(updated)
                 if activeServer?.id == updated.id { activeServer = updated }
             }
-            guard !session.sid.isEmpty else { throw NASError.sessionExpired }
-            let client = FileStationClient(baseURL: endpoint.url, trust: trust, sid: session.sid)
-            try await client.validateSession()
+            let client = try await Connector.connect(profile, at: endpoint, session: session, trust: trust)
             service = client
             connection = .online(endpoint)
             await filesAppSignedIn(profile)
-            learnMACAddress(of: profile, from: client, via: endpoint)
+            if let client = client as? FileStationClient { learnMACAddress(of: profile, from: client, via: endpoint) }
             #if os(iOS)
             backup.runIfAutomatic()
             #else
@@ -566,7 +565,7 @@ final class AppModel {
     /// newly discovered addresses, for saving.
     private func resolve(_ profile: ServerProfile) async throws -> (Endpoint, ServerProfile) {
         var profile = profile
-        if let id = profile.quickConnectID, !id.isEmpty {
+        if profile.kind.hasQuickConnect, let id = profile.quickConnectID, !id.isEmpty {
             do {
                 profile.discoveredEndpoints = try await QuickConnectLookup().endpoints(for: id)
             } catch {
@@ -580,7 +579,7 @@ final class AppModel {
         // a wrong lookup answer can't redirect the app to another server.
         let keys = profile.allEndpoints.map { CertificateTrustKey.make($0.url) }
         trust.extendPin(from: keys, to: keys)
-        let endpoint = try await ConnectionResolver(trust: trust).resolve(profile.allEndpoints)
+        let endpoint = try await ConnectionResolver(trust: trust).resolve(profile.allEndpoints, server: profile.kind)
         return (endpoint, profile)
     }
 

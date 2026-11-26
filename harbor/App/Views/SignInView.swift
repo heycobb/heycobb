@@ -22,6 +22,8 @@ struct SignInView: View {
     @State private var errorText: String?
     @State private var review: CertificateReview?
     @State private var showingGuide = false
+    /// Worked out from the addresses when signing in to a new NAS.
+    @State private var detectedKind: ServerKind?
     @FocusState private var focus: Field?
 
     private enum Field { case name, home, vpn, internet, account, password, code }
@@ -50,7 +52,7 @@ struct SignInView: View {
                     } footer: {
                         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
                             AddressHints(endpoints: endpoints)
-                            Text("Ownhold tries them all at once and uses the highest one on this list that answers, so your home network wins when you're home. HTTPS only; port 5001 is assumed if you don't give one.")
+                            Text("Ownhold tries them all at once and uses the highest one on this list that answers, so your home network wins when you're home. It works out whether your NAS is a Synology or uses file sharing (SMB). For WebDAV, enter its HTTPS address and port.")
                         }
                     }
                     QuickConnectSection(id: $quickConnectID) { showingGuide = true }
@@ -121,12 +123,13 @@ struct SignInView: View {
                 CertificateReviewView(review: review) { trusted in
                     self.review = nil
                     if trusted {
-                        model.trust.trust(review.info, alsoFor: endpoints.map { CertificateTrustKey.make($0.url) })
+                        model.trust.trust(review.info, alsoFor: endpoints(for: kind).map { CertificateTrustKey.make($0.url) })
                         submit()
                     }
                 }
             }
             .onAppear { focus = existing == nil ? .name : .password }
+            .onChange(of: [homeAddress, vpnAddress, internetAddress]) { detectedKind = nil }
         }
         #if os(macOS)
         .frame(minWidth: 460, minHeight: 520)
@@ -145,11 +148,21 @@ struct SignInView: View {
             #endif
     }
 
-    private var endpoints: [Endpoint] {
+    /// The kind to use for the typed addresses: what signing in found, or
+    /// what the text says (smb://, a WebDAV path), else Synology.
+    private var kind: ServerKind {
+        existing?.kind ?? detectedKind
+            ?? [homeAddress, vpnAddress, internetAddress].lazy.compactMap(ServerDetector.kind(fromText:)).first
+            ?? .synology
+    }
+
+    private var endpoints: [Endpoint] { endpoints(for: kind) }
+
+    private func endpoints(for kind: ServerKind) -> [Endpoint] {
         [
-            Endpoint.parse(homeAddress, kind: .local),
-            Endpoint.parse(vpnAddress, kind: .vpn),
-            Endpoint.parse(internetAddress, kind: .remote),
+            Endpoint.parse(homeAddress, kind: .local, server: kind),
+            Endpoint.parse(vpnAddress, kind: .vpn, server: kind),
+            Endpoint.parse(internetAddress, kind: .remote, server: kind),
         ].compactMap { $0 }
     }
 
@@ -164,24 +177,29 @@ struct SignInView: View {
     private func submit() {
         guard canSubmit, !working else { return }
         if existing == nil, [homeAddress, vpnAddress, internetAddress].contains(where: { $0.lowercased().hasPrefix("http://") }) {
-            errorText = "Ownhold only connects over HTTPS. Turn on HTTPS in DSM (Control Panel > Login Portal) and use port 5001."
+            errorText = "Ownhold only connects over HTTPS. On a Synology, turn on HTTPS in DSM (Control Panel › Login Portal) and use port 5001."
             return
         }
-        let profile = existing ?? ServerProfile(
-            name: name.isEmpty ? "NAS" : name,
-            account: account,
-            endpoints: endpoints,
-            quickConnectID: quickConnectID.trimmingCharacters(in: .whitespaces).isEmpty ? nil : quickConnectID.trimmingCharacters(in: .whitespaces)
-        )
-        let credentials = Credentials(
-            account: profile.account,
-            password: password,
-            otpCode: needsCode ? otpCode : nil
-        )
         working = true
         errorText = nil
         Task {
             defer { working = false }
+            let qc = quickConnectID.trimmingCharacters(in: .whitespaces)
+            if existing == nil, detectedKind == nil {
+                detectedKind = qc.isEmpty ? await ServerDetector.detect(addresses: [homeAddress, vpnAddress, internetAddress]) : .synology
+            }
+            let profile = existing ?? ServerProfile(
+                name: name.isEmpty ? "NAS" : name,
+                account: account,
+                endpoints: endpoints,
+                quickConnectID: qc.isEmpty || !kind.hasQuickConnect ? nil : qc,
+                kind: kind
+            )
+            let credentials = Credentials(
+                account: profile.account,
+                password: password,
+                otpCode: needsCode ? otpCode : nil
+            )
             do {
                 try await model.signIn(to: profile, credentials: credentials, rememberDevice: rememberDevice)
                 password = ""
@@ -226,8 +244,8 @@ struct CertificateReviewView: View {
                     }
                 } footer: {
                     Text(review.changed
-                         ? "If you didn't renew or replace the certificate in DSM, don't continue. Someone may be intercepting the connection."
-                         : "This is normal for a NAS using DSM's built-in self-signed certificate. Ownhold will remember this certificate and refuse to connect if it ever changes unexpectedly.")
+                         ? "If you didn't renew or replace the certificate on your NAS, don't continue. Someone may be intercepting the connection."
+                         : "This is normal for a NAS using its own self-signed certificate. Ownhold will remember this certificate and refuse to connect if it ever changes unexpectedly.")
                 }
                 Section {
                     LabeledContent("Server", value: review.info.host)

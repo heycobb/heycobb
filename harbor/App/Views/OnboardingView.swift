@@ -18,6 +18,9 @@ struct OnboardingView: View {
     @State private var address = ""
     @State private var quickConnectID = ""
     @State private var usesQuickConnect = false
+    /// Known once a NAS found on the network is picked, or worked out from
+    /// the address when signing in.
+    @State private var serverKind: ServerKind?
 
     // Sign in
     @State private var account = ""
@@ -217,6 +220,7 @@ struct OnboardingView: View {
                         usesQuickConnect = false
                         address = nas.host
                         name = nas.name
+                        serverKind = nas.kind
                     } label: {
                         HStack(spacing: Theme.Spacing.m) {
                             Image(systemName: "externaldrive.fill")
@@ -225,7 +229,7 @@ struct OnboardingView: View {
                                 .frame(width: 32)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(nas.name).font(Onboard.rowTitle)
-                                Text(nas.host).font(Onboard.note.monospaced()).foregroundStyle(.secondary)
+                                Text(nas.kind == .synology ? nas.host : "\(nas.host) · SMB").font(Onboard.note.monospaced()).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Image(systemName: selected ? "checkmark.circle.fill" : "circle")
@@ -264,6 +268,7 @@ struct OnboardingView: View {
                         .onChange(of: address) { _, new in
                             // A typed address of a NAS found here keeps its name.
                             name = discovery.name(forAddress: new) ?? ""
+                            serverKind = discovery.kind(forAddress: new)
                         }
                     if address.lowercased().hasPrefix("http://") {
                         Text("Ownhold only connects over HTTPS. Remove “http://”.")
@@ -436,7 +441,11 @@ struct OnboardingView: View {
     /// the private network address, so it's used wherever you are.
     private var endpoints: [Endpoint] {
         guard !usesQuickConnect else { return [] }
-        return [Endpoint.parse(address, kind: Self.isTailscale(address) ? .vpn : .local)].compactMap { $0 }
+        return [Endpoint.parse(address, kind: Self.isTailscale(address) ? .vpn : .local, server: kind)].compactMap { $0 }
+    }
+
+    private var kind: ServerKind {
+        usesQuickConnect ? .synology : serverKind ?? ServerDetector.kind(fromText: address) ?? .synology
     }
 
     private var usesTailscaleAddress: Bool { endpoints.contains { $0.kind == .vpn } }
@@ -451,7 +460,7 @@ struct OnboardingView: View {
         return parts.count == 4 && parts[0] == 100 && (64...127).contains(parts[1])
     }
 
-    private var vpnEndpoint: Endpoint? { Endpoint.parse(vpnAddress, kind: .vpn) }
+    private var vpnEndpoint: Endpoint? { Endpoint.parse(vpnAddress, kind: .vpn, server: model.activeServer?.kind ?? kind) }
 
     private var canContinueFromFind: Bool {
         if usesQuickConnect { return QuickConnectLookup.isValidID(trimmedQuickConnectID) }
@@ -464,19 +473,23 @@ struct OnboardingView: View {
 
     private func signIn() {
         guard canSignIn, !working else { return }
-        let profile = ServerProfile(
-            name: name.isEmpty ? "NAS" : name,
-            account: account,
-            endpoints: endpoints,
-            quickConnectID: usesQuickConnect ? trimmedQuickConnectID : nil
-        )
-        let credentials = Credentials(account: account, password: password, otpCode: needsCode ? otpCode : nil)
         working = true
         errorText = nil
         // Keeps these screens up after signing in, for the last two steps.
         model.isOnboarding = true
         Task {
             defer { working = false }
+            if serverKind == nil, !usesQuickConnect {
+                serverKind = await ServerDetector.detect(addresses: [address])
+            }
+            let profile = ServerProfile(
+                name: name.isEmpty ? "NAS" : name,
+                account: account,
+                endpoints: endpoints,
+                quickConnectID: usesQuickConnect ? trimmedQuickConnectID : nil,
+                kind: kind
+            )
+            let credentials = Credentials(account: account, password: password, otpCode: needsCode ? otpCode : nil)
             do {
                 try await model.signIn(to: profile, credentials: credentials, rememberDevice: rememberDevice)
                 password = ""
@@ -487,11 +500,13 @@ struct OnboardingView: View {
                 needsCode = true
                 focus = .code
             } catch let error as NASError {
-                model.isOnboarding = false
                 switch error {
+                // Stays on these screens: signing in carries on after the review.
                 case let .untrustedCertificate(info): review = CertificateReview(info: info, changed: false)
                 case let .certificateChanged(info): review = CertificateReview(info: info, changed: true)
-                default: errorText = error.errorDescription
+                default:
+                    model.isOnboarding = false
+                    errorText = error.errorDescription
                 }
                 if error == .twoFactorFailed { otpCode = "" }
             } catch {

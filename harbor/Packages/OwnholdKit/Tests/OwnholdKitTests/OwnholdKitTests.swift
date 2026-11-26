@@ -671,3 +671,165 @@ struct PhotoTimelineTests {
         #expect(CertificateTrust.hostKey(host: "FirelandsDS25.local", port: 5001) == CertificateTrust.hostKey(host: "firelandsds25.local", port: 5001))
     }
 }
+
+@Suite("Other NAS: SMB and WebDAV")
+struct SharingProtocolTests {
+    @Test func parsesAddressesPerKind() throws {
+        #expect(Endpoint.parse("nas.local", server: .smb)?.url.absoluteString == "smb://nas.local")
+        #expect(Endpoint.parse("smb://192.168.1.5", server: .smb)?.url.absoluteString == "smb://192.168.1.5")
+        #expect(Endpoint.parse("smb://nas.local:1445", server: .smb)?.url.absoluteString == "smb://nas.local:1445")
+        #expect(Endpoint.parse("ftp://nas.local", server: .smb) == nil)
+        #expect(Endpoint.parse("nas.local:5006", server: .webdav)?.url.absoluteString == "https://nas.local:5006/")
+        #expect(Endpoint.parse("https://cloud.example.com/remote.php/dav/files/me", server: .webdav)?.url.absoluteString
+            == "https://cloud.example.com/remote.php/dav/files/me/")
+        #expect(Endpoint.parse("http://nas.local:5005", server: .webdav) == nil)
+        #expect(Endpoint.parse("nas.local", server: .synology)?.url.absoluteString == "https://nas.local:5001")
+    }
+
+    @Test func kindFromTypedText() {
+        #expect(ServerDetector.kind(fromText: "smb://nas.local") == .smb)
+        #expect(ServerDetector.kind(fromText: "https://cloud.example.com/remote.php/dav/") == .webdav)
+        #expect(ServerDetector.kind(fromText: "https://nas.local:5006/") == nil)
+        #expect(ServerDetector.kind(fromText: "nas.local") == nil)
+    }
+
+    @Test func savedProfilesWithoutKindAreSynology() throws {
+        let json = #"{"id":"00000000-0000-0000-0000-000000000001","name":"NAS","account":"me","endpoints":[]}"#
+        let profile = try JSONDecoder().decode(ServerProfile.self, from: Data(json.utf8))
+        #expect(profile.kind == .synology)
+        let smb = ServerProfile(name: "Q", account: "me", endpoints: [], kind: .smb)
+        let decoded = try JSONDecoder().decode(ServerProfile.self, from: JSONEncoder().encode(smb))
+        #expect(decoded.kind == .smb)
+    }
+
+    @Test func parsesMultistatus() throws {
+        let xml = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <D:multistatus xmlns:D="DAV:">
+          <D:response><D:href>/dav/files/me/Photos/</D:href><D:propstat><D:prop>
+            <D:resourcetype><D:collection/></D:resourcetype></D:prop><D:status>HTTP/1.1 200 OK</D:status></D:propstat></D:response>
+          <D:response><D:href>https://nas.local/dav/files/me/Photos/Beach%20Day.jpg</D:href><D:propstat><D:prop>
+            <D:resourcetype/><D:getcontentlength>12345</D:getcontentlength>
+            <D:getlastmodified>Tue, 03 Jun 2025 14:02:11 GMT</D:getlastmodified></D:prop></D:propstat></D:response>
+          <D:response><D:href>/dav/files/me/Photos/2024/</D:href><D:propstat><D:prop>
+            <D:resourcetype><D:collection/></D:resourcetype></D:prop></D:propstat></D:response>
+        </D:multistatus>
+        """
+        let items = try WebDAVMultistatus.parse(Data(xml.utf8), base: URL(string: "https://nas.local/dav/files/me/")!)
+        #expect(items.map(\.path) == ["/Photos", "/Photos/Beach Day.jpg", "/Photos/2024"])
+        #expect(items[1].name == "Beach Day.jpg")
+        #expect(items[1].size == 12345)
+        #expect(!items[1].isDirectory && items[2].isDirectory)
+        #expect(items[1].modified == Date(timeIntervalSince1970: 1_748_959_331))
+    }
+
+    @Test func encodesPaths() {
+        let base = URL(string: "https://nas.local:5006/")!
+        #expect(WebDAVClient.url(base: base, path: "/home/A #1 & 50%.txt", isDirectory: false).absoluteString
+            == "https://nas.local:5006/home/A%20%231%20&%2050%25.txt")
+        #expect(WebDAVClient.url(base: base, path: "/home/TEST FOLDER", isDirectory: true).absoluteString
+            == "https://nas.local:5006/home/TEST%20FOLDER/")
+    }
+
+    @Test func sortsFoldersFirstAndPages() {
+        let items = [
+            RemoteItem(path: "/s/b.txt", name: "b.txt", isDirectory: false, size: 1),
+            RemoteItem(path: "/s/Z", name: "Z", isDirectory: true),
+            RemoteItem(path: "/s/a10.txt", name: "a10.txt", isDirectory: false, size: 3),
+            RemoteItem(path: "/s/a2.txt", name: "a2.txt", isDirectory: false, size: 2),
+        ]
+        let page = SharingProtocols.page(items, offset: 0, limit: 10, sort: .name, ascending: true)
+        #expect(page.items.map(\.name) == ["Z", "a2.txt", "a10.txt", "b.txt"])
+        let second = SharingProtocols.page(items, offset: 2, limit: 1, sort: .size, ascending: false)
+        #expect(second.items.map(\.name) == ["a2.txt"] && second.total == 4 && second.hasMore)
+    }
+
+    @Test func hidesHousekeepingFolders() {
+        for name in ["@eaDir", "#recycle", ".DS_Store", "@Recycle", ".@__thumb", "desktop.ini", "$RECYCLE.BIN"] {
+            #expect(SharingProtocols.isHidden(name), "\(name)")
+        }
+        #expect(!SharingProtocols.isHidden("Photos"))
+    }
+
+    @Test func searchesBelowAFolder() async throws {
+        let tree: [String: [RemoteItem]] = [
+            "/s": [RemoteItem(path: "/s/Trip", name: "Trip", isDirectory: true), RemoteItem(path: "/s/trip.pdf", name: "trip.pdf", isDirectory: false)],
+            "/s/Trip": [RemoteItem(path: "/s/Trip/map.png", name: "map.png", isDirectory: false)],
+        ]
+        let found = try await SharingProtocols.search(in: "/s", matching: "trip") { tree[$0] ?? [] }
+        #expect(Set(found.map(\.path)) == ["/s/Trip", "/s/trip.pdf"])
+    }
+
+    @Test func splitsPaths() {
+        #expect(SharingProtocols.split("/home/TEST FOLDER/docs")! == ("home", "TEST FOLDER/docs"))
+        #expect(SharingProtocols.split("/home")! == ("home", ""))
+        #expect(SharingProtocols.split("/") == nil)
+        #expect(SharingProtocols.ancestors(of: "/a/b") == ["/a", "/a/b"])
+    }
+}
+
+/// Runs against a real WebDAV server when OWNHOLD_WEBDAV_URL, _USER and
+/// _PASS are set (for example a local Apache with mod_dav); skipped otherwise.
+@Suite("WebDAV against a server", .enabled(if: ProcessInfo.processInfo.environment["OWNHOLD_WEBDAV_URL"] != nil))
+struct WebDAVIntegrationTests {
+    @Test func fullRoundTrip() async throws {
+        let env = ProcessInfo.processInfo.environment
+        let address = try #require(env["OWNHOLD_WEBDAV_URL"])
+        let account = try #require(env["OWNHOLD_WEBDAV_USER"])
+        let password = try #require(env["OWNHOLD_WEBDAV_PASS"])
+        #expect(await ServerDetector.detect(address) == .webdav)
+
+        let endpoint = try #require(Endpoint.parse(address, server: .webdav))
+        let profile = ServerProfile(name: "Test", account: account, endpoints: [endpoint], kind: .webdav)
+        let trust = CertificateTrust(keychain: Keychain(service: "app.ownhold.tests"))
+        defer { trust.forget(host: CertificateTrust.hostKey(host: endpoint.url.host() ?? "", port: endpoint.url.port ?? 443)) }
+
+        // First contact: the self-signed certificate must be reviewed.
+        do {
+            _ = try await ConnectionResolver(trust: trust).resolve([endpoint], server: .webdav)
+            Issue.record("expected an untrusted certificate")
+        } catch let NASError.untrustedCertificate(info) {
+            trust.trust(info)
+        }
+        #expect(try await ConnectionResolver(trust: trust).resolve([endpoint], server: .webdav) == endpoint)
+
+        await #expect(throws: NASError.invalidCredentials) {
+            _ = try await Connector.signIn(profile, at: endpoint, credentials: Credentials(account: account, password: "wrong"),
+                                           trust: trust, deviceName: "Test", previous: nil, rememberDevice: false)
+        }
+        let session = try await Connector.signIn(profile, at: endpoint, credentials: Credentials(account: account, password: password),
+                                                 trust: trust, deviceName: "Test", previous: nil, rememberDevice: false)
+        let service = try await Connector.connect(profile, at: endpoint, session: session, trust: trust)
+
+        #expect(try await service.listShares().map(\.name).contains("share"))
+        let top = try await service.list(folder: "/share", offset: 0, limit: 50, sort: .name, ascending: true)
+        #expect(top.items.map(\.name) == ["Sub", "Hello World.txt"])
+
+        // Upload into a folder that doesn't exist yet; no replacing.
+        let local = FileManager.default.temporaryDirectory.appending(path: "ownhold-dav-\(UUID().uuidString).txt")
+        try Data("0123456789".utf8).write(to: local)
+        defer { try? FileManager.default.removeItem(at: local) }
+        try await service.upload(local, as: "Ten #1.txt", to: "/share/New/Deep", replacing: false) { _ in }
+        await #expect(throws: NASError.alreadyExists) {
+            try await service.upload(local, as: "Ten #1.txt", to: "/share/New/Deep", replacing: false) { _ in }
+        }
+        try await service.upload(local, as: "Ten #1.txt", to: "/share/New/Deep", replacing: true) { _ in }
+        let file = try #require(try await service.list(folder: "/share/New/Deep", offset: 0, limit: 10, sort: .name, ascending: true).items.first)
+        #expect(file.name == "Ten #1.txt" && file.size == 10)
+
+        let range = try await service.read(file, from: 2, length: 3)
+        #expect(String(decoding: range.data, as: UTF8.self) == "234" && range.totalLength == 10)
+        let downloaded = try await service.download(file)
+        #expect(try String(contentsOf: downloaded, encoding: .utf8) == "0123456789")
+
+        let renamed = try await service.rename(file, to: "Renamed.txt")
+        await #expect(throws: NASError.alreadyExists) { _ = try await service.createFolder(named: "Deep", in: "/share/New") }
+        try await service.move([renamed], to: "/share/Sub")
+        #expect(try await service.search(in: "/share", matching: "renamed").map(\.path) == ["/share/Sub/Renamed.txt"])
+
+        try await service.delete([RemoteItem(path: "/share/New", name: "New", isDirectory: true),
+                                  RemoteItem(path: "/share/Sub/Renamed.txt", name: "Renamed.txt", isDirectory: false)])
+        let after = try await service.list(folder: "/share", offset: 0, limit: 50, sort: .name, ascending: true)
+        #expect(after.items.map(\.name) == ["Sub", "Hello World.txt"])
+    }
+}

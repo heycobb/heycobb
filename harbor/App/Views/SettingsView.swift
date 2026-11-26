@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var editing: ServerProfile?
     @State private var showingGuide = false
     @State private var showingPro = false
+    @State private var showingAcknowledgements = false
     @AppStorage(PlaybackPositions.settingKey) private var rememberPosition = true
     @AppStorage(SyncIndicator.liveActivityKey) private var showLiveActivity = true
     @AppStorage(AppModel.filesAppChecksKey) private var keepFilesAppUpdated = true
@@ -29,6 +30,7 @@ struct SettingsView: View {
             .sheet(item: $editing) { server in ServerEditView(server: server) }
             .sheet(isPresented: $showingGuide) { SetupGuideView() }
             .sheet(isPresented: $showingPro) { ProView() }
+            .sheet(isPresented: $showingAcknowledgements) { AcknowledgementsView() }
             .confirmationDialog(
                 "Remove \(confirmRemove?.name ?? "server")?",
                 isPresented: Binding(get: { confirmRemove != nil }, set: { if !$0 { confirmRemove = nil } }),
@@ -241,6 +243,10 @@ struct SettingsView: View {
                 #endif
             Link("Get Support", destination: URL(string: "https://ownhold.app/support")!)
             Link("Privacy Policy", destination: URL(string: "https://ownhold.app/privacy")!)
+            Button("Acknowledgements") { showingAcknowledgements = true }
+                #if os(macOS)
+                .buttonStyle(.link)
+                #endif
             LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")
         } header: {
             // The Mac's tab already says About.

@@ -75,6 +75,7 @@ struct SetupGuideView: View {
         Topic(title: "No permission to see files", text: "In DSM, open **Control Panel › User & Group**, edit the account, and allow **File Station** under **Applications**."),
         Topic(title: "Only connects over HTTPS", text: "Ownhold only uses encrypted connections. In DSM, check **Control Panel › Login Portal**: the HTTPS port should be **5001**."),
         Topic(title: "Using a different VPN", text: "WireGuard, ZeroTier, NetBird and similar all work while their app is on. Enter the NAS's address on that network as the **Private network (VPN)** address."),
+        Topic(title: "Other NAS (QNAP, UGREEN, TrueNAS…)", text: "Enter the NAS's name or address and Ownhold connects with file sharing (SMB), using your NAS account. SMB is for your home network or a VPN such as Tailscale. For WebDAV, turn it on in your NAS's settings and enter its HTTPS address with the port, for example **nas.local:5006**. Share links, archives and Recently Deleted need a Synology."),
         Topic(title: "QuickConnect or DDNS", text: "Enter your QuickConnect ID or yourname.synology.me address when you add the NAS. Ownhold connects directly, without Synology's relay, so this works away from home only if your NAS is reachable from the internet."),
         Topic(title: "Checking the certificate", text: "To confirm the fingerprint Ownhold shows, open **https://** your NAS's address **:5001** in Safari at home, view the certificate, and compare its SHA-256 fingerprint. Ownhold warns you if the certificate ever changes."),
     ]

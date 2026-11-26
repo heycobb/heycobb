@@ -95,8 +95,9 @@ extension AppModel {
         do {
             do {
                 try await service.compress(items, to: RemoteItem.join(folder, name))
-            } catch NASError.permissionDenied {
-                // Some NAS setups refuse File Station's Compress for apps.
+            } catch let error as NASError where error == .permissionDenied || error == .unsupported {
+                // Some NAS setups refuse File Station's Compress for apps,
+                // and SMB and WebDAV can't compress at all.
                 // Zip on this device instead, then upload the archive.
                 libraryLog.debug("NAS refused Compress; zipping on device")
                 let zip = try await LocalArchive.zip(items, named: name, using: service)

@@ -453,7 +453,7 @@ struct BrowserView: View {
         do {
             shares = try await service.listShares()
             if showsTwoColumns { selectInitialShare() }
-            recycleBins = await model.recycleBins(in: shares)
+            recycleBins = model.activeServer?.kind.hasRecycleBin == false ? [] : await model.recycleBins(in: shares)
         } catch {
             model.handle(error)
         }

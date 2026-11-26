@@ -45,4 +45,10 @@ public protocol FileService: Sendable {
     /// Removes a link so it stops working.
     func deleteShareLink(_ link: SharingLink) async throws
     func signOut() async
+    /// A cheap request that checks the stored sign-in still works.
+    func validateSession() async throws
+}
+
+public extension FileService {
+    func validateSession() async throws {}
 }

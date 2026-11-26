@@ -149,6 +149,9 @@ struct FolderView: View {
 
     private var selectedItems: [RemoteItem] { shown.filter { selection.contains($0.path) } }
 
+    /// What the NAS can do (share links and archives are Synology's).
+    private var serverKind: ServerKind { model.activeServer?.kind ?? .synology }
+
     /// What the Mac menu bar's File, Edit and View commands act on.
     private var menuCommands: FolderCommands {
         let chosen = selectedItems
@@ -163,8 +166,8 @@ struct FolderView: View {
             uploadFiles: { showingFiles = true },
             canRename: writable && chosen.count == 1,
             canDelete: writable && !chosen.isEmpty,
-            canExtract: writable && chosen.count == 1 && chosen[0].isArchive,
-            canShareLink: model.service != nil && chosen.count == 1,
+            canExtract: writable && serverKind.hasArchives && chosen.count == 1 && chosen[0].isArchive,
+            canShareLink: model.service != nil && serverKind.hasShareLinks && chosen.count == 1,
             rename: {
                 guard let item = chosen.first, chosen.count == 1 else { return }
                 endSelecting()
@@ -526,7 +529,7 @@ struct FolderView: View {
         }
         Button("Share…", systemImage: "square.and.arrow.up") { share([item]) }
             .disabled(model.service == nil && !saved)
-        if model.service != nil {
+        if model.service != nil, serverKind.hasShareLinks {
             Button("Share Link…", systemImage: "link") { linkItem = item }
         }
         if item.isDirectory {
@@ -550,7 +553,7 @@ struct FolderView: View {
             }
             Button("Move…", systemImage: "folder") { moveRequest = MoveRequest(items: [item]) }
             Button("Compress", systemImage: "archivebox") { Task { await compress([item]) } }
-            if item.isArchive {
+            if item.isArchive, serverKind.hasArchives {
                 Button("Extract Here", systemImage: "archivebox.circle") { Task { await extract(item) } }
             }
             Button("Delete…", systemImage: "trash", role: .destructive) { askToDelete([item]) }
@@ -797,7 +800,9 @@ private struct ChangeDialogs: ViewModifier {
                 Button("Delete", role: .destructive) { onDelete(deleting) }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This deletes \(deleting.count == 1 ? "it" : "them") from your NAS. If the Recycle Bin is on for this shared folder, you can restore \(deleting.count == 1 ? "it" : "them") from there in DSM.")
+                Text(model.activeServer?.kind.hasRecycleBin != false
+                     ? "This deletes \(deleting.count == 1 ? "it" : "them") from your NAS. If the Recycle Bin is on for this shared folder, you can restore \(deleting.count == 1 ? "it" : "them") from there in DSM."
+                     : "This deletes \(deleting.count == 1 ? "it" : "them") from your NAS. If your NAS keeps a recycle bin for this folder, you can restore \(deleting.count == 1 ? "it" : "them") from there.")
             }
             .sheet(item: $moveRequest) { request in
                 FolderPicker(items: request.items) { destination in onMove(request.items, destination) }

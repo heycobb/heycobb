@@ -14,12 +14,12 @@ public struct ConnectionResolver: Sendable {
         self.timeout = timeout
     }
 
-    public func resolve(_ endpoints: [Endpoint]) async throws -> Endpoint {
+    public func resolve(_ endpoints: [Endpoint], server: ServerKind = .synology) async throws -> Endpoint {
         guard !endpoints.isEmpty else { throw NASError.unreachable }
 
         let results = await withTaskGroup(of: (Int, Result<Void, Error>).self) { group in
             for (index, endpoint) in endpoints.enumerated() {
-                group.addTask { (index, await probe(endpoint)) }
+                group.addTask { (index, await probe(endpoint, server: server)) }
             }
             var collected: [Int: Result<Void, Error>] = [:]
             for await (index, result) in group {
@@ -48,7 +48,39 @@ public struct ConnectionResolver: Sendable {
         throw NASError.unreachable
     }
 
-    private func probe(_ endpoint: Endpoint) async -> Result<Void, Error> {
+    private func probe(_ endpoint: Endpoint, server: ServerKind) async -> Result<Void, Error> {
+        switch server {
+        case .synology: return await probeDSM(endpoint)
+        case .webdav: return await probeWebDAV(endpoint)
+        case .smb:
+            let port = endpoint.url.port ?? 445
+            return await ServerDetector.isListening(host: endpoint.url.host() ?? "", port: port, timeout: timeout)
+                ? .success(()) : .failure(NASError.unreachable)
+        }
+    }
+
+    /// Any HTTP answer means the server is there (it may ask for the
+    /// password: no account details are sent here). The certificate is
+    /// checked against the pinned one.
+    private func probeWebDAV(_ endpoint: Endpoint) async -> Result<Void, Error> {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = timeout
+        config.timeoutIntervalForResource = timeout
+        let session = URLSession(configuration: config, delegate: trust, delegateQueue: nil)
+        defer { session.finishTasksAndInvalidate() }
+        var request = URLRequest(url: endpoint.url)
+        request.httpMethod = "OPTIONS"
+        do {
+            _ = try await session.data(for: request)
+            return .success(())
+        } catch {
+            let key = CertificateTrust.hostKey(host: endpoint.url.host() ?? "", port: endpoint.url.port ?? 443)
+            if let rejection = trust.takeRejection(for: key) { return .failure(rejection) }
+            return .failure(NASError.unreachable)
+        }
+    }
+
+    private func probeDSM(_ endpoint: Endpoint) async -> Result<Void, Error> {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = timeout
         config.timeoutIntervalForResource = timeout

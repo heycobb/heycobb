@@ -23,8 +23,8 @@ public enum SharedConnection {
               !session.sid.isEmpty
         else { throw NASError.sessionExpired }
         let trust = CertificateTrust(keychain: keychain)
-        let endpoint = try await ConnectionResolver(trust: trust).resolve(profile.allEndpoints)
-        return FileStationClient(baseURL: endpoint.url, trust: trust, sid: session.sid)
+        let endpoint = try await ConnectionResolver(trust: trust).resolve(profile.allEndpoints, server: profile.kind)
+        return Connector.service(for: profile, at: endpoint, session: session, trust: trust)
     }
 
     /// Whether the app lock (Settings › Privacy) is on, so extensions ask

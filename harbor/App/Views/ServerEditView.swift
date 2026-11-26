@@ -24,6 +24,9 @@ struct ServerEditView: View {
                     LabeledContent("Account", value: server.account)
                 }
                 Section {
+                    if server.kind != .synology {
+                        LabeledContent("Connects With", value: server.kind.label)
+                    }
                     AddressField(label: "Home network", text: $homeAddress, prompt: "192.168.1.20 or nas.local")
                     AddressField(label: "Private network (VPN)", text: $vpnAddress, prompt: "Tailscale, ZeroTier or WireGuard address")
                     AddressField(label: "Internet", text: $internetAddress, prompt: "Optional")
@@ -31,16 +34,18 @@ struct ServerEditView: View {
                     Text("Addresses")
                 } footer: {
                     VStack(alignment: .leading, spacing: Theme.Spacing.s) {
-                        AddressHints(endpoints: endpoints)
+                        if server.kind == .synology { AddressHints(endpoints: endpoints) }
                         if hasPlainHTTP {
-                            Text("Ownhold only connects over HTTPS. Remove “http://” and use port 5001.")
+                            Text(server.kind == .synology ? "Ownhold only connects over HTTPS. Remove “http://” and use port 5001." : "Ownhold only connects over HTTPS. Remove “http://”.")
                                 .foregroundStyle(.red)
                         }
                         Button("How do I find my VPN address?") { showingGuide = true }
                             .buttonStyle(.borderless)
                     }
                 }
-                QuickConnectSection(id: $quickConnectID) { showingGuide = true }
+                if server.kind.hasQuickConnect {
+                    QuickConnectSection(id: $quickConnectID) { showingGuide = true }
+                }
                 Section {
                     TextField("MAC Address", text: $macAddress, prompt: Text("00:11:32:AA:BB:CC"))
                         .font(.path)
@@ -86,9 +91,9 @@ struct ServerEditView: View {
 
     private var endpoints: [Endpoint] {
         [
-            Endpoint.parse(homeAddress, kind: .local),
-            Endpoint.parse(vpnAddress, kind: .vpn),
-            Endpoint.parse(internetAddress, kind: .remote),
+            Endpoint.parse(homeAddress, kind: .local, server: server.kind),
+            Endpoint.parse(vpnAddress, kind: .vpn, server: server.kind),
+            Endpoint.parse(internetAddress, kind: .remote, server: server.kind),
         ].compactMap { $0 }
     }
 
@@ -111,8 +116,7 @@ struct ServerEditView: View {
     private func load() {
         name = server.name
         func address(_ kind: Endpoint.Kind) -> String {
-            guard let url = server.endpoints.first(where: { $0.kind == kind })?.url, let host = url.host() else { return "" }
-            return url.port == 5001 || url.port == nil ? host : "\(host):\(url.port!)"
+            server.endpoints.first(where: { $0.kind == kind })?.editableText(server: server.kind) ?? ""
         }
         homeAddress = address(.local)
         vpnAddress = address(.vpn)

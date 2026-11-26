@@ -17,6 +17,9 @@ public struct ServerProfile: Codable, Identifiable, Hashable, Sendable {
     /// For Wake NAS: "00:11:32:AA:BB:CC". Read from DSM when the account may
     /// see it (admins), or typed in Edit NAS.
     public var macAddress: String?
+    /// Synology (DSM's API), WebDAV or SMB. Saved NAS from before other
+    /// kinds existed are Synology.
+    public var kind: ServerKind
 
     public init(
         id: UUID = UUID(),
@@ -25,7 +28,8 @@ public struct ServerProfile: Codable, Identifiable, Hashable, Sendable {
         endpoints: [Endpoint],
         quickConnectID: String? = nil,
         discoveredEndpoints: [Endpoint] = [],
-        macAddress: String? = nil
+        macAddress: String? = nil,
+        kind: ServerKind = .synology
     ) {
         self.id = id
         self.name = name
@@ -34,6 +38,7 @@ public struct ServerProfile: Codable, Identifiable, Hashable, Sendable {
         self.quickConnectID = quickConnectID
         self.discoveredEndpoints = discoveredEndpoints
         self.macAddress = macAddress
+        self.kind = kind
     }
 
     public init(from decoder: Decoder) throws {
@@ -45,6 +50,7 @@ public struct ServerProfile: Codable, Identifiable, Hashable, Sendable {
         quickConnectID = try c.decodeIfPresent(String.self, forKey: .quickConnectID)
         discoveredEndpoints = try c.decodeIfPresent([Endpoint].self, forKey: .discoveredEndpoints) ?? []
         macAddress = try c.decodeIfPresent(String.self, forKey: .macAddress)
+        kind = try c.decodeIfPresent(ServerKind.self, forKey: .kind) ?? .synology
     }
 
     public static let demo = ServerProfile(

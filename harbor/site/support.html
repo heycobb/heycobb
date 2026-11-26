@@ -27,6 +27,7 @@
     <li>An iPhone or iPad with iOS / iPadOS 26 or later, or a Mac with macOS 26 or later.</li>
     <li>A Synology NAS running DSM 7, with HTTPS turned on. Port 5001 is the standard setting.</li>
     <li>A DSM account that's allowed to use File Station.</li>
+    <li>Or another NAS (QNAP, UGREEN, UniFi, TrueNAS and others) with file sharing (SMB) or WebDAV turned on. See <a href="#other-nas">Other NAS</a>.</li>
     <li>For access away from home (optional): Tailscale or another VPN, Synology DDNS, or your QuickConnect ID. See below.</li>
   </ul>
   <p>Want to look around first? Tap <strong>Try the Demo Library</strong> on the welcome screen. It works without a NAS.</p>
@@ -39,6 +40,14 @@
     <li>In Ownhold, tap <strong>Add a NAS</strong>, enter the address, your account and password.</li>
     <li>The first time, you'll be asked to check the NAS's certificate. That's normal; see below.</li>
   </ol>
+
+  <h3 id="other-nas">Other NAS</h3>
+  <p>Enter your NAS's name or address and your NAS account. Ownhold checks whether it's a Synology; if not, it connects with file sharing (SMB), which every NAS offers. NAS that announce file sharing on your network also appear in the setup screen.</p>
+  <ul>
+    <li><strong>SMB</strong> isn't encrypted on most NAS, so use it at home or over a VPN such as Tailscale, which encrypts everything.</li>
+    <li><strong>WebDAV</strong> works over HTTPS from anywhere your NAS can be reached. Turn it on in your NAS's settings, then enter its address with the HTTPS port, for example <em>nas.local:5006</em>, or the full address if it has a path.</li>
+    <li>Browsing, opening, uploading, offline files, Photo Backup and the Files app work the same. Thumbnails are made on your device. Share links, extracting archives and Recently Deleted need a Synology; <strong>Compress</strong> zips on your device and uploads the zip.</li>
+  </ul>
 
   <h3>Where is Settings?</h3>
   <p>On iPhone and iPad, tap the server button at the top of the list of shared folders, then <strong>Settings</strong>. On a Mac, choose <strong>Ownhold › Settings…</strong> (⌘,).</p>

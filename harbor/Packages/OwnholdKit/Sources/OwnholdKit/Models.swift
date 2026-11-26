@@ -187,6 +187,13 @@ public struct Session: Sendable, Codable, Equatable {
         self.sid = sid
         self.deviceToken = deviceToken
     }
+
+    /// SMB and WebDAV have no sessions to keep: each connection signs in
+    /// with the password. It's kept here, in the Keychain item a Synology
+    /// session would use, so signing out (which empties `sid`) forgets it.
+    public static func password(_ password: String) -> Session {
+        Session(sid: password, deviceToken: nil)
+    }
 }
 
 /// A link to a file or folder that anyone with the URL can open, created by
