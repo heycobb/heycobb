@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var confirmRemove: ServerProfile?
     @State private var editing: ServerProfile?
     @State private var showingGuide = false
+    @AppStorage(PlaybackPositions.settingKey) private var rememberPosition = true
     #if os(macOS)
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
     #endif
@@ -37,6 +38,11 @@ struct SettingsView: View {
                     // iOS keeps an empty Ownhold entry in Files that apps can't remove.
                     Text("The Files app still lists Ownhold, but it stays empty. To hide it, tap ⋯ › Edit in Files.")
                 }
+            }
+
+            Section("Playback") {
+                Toggle("Remember Playback Position", isOn: $rememberPosition)
+                    .onChange(of: rememberPosition) { if !rememberPosition { PlaybackPositions.removeAll() } }
             }
 
             #if os(macOS)

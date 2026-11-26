@@ -68,12 +68,17 @@ private struct PlayerPresenter: UIViewControllerRepresentable {
         controller.allowsPictureInPicturePlayback = false
         controller.delegate = coordinator
         controller.modalPresentationStyle = .fullScreen
-        host.present(controller, animated: true) { controller.player?.play() }
+        coordinator.item = playback.item
+        host.present(controller, animated: true) {
+            guard let player = controller.player else { return }
+            Task { await PlaybackPositions.resumeAndPlay(player, item: playback.item) }
+        }
     }
 
     final class Coordinator: NSObject, @preconcurrency AVPlayerViewControllerDelegate {
         var current: UUID?
         var loader: StreamingLoader?
+        var item: RemoteItem?
         var onDismiss: () -> Void = {}
 
         // Called when the user closes a modally presented player.
@@ -82,6 +87,7 @@ private struct PlayerPresenter: UIViewControllerRepresentable {
             coordinator.animate(alongsideTransition: nil) { [weak self] context in
                 guard !context.isCancelled, let self else { return }
                 controller.player?.pause()
+                if let item = self.item { PlaybackPositions.save(controller.player, item: item) }
                 controller.player = nil
                 self.current = nil
                 self.loader = nil
@@ -114,10 +120,11 @@ private struct MacPlayerSheet: View {
         .onAppear {
             let player = playback.makePlayer()
             self.player = player
-            player.play()
+            Task { await PlaybackPositions.resumeAndPlay(player, item: playback.item) }
         }
         .onDisappear {
             player?.pause()
+            PlaybackPositions.save(player, item: playback.item)
             player = nil
         }
     }

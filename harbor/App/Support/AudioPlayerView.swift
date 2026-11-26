@@ -132,6 +132,7 @@ final class AudioController {
     @ObservationIgnored private var player: AVPlayer?
     @ObservationIgnored private var observer: Any?
     @ObservationIgnored private var loader: StreamingLoader?
+    @ObservationIgnored private var item: RemoteItem?
     @ObservationIgnored private var endObserver: NSObjectProtocol?
     private var atEnd = false
 
@@ -140,6 +141,7 @@ final class AudioController {
         try? AVAudioSession.sharedInstance().setCategory(.playback)
         #endif
         loader = playback.loader
+        item = playback.item
         let player = playback.makePlayer()
         self.player = player
         observer = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { [weak self] time in
@@ -157,15 +159,20 @@ final class AudioController {
                 if self.duration > 0 { self.position = self.duration }
             }
         }
-        player.play()
         isPlaying = true
         guard let asset = player.currentItem?.asset else { return }
         if let seconds = try? await asset.load(.duration).seconds, seconds.isFinite { duration = seconds }
+        if let saved = PlaybackPositions.position(for: playback.item) { position = saved }
+        await PlaybackPositions.resumeAndPlay(player, item: playback.item)
         await loadTags(asset)
     }
 
     func stop() {
         player?.pause()
+        if let item, let player {
+            // At the end, forget the position so it starts over next time.
+            PlaybackPositions.save(atEnd ? duration : player.currentTime().seconds, duration: duration, for: item)
+        }
         if let observer { player?.removeTimeObserver(observer) }
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         observer = nil

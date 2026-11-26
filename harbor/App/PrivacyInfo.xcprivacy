@@ -11,7 +11,7 @@
 	<array/>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
-		<!-- UserDefaults: app settings (layout, sort, lock preference). -->
+		<!-- UserDefaults: app settings (layout, sort, lock preference) and playback positions. -->
 		<dict>
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
