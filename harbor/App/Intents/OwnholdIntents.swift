@@ -44,7 +44,7 @@ struct NASItemEntity: AppEntity {
     var remoteItem: RemoteItem { RemoteItem(path: path, name: name, isDirectory: isFolder, modified: nil) }
 }
 
-struct NASItemQuery: EntityQuery {
+struct NASItemQuery: EntityStringQuery {
     @Dependency private var model: AppModel
 
     @MainActor
@@ -55,15 +55,42 @@ struct NASItemQuery: EntityQuery {
         }
     }
 
-    /// Shared folders, Favorites and Recents of the NAS in use.
+    /// Shared folders and the folders inside them, then Favorites and Recents.
     @MainActor
     func suggestedEntities() async throws -> [NASItemEntity] {
         await model.start()
         guard let profile = model.activeServer, let service = model.service else { return [] }
         let shares = (try? await service.listShares()) ?? []
-        return (shares + model.favorites + model.recents).map {
-            NASItemEntity(serverID: profile.id, serverName: profile.name, item: $0)
+        var items = shares
+        for share in shares {
+            let folders = (try? await service.list(folder: share.path, offset: 0, limit: 200, sort: .name, ascending: true).items) ?? []
+            items += folders.filter { $0.isDirectory && !RecycleBin.contains($0.path) }
         }
+        items += model.favorites + model.recents
+        return Self.unique(items).map { NASItemEntity(serverID: profile.id, serverName: profile.name, item: $0) }
+    }
+
+    /// What's typed in the Shortcuts picker: a name search across the shared
+    /// folders (File Station search), up to 60 results, folders first.
+    @MainActor
+    func entities(matching string: String) async throws -> [NASItemEntity] {
+        let text = string.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return try await suggestedEntities() }
+        await model.start()
+        guard let profile = model.activeServer, let service = model.service else { return [] }
+        let shares = (try? await service.listShares()) ?? []
+        var found = shares.filter { $0.name.localizedCaseInsensitiveContains(text) }
+        for share in shares where found.count < 60 {
+            let results = (try? await service.search(in: share.path, matching: text)) ?? []
+            found += results.filter { !RecycleBin.contains($0.path) }
+        }
+        let sorted = Self.unique(found).sorted { ($0.isDirectory ? 0 : 1, $0.name.lowercased()) < ($1.isDirectory ? 0 : 1, $1.name.lowercased()) }
+        return sorted.prefix(60).map { NASItemEntity(serverID: profile.id, serverName: profile.name, item: $0) }
+    }
+
+    private static func unique(_ items: [RemoteItem]) -> [RemoteItem] {
+        var seen = Set<String>()
+        return items.filter { seen.insert($0.path).inserted }
     }
 }
 
