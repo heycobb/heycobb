@@ -3,7 +3,8 @@ import Network
 import Observation
 import OwnholdKit
 
-/// Finds Synology NAS on the local network, for the first-run setup.
+/// Finds NAS on the local network, for the first-run setup. Only
+/// Synology DSM is recognized for now.
 ///
 /// DSM doesn't announce itself as Synology over Bonjour, but it does
 /// announce file sharing (SMB) under its own name. Each SMB server found is

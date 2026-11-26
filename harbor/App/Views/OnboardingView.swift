@@ -195,7 +195,7 @@ struct OnboardingView: View {
             VStack(spacing: Theme.Spacing.s) {
                 Text("Ownhold")
                     .font(.system(.largeTitle, weight: .semibold))
-                Text("Your Synology files and photos, at home and away. Nothing in between: no account, no cloud.")
+                Text("The files and photos on your NAS, at home and away. Nothing in between: no account, no cloud.")
                     .font(.title3)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -208,7 +208,7 @@ struct OnboardingView: View {
 
     private var find: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.l) {
-            title("Find your NAS", detail: "Make sure this \(Self.deviceName) is on the same Wi-Fi as your NAS.")
+            title("Find your NAS", detail: "At home, your NAS appears below. Away from home, enter its Tailscale address.")
 
             VStack(alignment: .leading, spacing: Theme.Spacing.s) {
                 ForEach(discovery.found) { nas in
@@ -246,7 +246,7 @@ struct OnboardingView: View {
                             Text("Looking on this network…")
                         } else {
                             Image(systemName: "magnifyingglass")
-                            Text("No NAS found here. Enter its address below.")
+                            Text("None found on this network. Enter its address below.")
                         }
                     }
                     .font(.callout)
@@ -260,7 +260,7 @@ struct OnboardingView: View {
                     field("QuickConnect ID", text: $quickConnectID, prompt: "your-quickconnect-id", focus: .quickConnect)
                     link("Enter an address instead") { usesQuickConnect = false }
                 } else {
-                    field("Or enter its address", text: $address, prompt: "192.168.1.20 or nas.local", focus: .address, monospaced: true)
+                    field("Or enter its address", text: $address, prompt: "192.168.1.20 or nas.ts.net", focus: .address, monospaced: true)
                         .onChange(of: address) { _, new in
                             // A typed address of a NAS found here keeps its name.
                             name = discovery.name(forAddress: new) ?? ""
@@ -278,7 +278,7 @@ struct OnboardingView: View {
 
     private var signInStep: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.l) {
-            title("Sign in to \(displayName)", detail: "Use the account you use for DSM.")
+            title("Sign in to \(displayName)", detail: "Use the account you sign in to your NAS with.")
             VStack(alignment: .leading, spacing: Theme.Spacing.m) {
                 field("Account", text: $account, prompt: "Account name", focus: .account, contentType: .username)
                 VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
@@ -427,8 +427,23 @@ struct OnboardingView: View {
 
     private var trimmedQuickConnectID: String { quickConnectID.trimmingCharacters(in: .whitespaces) }
 
+    /// A Tailscale address typed here (set up away from home) is saved as
+    /// the private network address, so it's used wherever you are.
     private var endpoints: [Endpoint] {
-        usesQuickConnect ? [] : [Endpoint.parse(address, kind: .local)].compactMap { $0 }
+        guard !usesQuickConnect else { return [] }
+        return [Endpoint.parse(address, kind: Self.isTailscale(address) ? .vpn : .local)].compactMap { $0 }
+    }
+
+    private var usesTailscaleAddress: Bool { endpoints.contains { $0.kind == .vpn } }
+
+    /// "nas.tailnet.ts.net", or an address in Tailscale's 100.64.0.0/10 range.
+    static func isTailscale(_ address: String) -> Bool {
+        var host = address.lowercased().trimmingCharacters(in: .whitespaces)
+        if let scheme = host.range(of: "://") { host = String(host[scheme.upperBound...]) }
+        host = String(host.prefix { $0 != ":" && $0 != "/" })
+        if host.hasSuffix(".ts.net") { return true }
+        let parts = host.split(separator: ".").compactMap { Int($0) }
+        return parts.count == 4 && parts[0] == 100 && (64...127).contains(parts[1])
     }
 
     private var vpnEndpoint: Endpoint? { Endpoint.parse(vpnAddress, kind: .vpn) }
@@ -460,7 +475,8 @@ struct OnboardingView: View {
             do {
                 try await model.signIn(to: profile, credentials: credentials, rememberDevice: rememberDevice)
                 password = ""
-                step = .away
+                // Set up with a Tailscale address: away from home is done already.
+                step = usesTailscaleAddress ? .options : .away
             } catch NASError.twoFactorRequired {
                 model.isOnboarding = false
                 needsCode = true
