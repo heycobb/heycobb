@@ -96,10 +96,32 @@ Goal: QNAP, UniFi (UNAS), UGREEN, TrueNAS and others, without a separate app.
 6. **Testing**: needs access to each brand (QNAP and UniFi test units or
    loaners). Don't ship a brand we haven't tested on real hardware.
 
+## Pricing (decided 2026-11-26)
+
+Free download, plus **Ownhold Pro: one-time $9.99**, a single universal
+purchase covering iPhone, iPad and Mac, with Family Sharing on. No
+subscription. Optional $0 non-consumable trial (e.g. 14 days).
+
+- **Free:** browse, open, preview, search, upload/download, players and PiP,
+  offline files, Favorites, Recents, share links, compress/extract, one saved
+  NAS, app lock and all privacy/security settings, onboarding (discovery,
+  Tailscale, QuickConnect), Show NAS in Finder/Files (browsing), Photo Backup
+  "Back Up Now".
+- **Pro:** automatic Photo Backup, Folder Backup (Mac), Keep Downloaded and
+  Keep Finder Up to Date, Photos timeline, Shortcuts actions, Scan to NAS,
+  background uploads, more than one NAS, Wake NAS, Recently Deleted; later NAS
+  status and other NAS brands.
+- **Build:** StoreKit 2 non-consumable (`app.ownhold.pro`), `Entitlement`
+  check in Kit (transaction listener, `Transaction.currentEntitlements`),
+  universal purchase across platforms (same bundle ID family), Family Sharing
+  enabled in App Store Connect. Settings: one **Ownhold Pro** row (buy,
+  restore) and a small lock on Pro switches; no pop-ups or nagging. Restore
+  Purchases always available. Test with a StoreKit configuration file.
+- Update `site/support.html` (what's free vs Pro) and the App Store text.
+
 ## Still open from before
 
 - Real-iPhone tests: background Photo Backup, Live Photos, Lock Screen
   controls, iPhone Picture in Picture.
 - Photo Backup on the Mac (reads the Mac's Photos library: ask first).
 - NAS status at a glance (item 6), share with NAS users, file versions.
-- Pricing (undecided).
