@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import ImageIO
 import Testing
 @testable import OwnholdKit
 
@@ -371,5 +372,44 @@ struct StreamingTests {
         defer { try? FileManager.default.removeItem(at: zip) }
         let head = try FileHandle(forReadingFrom: zip).read(upToCount: 4)
         #expect(head == Data([0x50, 0x4B, 0x03, 0x04])) // "PK\u{3}\u{4}"
+    }
+}
+
+@Suite("Device thumbnails")
+struct LocalThumbnailTests {
+    /// A camera-style JPEG with an embedded preview: the first 64 KB are
+    /// enough, without decoding (or downloading) the whole photo.
+    @Test func readsEmbeddedPreviewFromPartialFile() throws {
+        // A detailed image, so the file is much larger than its preview.
+        let ctx = try #require(CGContext(data: nil, width: 2400, height: 1600, bitsPerComponent: 8, bytesPerRow: 0,
+                                         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue))
+        for i in 0 ..< 200 {
+            ctx.setFillColor(red: CGFloat(i % 7) / 7, green: CGFloat(i % 5) / 5, blue: CGFloat(i % 3) / 3, alpha: 1)
+            ctx.fill(CGRect(x: i * 12, y: (i * 37) % 1600, width: 300, height: 200))
+        }
+        let image = try #require(ctx.makeImage())
+        let out = NSMutableData()
+        let dest = try #require(CGImageDestinationCreateWithData(out, "public.jpeg" as CFString, 1, nil))
+        CGImageDestinationAddImage(dest, image, [kCGImageDestinationEmbedThumbnail: true] as CFDictionary)
+        #expect(CGImageDestinationFinalize(dest))
+        let head = (out as Data).prefix(64 * 1024)
+        #expect(head.count < (out as Data).count)
+        let preview = try #require(LocalThumbnailer.embeddedPreview(Data(head), maxPixel: 400))
+        #expect(max(preview.width, preview.height) <= 400)
+    }
+
+    @Test func noPreviewMeansNil() throws {
+        // A plain JPEG without an embedded thumbnail, cut short: nothing to use.
+        let full = try #require(DemoFileService.renderPhoto(seed: "y", width: 2400, height: 1600))
+        #expect(LocalThumbnailer.embeddedPreview(Data(full.prefix(4096)), maxPixel: 400) == nil)
+    }
+
+    @Test func videoFrameFromRanges() async throws {
+        let demo = DemoFileService()
+        let video = try #require(try await demo.list(folder: "/Photos/Coast trip", offset: 0, limit: 100, sort: .name, ascending: true)
+            .items.first { $0.isStreamable })
+        let data = try #require(await LocalThumbnailer.shared.thumbnail(for: video, maxPixel: 300, service: demo))
+        let image = try #require(ImageDecoding.downsample(data, maxPixel: 300))
+        #expect(max(image.width, image.height) <= 300)
     }
 }
