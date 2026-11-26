@@ -8,6 +8,7 @@ enum SidebarItem: Hashable {
     case offline
     case backup
     case recentlyDeleted
+    case photos
 }
 
 /// Sidebar of shares + a folder stack. On iPhone this collapses into a single
@@ -94,6 +95,8 @@ struct BrowserView: View {
             OfflineView()
         case .recentlyDeleted:
             RecentlyDeletedView(bins: recycleBins)
+        case .photos:
+            PhotoLibraryView()
         case nil:
             ContentUnavailableView("Choose a folder", systemImage: "sidebar.left")
         }
@@ -204,6 +207,7 @@ struct BrowserView: View {
                 }
             }
             Section {
+                macRow(.photos, title: "Photos", symbol: "photo.on.rectangle.angled")
                 if model.keepRecents {
                     macRow(.recents, title: "Recents", symbol: "clock")
                 }
@@ -275,6 +279,10 @@ struct BrowserView: View {
                 }
             }
             Section {
+                NavigationLink(value: SidebarItem.photos) {
+                    sidebarLabel("Photos", symbol: "photo.on.rectangle.angled", item: .photos)
+                }
+                .listRowBackground(rowBackground(.photos))
                 if model.keepRecents {
                     NavigationLink(value: SidebarItem.recents) {
                         sidebarLabel("Recents", symbol: "clock", item: .recents)

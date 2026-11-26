@@ -633,3 +633,32 @@ struct RecycleBinTests {
         #expect(!RecycleBin.contains("/home/x/#recycle"))
     }
 }
+
+@Suite("Photo timeline")
+struct PhotoTimelineTests {
+    private func photo(_ name: String, _ date: String?) -> RemoteItem {
+        let formatter = ISO8601DateFormatter()
+        return RemoteItem(path: "/p/\(name)", name: name, isDirectory: false, modified: date.flatMap(formatter.date))
+    }
+
+    @Test func groupsByMonthNewestFirst() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let items = [
+            photo("a.jpg", "2025-03-02T10:00:00Z"),
+            photo("b.heic", "2026-11-20T10:00:00Z"),
+            photo("c.mov", "2026-11-01T10:00:00Z"),
+            photo("notes.pdf", "2026-11-05T10:00:00Z"),
+            photo("d.jpg", nil),
+        ]
+        let months = PhotoTimeline.months(items, calendar: calendar)
+        #expect(months.map(\.id) == ["2026-11", "2025-03", "undated"])
+        #expect(months[0].items.map(\.name) == ["b.heic", "c.mov"])
+    }
+
+    @Test func skipsRecycleAndSystemFolders() {
+        #expect(PhotoTimeline.shouldSkipFolder(RemoteItem(path: "/home/#recycle", name: "#recycle", isDirectory: true)))
+        #expect(PhotoTimeline.shouldSkipFolder(RemoteItem(path: "/home/x/@eaDir", name: "@eaDir", isDirectory: true)))
+        #expect(!PhotoTimeline.shouldSkipFolder(RemoteItem(path: "/home/2024", name: "2024", isDirectory: true)))
+    }
+}

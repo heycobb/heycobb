@@ -47,6 +47,8 @@ final class AppModel {
     private(set) var folderRevisions: [String: Int] = [:]
     /// Uploads the user started. Runs only while the app is open.
     @ObservationIgnored private(set) lazy var uploads = UploadQueue(model: self)
+    /// The Photos view's index for the active server.
+    @ObservationIgnored private(set) lazy var photoLibrary = PhotoLibrary(model: self)
     #if os(iOS)
     /// Photo Backup for the active server (iPhone and iPad).
     @ObservationIgnored private(set) lazy var backup = PhotoBackup(model: self)
@@ -154,6 +156,7 @@ final class AppModel {
         offline = OfflineStore(namespace: profile.id.uuidString)
         thumbnails = ThumbnailCache(namespace: profile.id.uuidString)
         loadLibrary(for: profile)
+        photoLibrary.load(for: profile)
         #if os(iOS)
         backup.load(for: profile)
         #else
@@ -226,6 +229,8 @@ final class AppModel {
         await OfflineStore(namespace: profile.id.uuidString).removeAll()
         await ThumbnailCache(namespace: profile.id.uuidString).removeAll()
         forgetLibrary(for: profile)
+        photoLibrary.forget(profile)
+        if activeServer == nil { photoLibrary.load(for: nil) }
         #if os(iOS)
         backup.forget(profile)
         if activeServer == nil { backup.load(for: nil) }
