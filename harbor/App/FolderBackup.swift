@@ -66,6 +66,13 @@ final class FolderBackup {
     var isRunning: Bool { runner != nil }
     var isReady: Bool { settings.destination != nil && !settings.sources.isEmpty }
 
+    /// Why automatic backups are waiting (on a Personal Hotspot, or in Low
+    /// Data Mode), if they are.
+    var networkWait: String? {
+        guard settings.automatic, !NetworkPolicy.allows(.backups, automatic: true) else { return nil }
+        return NetworkPolicy.waitingReason
+    }
+
     /// The NAS folder each source goes into, in order.
     var folderNames: [String] { FolderBackupPlanner.folderNames(settings.sources.map(\.name)) }
 
@@ -140,7 +147,8 @@ final class FolderBackup {
 
     /// With Back Up When Files Change on: catch up after connecting.
     func runIfAutomatic() {
-        guard settings.automatic, isReady, runner == nil, !ProcessInfo.processInfo.isLowPowerModeEnabled else { return }
+        guard settings.automatic, isReady, runner == nil, !ProcessInfo.processInfo.isLowPowerModeEnabled,
+              NetworkPolicy.allows(.backups, automatic: true) else { return }
         backUpNow()
     }
 

@@ -52,12 +52,11 @@ struct BackupView: View {
             Section {
                 Toggle("Back Up Automatically", isOn: $backup.settings.automatic)
                 if backup.settings.automatic {
-                    Toggle("Only on Wi-Fi", isOn: $backup.settings.wifiOnly)
                     Toggle("Only While Charging", isOn: $backup.settings.chargingOnly)
                 }
             } footer: {
                 if backup.settings.automatic {
-                    Text("Backs up when you open Ownhold, and in the background when iOS allows. Never in Low Power Mode.")
+                    Text("Backs up when you open Ownhold, and in the background when iOS allows. Never in Low Power Mode. Cellular use is in Settings.")
                 }
             }
         }
@@ -120,6 +119,7 @@ struct BackupView: View {
 
     private var summary: String {
         if backup.settings.destination == nil { return "Choose a folder" }
+        if let wait = backup.networkWait { return wait }
         if let waiting = backup.waiting, waiting > 0 { return waiting == 1 ? "1 item to back up" : "\(waiting) items to back up" }
         if let last = backup.settings.lastBackup { return "Backed up \(last.formatted(.relative(presentation: .named)))" }
         return backup.waiting == 0 ? "Up to date" : "Not backed up yet"

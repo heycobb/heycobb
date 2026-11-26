@@ -54,6 +54,8 @@ final class UploadQueue {
     }
 
     private(set) var jobs: [Job] = []
+    /// Set while a large upload waits for Wi-Fi (Settings › Cellular Data).
+    private(set) var networkWait: String?
     /// Items still being copied out of Photos.
     private(set) var preparing = 0
 
@@ -171,8 +173,11 @@ final class UploadQueue {
         keepAwake(true)
         runner = Task {
             while let index = jobs.firstIndex(where: { $0.state == .waiting }), !Task.isCancelled {
+                guard await waitForNetwork(size: jobs[index].size), !Task.isCancelled else { break }
+                guard let index = jobs.firstIndex(where: { $0.state == .waiting }) else { break }
                 guard await upload(at: index) else { break }
             }
+            networkWait = nil
             runner = nil
             keepAwake(false)
             refreshFolders(force: true)
@@ -186,6 +191,18 @@ final class UploadQueue {
                 if runner == nil, failed == 0, !jobs.contains(where: { $0.state == .waiting }) { clearFinished() }
             }
         }
+    }
+
+    /// Large files wait for Wi-Fi when Settings › Cellular Data › Large
+    /// Uploads is off. Checks every few seconds; false if cancelled.
+    private func waitForNetwork(size: Int64) async -> Bool {
+        guard size >= NetworkPolicy.largeUploadBytes else { return true }
+        while !NetworkPolicy.allows(.largeUploads, automatic: false) {
+            networkWait = NetworkPolicy.waitingReason
+            do { try await Task.sleep(for: .seconds(5)) } catch { return false }
+        }
+        networkWait = nil
+        return true
     }
 
     /// Returns false when the rest of the queue can't continue (signed out,

@@ -569,3 +569,27 @@ struct FolderBackupPlannerTests {
         #expect(FolderBackupPlanner.folderNames(["Documents", "documents", "Desktop"]) == ["Documents", "documents 2", "Desktop"])
     }
 }
+
+@Suite("Network policy")
+struct NetworkPolicyTests {
+    @Test func wifiAllowsEverything() {
+        #expect(NetworkPolicy.allows(expensive: false, constrained: false, cellularAllowed: false, automatic: true))
+    }
+
+    @Test func cellularFollowsTheSwitch() {
+        #expect(!NetworkPolicy.allows(expensive: true, constrained: false, cellularAllowed: false, automatic: false))
+        #expect(NetworkPolicy.allows(expensive: true, constrained: false, cellularAllowed: true, automatic: true))
+    }
+
+    @Test func lowDataModePausesOnlyAutomaticWork() {
+        #expect(!NetworkPolicy.allows(expensive: false, constrained: true, cellularAllowed: true, automatic: true))
+        #expect(NetworkPolicy.allows(expensive: false, constrained: true, cellularAllowed: true, automatic: false))
+    }
+
+    @Test func defaults() {
+        let defaults = UserDefaults(suiteName: "policy-\(UUID().uuidString)")!
+        #expect(!NetworkPolicy.isCellularAllowed(.backups, defaults: defaults))
+        #expect(NetworkPolicy.isCellularAllowed(.largeUploads, defaults: defaults))
+        #expect(!NetworkPolicy.isCellularAllowed(.keptDownloads, defaults: defaults))
+    }
+}

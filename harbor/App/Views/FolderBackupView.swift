@@ -112,6 +112,7 @@ struct FolderBackupView: View {
         let backup = model.folderBackup
         if backup.settings.sources.isEmpty { return "Add a folder" }
         if backup.settings.destination == nil { return "Choose where to back up" }
+        if let wait = backup.networkWait { return wait }
         if let waiting = backup.waiting, waiting > 0 { return waiting == 1 ? "1 file to back up" : "\(waiting) files to back up" }
         if let last = backup.settings.lastBackup { return "Backed up \(last.formatted(.relative(presentation: .named)))" }
         return backup.waiting == 0 ? "Up to date" : "Not backed up yet"

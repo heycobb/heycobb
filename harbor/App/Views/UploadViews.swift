@@ -42,6 +42,9 @@ struct ActivityBar: View {
         if uploads.preparing > 0, uploads.jobs.isEmpty {
             ProgressView().controlSize(.small)
             Text(uploads.preparing == 1 ? "Preparing 1 item…" : "Preparing \(uploads.preparing) items…").font(.callout)
+        } else if uploads.isRunning, let wait = uploads.networkWait {
+            Image(systemName: "wifi").foregroundStyle(.secondary)
+            Text(wait).font(.callout)
         } else if uploads.isRunning {
             ProgressView(value: uploads.fraction)
                 .progressViewStyle(.circular)

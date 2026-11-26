@@ -12,6 +12,9 @@ struct SettingsView: View {
     @State private var showingGuide = false
     @AppStorage(PlaybackPositions.settingKey) private var rememberPosition = true
     @AppStorage(AppModel.filesAppChecksKey) private var keepFilesAppUpdated = true
+    @AppStorage(NetworkPolicy.Use.backups.key) private var cellularBackups = NetworkPolicy.Use.backups.allowedByDefault
+    @AppStorage(NetworkPolicy.Use.largeUploads.key) private var cellularLargeUploads = NetworkPolicy.Use.largeUploads.allowedByDefault
+    @AppStorage(NetworkPolicy.Use.keptDownloads.key) private var cellularKeptDownloads = NetworkPolicy.Use.keptDownloads.allowedByDefault
     #if os(macOS)
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
     @AppStorage("hideDockWhenClosed") private var hideDockWhenClosed = true
@@ -57,6 +60,7 @@ struct SettingsView: View {
                 Form {
                     serversSection
                     filesAppSection
+                    cellularSection
                     storageSection
                 }
                 .formStyle(.grouped)
@@ -71,6 +75,7 @@ struct SettingsView: View {
             AppearanceSection()
             securitySection
             filesAppSection
+            cellularSection
             browsingSection
             storageSection
             aboutSection
@@ -143,6 +148,23 @@ struct SettingsView: View {
                 // iOS keeps an empty Ownhold entry in Files that apps can't remove.
                 Text("The Files app still lists Ownhold, but it stays empty. To hide it, tap ⋯ › Edit in Files.")
             }
+        }
+    }
+
+    /// What may use cellular data (on a Mac: a Personal Hotspot). Things
+    /// you open yourself always work; this covers automatic and large work.
+    private var cellularSection: some View {
+        Section {
+            Toggle(Platform.isMac ? "Folder Backup" : "Photo Backup", isOn: $cellularBackups)
+            Toggle("Large Uploads", isOn: $cellularLargeUploads)
+            #if os(macOS)
+            Toggle("Keep Downloaded", isOn: $cellularKeptDownloads)
+            #endif
+        } header: {
+            Text(Platform.isMac ? "Personal Hotspot" : "Cellular Data")
+        } footer: {
+            // Needed: Low Data Mode overrides these, and that isn't visible here.
+            Text("Low Data Mode pauses automatic backups and downloads.")
         }
     }
 

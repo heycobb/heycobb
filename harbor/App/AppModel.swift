@@ -569,7 +569,8 @@ final class AppModel {
                 try? await Task.sleep(for: Self.filesAppCheckInterval)
                 guard let self else { return }
                 let on = UserDefaults.standard.object(forKey: Self.filesAppChecksKey) as? Bool ?? true
-                guard on, showInFilesApp, !requireUnlock, !ProcessInfo.processInfo.isLowPowerModeEnabled else { continue }
+                guard on, showInFilesApp, !requireUnlock, !ProcessInfo.processInfo.isLowPowerModeEnabled,
+                      !NetworkStatus.shared.isConstrained else { continue }
                 let domains = (try? await NSFileProviderManager.domains()) ?? []
                 for domain in domains {
                     NSFileProviderManager(for: domain)?.signalEnumerator(for: .workingSet) { _ in }

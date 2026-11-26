@@ -24,7 +24,6 @@ final class PhotoBackup {
         /// nil: the whole library. Otherwise only items taken from then on.
         var since: Date?
         var automatic = false
-        var wifiOnly = true
         var chargingOnly = true
         var lastBackup: Date?
     }
@@ -68,6 +67,7 @@ final class PhotoBackup {
             settings = Settings()
             return
         }
+        Self.migrateWiFiOnly(data)
         settings = saved
     }
 
@@ -188,6 +188,22 @@ final class PhotoBackup {
         }
     }
 
+    /// Why an automatic backup is waiting for the network, if it is.
+    var networkWait: String? {
+        guard settings.automatic, !NetworkPolicy.allows(.backups, automatic: true) else { return nil }
+        return NetworkPolicy.waitingReason
+    }
+
+    /// Photo Backup used to have its own Only on Wi-Fi switch. Turned off, it
+    /// becomes Settings › Cellular Data › Photo Backup on (once).
+    private static func migrateWiFiOnly(_ data: Data) {
+        let key = NetworkPolicy.Use.backups.key
+        guard UserDefaults.standard.object(forKey: key) == nil,
+              let raw = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              raw["wifiOnly"] as? Bool == false else { return }
+        UserDefaults.standard.set(true, forKey: key)
+    }
+
     // MARK: Planning
 
     private func makePlan(service: any FileService, destination: String, history: Set<String>) async throws -> BackupPlanner.Plan {
@@ -291,7 +307,8 @@ final class PhotoBackup {
             let state = UIDevice.current.batteryState
             if state != .charging, state != .full { return false }
         }
-        if settings.wifiOnly, NetworkStatus.shared.isExpensive { return false }
+        // Settings › Cellular Data › Photo Backup, and Low Data Mode.
+        if !NetworkPolicy.allows(.backups, automatic: true) { return false }
         return true
     }
 
@@ -332,21 +349,4 @@ final class PhotoBackup {
     }
 }
 
-/// Whether the current connection is cellular or a personal hotspot.
-final class NetworkStatus: @unchecked Sendable {
-    static let shared = NetworkStatus()
-    private let monitor = NWPathMonitor()
-    private let lock = NSLock()
-    private var expensive = false
-
-    private init() {
-        monitor.pathUpdateHandler = { [weak self] path in
-            guard let self else { return }
-            lock.withLock { self.expensive = path.isExpensive }
-        }
-        monitor.start(queue: DispatchQueue(label: "app.ownhold.network"))
-    }
-
-    var isExpensive: Bool { lock.withLock { expensive } }
-}
 #endif
