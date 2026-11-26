@@ -1,0 +1,32 @@
+{
+  "identifier" : "4F2C1E7A",
+  "nonRenewingSubscriptions" : [ ],
+  "products" : [
+    {
+      "displayPrice" : "9.99",
+      "familyShareable" : true,
+      "internalID" : "6740000001",
+      "localizations" : [
+        {
+          "description" : "Backups, Photos, Shortcuts, Keep Downloaded and more. One purchase for iPhone, iPad and Mac.",
+          "displayName" : "Ownhold Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "app.ownhold.pro",
+      "referenceName" : "Ownhold Pro",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [ ]
+  },
+  "subscriptionGroups" : [ ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

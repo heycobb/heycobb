@@ -34,7 +34,7 @@ enum KeptDownloader {
     /// Opens every kept file that isn't downloaded yet, in every NAS location.
     static func downloadKeptFiles() async {
         // Settings › Personal Hotspot › Keep Downloaded, and Low Data Mode.
-        guard NetworkPolicy.allows(.keptDownloads, automatic: true) else { return }
+        guard ProStore.unlocked, NetworkPolicy.allows(.keptDownloads, automatic: true) else { return }
         let domains = (try? await NSFileProviderManager.domains()) ?? []
         for domain in domains {
             let kept = KeptDownloads(domain: domain.identifier.rawValue).paths

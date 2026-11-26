@@ -19,6 +19,7 @@ struct OwnholdApp: App {
         // Shortcuts and Siri actions reach the model through this, including
         // when they launch the app without a window.
         AppDependencyManager.shared.add(dependency: model)
+        ProStore.shared.start()
         #if os(iOS)
         // Large uploads check certificates like everything else, and pick
         // up results of uploads that finished while Ownhold wasn't running.

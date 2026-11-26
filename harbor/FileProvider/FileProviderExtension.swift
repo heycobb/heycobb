@@ -165,6 +165,14 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
         let reply = Reply1(completionHandler)
         let paths = itemIdentifiers.map(FileProviderItem.path(for:))
         let keep = actionIdentifier.rawValue == Self.keepAction
+        // Keep Downloaded is part of Ownhold Pro (Stop Keeping always works).
+        if keep, !SharedContainer.isProUnlocked {
+            reply.handler(NSError(domain: "app.ownhold.Ownhold", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Keep Downloaded is part of Ownhold Pro.",
+                NSLocalizedRecoverySuggestionErrorKey: "Open Ownhold to unlock it.",
+            ]))
+            return Progress()
+        }
         let domainID = domain.identifier.rawValue
         return task { [self] in
             if keep {

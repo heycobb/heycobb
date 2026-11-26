@@ -567,7 +567,9 @@ struct FolderView: View {
                     Button("Upload Files…", systemImage: "arrow.up.doc") { showingFiles = true }
                     #if os(iOS)
                     if DocumentScanner.isAvailable {
-                        Button("Scan Document", systemImage: "doc.viewfinder") { scanning = true }
+                        Button("Scan Document", systemImage: "doc.viewfinder") {
+                            if ProStore.shared.isUnlocked { scanning = true } else { model.showingPro = true }
+                        }
                     }
                     #endif
                     Divider()

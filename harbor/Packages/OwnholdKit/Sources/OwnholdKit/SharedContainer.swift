@@ -43,6 +43,13 @@ public enum SharedContainer {
         isFilesAppEnabled && !SharedConnection.requiresUnlock
     }
 
+    /// Ownhold Pro, as last confirmed by the App Store in the app; read by
+    /// the Finder extension (which can't ask the App Store itself).
+    public static var isProUnlocked: Bool {
+        get { defaults.bool(forKey: "pro.unlocked") }
+        set { defaults.set(newValue, forKey: "pro.unlocked") }
+    }
+
     public static var keychain: Keychain { Keychain(accessGroup: keychainGroup) }
 
     public static func sessionKey(_ id: UUID) -> String { "session.\(id.uuidString)" }

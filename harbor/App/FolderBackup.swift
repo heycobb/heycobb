@@ -147,7 +147,7 @@ final class FolderBackup {
 
     /// With Back Up When Files Change on: catch up after connecting.
     func runIfAutomatic() {
-        guard settings.automatic, isReady, runner == nil, !ProcessInfo.processInfo.isLowPowerModeEnabled,
+        guard settings.automatic, ProStore.unlocked, isReady, runner == nil, !ProcessInfo.processInfo.isLowPowerModeEnabled,
               NetworkPolicy.allows(.backups, automatic: true) else { return }
         backUpNow()
     }

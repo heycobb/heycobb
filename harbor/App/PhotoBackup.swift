@@ -118,7 +118,7 @@ final class PhotoBackup {
 
     /// With Back Up Automatically on: catch up when the app opens.
     func runIfAutomatic() {
-        guard settings.automatic, isReady, runner == nil, Self.conditionsAllow(settings, foreground: true) else { return }
+        guard settings.automatic, ProStore.unlocked, isReady, runner == nil, Self.conditionsAllow(settings, foreground: true) else { return }
         backUpNow()
     }
 

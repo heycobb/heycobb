@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var confirmRemove: ServerProfile?
     @State private var editing: ServerProfile?
     @State private var showingGuide = false
+    @State private var showingPro = false
     @AppStorage(PlaybackPositions.settingKey) private var rememberPosition = true
     @AppStorage(AppModel.filesAppChecksKey) private var keepFilesAppUpdated = true
     @AppStorage(NetworkPolicy.Use.backups.key) private var cellularBackups = NetworkPolicy.Use.backups.allowedByDefault
@@ -26,6 +27,7 @@ struct SettingsView: View {
             .task { await measure() }
             .sheet(item: $editing) { server in ServerEditView(server: server) }
             .sheet(isPresented: $showingGuide) { SetupGuideView() }
+            .sheet(isPresented: $showingPro) { ProView() }
             .confirmationDialog(
                 "Remove \(confirmRemove?.name ?? "server")?",
                 isPresented: Binding(get: { confirmRemove != nil }, set: { if !$0 { confirmRemove = nil } }),
@@ -46,6 +48,7 @@ struct SettingsView: View {
         TabView {
             Tab("General", systemImage: "gearshape") {
                 Form {
+                    proSection
                     startupSection
                     menuBarSection
                     browsingSection
@@ -71,6 +74,7 @@ struct SettingsView: View {
         }
         #else
         Form {
+            proSection
             serversSection
             AppearanceSection()
             securitySection
@@ -89,6 +93,21 @@ struct SettingsView: View {
     }
 
     // MARK: Sections
+
+    private var proSection: some View {
+        Section {
+            Button { showingPro = true } label: {
+                LabeledContent {
+                    Text(ProStore.shared.isUnlocked ? "Unlocked" : (ProStore.shared.product?.displayPrice ?? ""))
+                        .foregroundStyle(.secondary)
+                } label: {
+                    Label("Ownhold Pro", systemImage: ProStore.shared.isUnlocked ? "checkmark.seal.fill" : "seal")
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+        }
+    }
 
     @ViewBuilder private var serversSection: some View {
         Section("Your NAS") {
@@ -134,7 +153,17 @@ struct SettingsView: View {
             Toggle(Platform.isMac ? "Show NAS in Finder" : "Show NAS in Files App", isOn: $model.showInFilesApp)
                 .disabled(model.requireUnlock)
             if model.showInFilesApp, !model.requireUnlock {
-                Toggle(Platform.isMac ? "Keep Finder Up to Date" : "Keep Files App Up to Date", isOn: $keepFilesAppUpdated)
+                // Part of Ownhold Pro.
+                Toggle(isOn: Binding(
+                    get: { keepFilesAppUpdated && ProStore.shared.isUnlocked },
+                    set: { on in if on, !ProStore.shared.isUnlocked { showingPro = true } else { keepFilesAppUpdated = on } }
+                )) {
+                    Label {
+                        Text(Platform.isMac ? "Keep Finder Up to Date" : "Keep Files App Up to Date")
+                    } icon: {
+                        if !ProStore.shared.isUnlocked { Image(systemName: "lock").foregroundStyle(.secondary) }
+                    }
+                }
             }
         } header: {
             Text(Platform.isMac ? "Finder" : "Files App")

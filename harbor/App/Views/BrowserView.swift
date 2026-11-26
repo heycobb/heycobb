@@ -89,14 +89,14 @@ struct BrowserView: View {
             #if os(iOS)
             BackupView()
             #else
-            FolderBackupView()
+            if ProStore.shared.isUnlocked { FolderBackupView() } else { ProLockedView(title: "Folder Backup") }
             #endif
         case .offline:
             OfflineView()
         case .recentlyDeleted:
-            RecentlyDeletedView(bins: recycleBins)
+            if ProStore.shared.isUnlocked { RecentlyDeletedView(bins: recycleBins) } else { ProLockedView(title: "Recently Deleted") }
         case .photos:
-            PhotoLibraryView()
+            if ProStore.shared.isUnlocked { PhotoLibraryView() } else { ProLockedView(title: "Photos") }
         case nil:
             ContentUnavailableView("Choose a folder", systemImage: "sidebar.left")
         }

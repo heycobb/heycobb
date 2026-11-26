@@ -157,6 +157,7 @@ enum OwnholdIntentError: Error, CustomLocalizedStringResourceConvertible {
     case shareLinkFailed
     case cantWake
     case backupNotSetUp
+    case needsPro
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
@@ -165,13 +166,16 @@ enum OwnholdIntentError: Error, CustomLocalizedStringResourceConvertible {
         case .shareLinkFailed: "Ownhold couldn't create a share link."
         case .cantWake: "Wake NAS needs the NAS's MAC address. Add it in Settings › Edit NAS."
         case .backupNotSetUp: "Set up backup in Ownhold first."
+        case .needsPro: "This action is part of Ownhold Pro. Open Ownhold to unlock it."
         }
     }
 }
 
 extension AppModel {
-    /// Connects (or switches) to the NAS an action needs.
+    /// Connects (or switches) to the NAS an action needs. Shortcuts
+    /// actions are part of Ownhold Pro.
     func serviceForIntent(serverID: UUID?) async throws -> any FileService {
+        guard ProStore.unlocked else { throw OwnholdIntentError.needsPro }
         await start()
         if let serverID, activeServer?.id != serverID, let profile = servers.first(where: { $0.id == serverID }) {
             await activate(profile)
@@ -265,6 +269,7 @@ struct WakeNASIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard ProStore.unlocked else { throw OwnholdIntentError.needsPro }
         await model.start()
         guard model.canWake else { throw OwnholdIntentError.cantWake }
         await model.wakeNAS()

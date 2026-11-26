@@ -50,7 +50,19 @@ struct BackupView: View {
             .disabled(backup.isRunning)
 
             Section {
-                Toggle("Back Up Automatically", isOn: $backup.settings.automatic)
+                // Automatic backup is part of Ownhold Pro; Back Up Now is free.
+                Toggle(isOn: Binding(
+                    get: { backup.settings.automatic && ProStore.shared.isUnlocked },
+                    set: { on in
+                        if on, !ProStore.shared.isUnlocked { model.showingPro = true } else { backup.settings.automatic = on }
+                    }
+                )) {
+                    Label {
+                        Text("Back Up Automatically")
+                    } icon: {
+                        if !ProStore.shared.isUnlocked { Image(systemName: "lock").foregroundStyle(.secondary) }
+                    }
+                }
                 if backup.settings.automatic {
                     Toggle("Only While Charging", isOn: $backup.settings.chargingOnly)
                 }

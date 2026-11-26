@@ -60,7 +60,17 @@ final class AppModel {
     /// Set when the active server needs a password (first use or expired session).
     var signInRequest: ServerProfile?
     /// Shows the Add NAS sheet (from the welcome screen or the server menu).
-    var isAddingServer = false
+    /// A second NAS is part of Ownhold Pro: asking for one shows Pro instead.
+    var isAddingServer = false {
+        didSet {
+            if isAddingServer, !ProStore.unlocked, servers.contains(where: { !$0.isDemo }) {
+                isAddingServer = false
+                showingPro = true
+            }
+        }
+    }
+    /// The Ownhold Pro screen (from a locked feature).
+    var showingPro = false
     /// Scan to NAS from Shortcuts: the folder (path) that should start a scan
     /// once it's open.
     var scanRequest: String?
@@ -288,6 +298,10 @@ final class AppModel {
     /// Sends a Wake-on-LAN packet, then tries to connect every 10 seconds
     /// for about a minute (a NAS takes a while to spin up its drives).
     func wakeNAS() async {
+        guard ProStore.unlocked else {
+            showingPro = true
+            return
+        }
         guard let profile = activeServer, let mac = profile.macAddress.flatMap(WakeOnLAN.parseMAC), !isWaking else { return }
         isWaking = true
         defer { isWaking = false }
@@ -620,7 +634,7 @@ final class AppModel {
                 try? await Task.sleep(for: Self.filesAppCheckInterval)
                 guard let self else { return }
                 let on = UserDefaults.standard.object(forKey: Self.filesAppChecksKey) as? Bool ?? true
-                guard on, showInFilesApp, !requireUnlock, !ProcessInfo.processInfo.isLowPowerModeEnabled,
+                guard on, ProStore.unlocked, showInFilesApp, !requireUnlock, !ProcessInfo.processInfo.isLowPowerModeEnabled,
                       !NetworkStatus.shared.isConstrained else { continue }
                 let domains = (try? await NSFileProviderManager.domains()) ?? []
                 for domain in domains {

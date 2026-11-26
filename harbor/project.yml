@@ -124,6 +124,9 @@ schemes:
     build:
       targets:
         Ownhold: all
+    run:
+      # Test purchases of Ownhold Pro when run from Xcode.
+      storeKitConfiguration: Config/Ownhold.storekit
     test:
       targets:
         - package: OwnholdKit/OwnholdKitTests

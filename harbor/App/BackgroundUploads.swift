@@ -136,7 +136,7 @@ extension FileService {
     func uploadAllowingBackground(_ file: URL, as name: String, to folder: String, replacing: Bool,
                                   progress: @escaping @Sendable (Double) -> Void) async throws {
         let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
-        if size >= BackgroundUploads.threshold, let client = self as? FileStationClient {
+        if size >= BackgroundUploads.threshold, ProStore.unlocked, let client = self as? FileStationClient {
             try await BackgroundUploads.shared.upload(file, as: name, to: folder, replacing: replacing, with: client, progress: progress)
         } else {
             try await upload(file, as: name, to: folder, replacing: replacing, progress: progress)

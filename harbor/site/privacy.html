@@ -54,6 +54,8 @@
   <p>Ownhold connects to the NAS addresses you enter: on your home network, through a private network (VPN) such as Tailscale, or over the internet. In the built-in demo library, it makes no network connections at all.</p>
   <p><strong>QuickConnect (optional):</strong> if you enter a Synology QuickConnect ID, Ownhold asks Synology's QuickConnect service (quickconnect.to) for your NAS's current addresses each time it connects. Only the QuickConnect ID is sent to Synology, under Synology's privacy policy, and Synology can see the network address your request comes from, as with any internet request. Your account name, password and files are never sent to Synology, and Ownhold never routes your connection through Synology's relay servers. If you don't enter a QuickConnect ID, Ownhold never contacts Synology.</p>
   <p>If you use Tailscale or another VPN, that connection is provided by its own app, under its own privacy policy. Ownhold doesn't communicate with their servers.</p>
+  <p><strong>Finding your NAS (setup):</strong> while the setup screen looks for a NAS, Ownhold asks devices on your home network that share files whether they run Synology DSM. No account details are sent.</p>
+  <p><strong>Ownhold Pro:</strong> buying or restoring Ownhold Pro goes through Apple's App Store. Apple handles the payment; Ownhold only learns whether Pro is unlocked, and never sees your payment details or Apple Account.</p>
 
   <h2>Share links</h2>
   <p>When you choose <strong>Share Link…</strong>, your NAS creates the link and serves the file to whoever opens it. The link, and any password you set, are stored on your NAS, not by Ownhold or by us. <strong>Stop Sharing</strong> removes it.</p>
@@ -71,6 +73,7 @@
     <li><strong>Local network:</strong> used to reach your NAS on your home network.</li>
     <li><strong>Photos</strong> (when you upload): you choose photos and videos in Apple's own picker, and Ownhold receives only the ones you pick. It doesn't ask for access to your library, and it sends what you pick only to your NAS.</li>
     <li><strong>Photo library</strong> (only if you turn on Photo Backup): Ownhold reads your photos and videos to copy them to the folder you choose on your NAS, directly over your connection. It sends them nowhere else. A list of what has been backed up is kept on this device so nothing is uploaded twice.</li>
+    <li><strong>Camera</strong> (only when you scan a document): used by Apple's document scanner. Scans are uploaded to your NAS and not kept on the device.</li>
     <li><strong>Face ID or Touch ID</strong> (optional): used only to unlock the app. Your device handles this, and Ownhold never receives any biometric data.</li>
   </ul>
 

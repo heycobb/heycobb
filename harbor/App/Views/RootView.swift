@@ -25,6 +25,9 @@ struct RootView: View {
         .sheet(isPresented: $model.isAddingServer) {
             SignInView(existing: nil)
         }
+        .sheet(isPresented: $model.showingPro) {
+            ProView()
+        }
         .sheet(item: model.signInRequest == nil ? $model.certificateReview : .constant(nil)) { review in
             CertificateReviewView(review: review) { trusted in
                 if trusted {
