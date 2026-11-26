@@ -37,6 +37,10 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
             reply.handler(RootItem(name: domain.displayName, readOnly: isPlaceholder), nil)
             return Progress()
         }
+        if identifier == .trashContainer {
+            reply.handler(TrashItem(), nil)
+            return Progress()
+        }
         if isPlaceholder {
             reply.handler(nil, NSFileProviderError(.noSuchItem))
             return Progress()
@@ -67,6 +71,12 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
 
     func createItem(basedOn itemTemplate: NSFileProviderItem, fields: NSFileProviderItemFields, contents url: URL?, options: NSFileProviderCreateItemOptions = [], request: NSFileProviderRequest, completionHandler: @escaping (NSFileProviderItem?, NSFileProviderItemFields, Bool, Error?) -> Void) -> Progress {
         let reply = ChangeReply(completionHandler)
+        // Anything put in Finder's Trash for this location (items that were
+        // never uploaded) stays on this Mac: the NAS has no such folder.
+        if itemTemplate.parentItemIdentifier == .trashContainer {
+            reply.handler(nil, [], false, NSFileProviderError(.excludedFromSync))
+            return Progress()
+        }
         let parent = FileProviderItem.path(for: itemTemplate.parentItemIdentifier)
         let name = itemTemplate.filename
         let isFolder = itemTemplate.contentType?.conforms(to: .folder) == true
@@ -133,8 +143,11 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
     // MARK: Listing
 
     func enumerator(for containerItemIdentifier: NSFileProviderItemIdentifier, request: NSFileProviderRequest) throws -> NSFileProviderEnumerator {
-        guard containerItemIdentifier != .trashContainer else { throw NSFileProviderError(.noSuchItem) }
-        if isPlaceholder { return EmptyEnumerator() }
+        // Items deleted from the NAS are deleted there (or go to DSM's
+        // Recycle Bin), so Finder's Trash for this location is always empty.
+        // It must still answer: refusing made Finder report that the Trash
+        // "needs to be downloaded", and nothing could be moved to it.
+        if containerItemIdentifier == .trashContainer || isPlaceholder { return EmptyEnumerator() }
         return FileProviderEnumerator(container: containerItemIdentifier, context: context, snapshots: snapshots)
     }
 

@@ -61,3 +61,12 @@ final class RootItem: NSObject, NSFileProviderItem {
     var capabilities: NSFileProviderItemCapabilities { readOnly ? [.allowsContentEnumerating] : [.allowsReading, .allowsContentEnumerating] }
     var itemVersion: NSFileProviderItemVersion { NSFileProviderItemVersion(contentVersion: Data("root".utf8), metadataVersion: Data("root".utf8)) }
 }
+
+/// Finder's Trash for this location. Always empty (see the enumerator).
+final class TrashItem: NSObject, NSFileProviderItem {
+    var itemIdentifier: NSFileProviderItemIdentifier { .trashContainer }
+    var parentItemIdentifier: NSFileProviderItemIdentifier { .trashContainer }
+    var filename: String { "Trash" }
+    var contentType: UTType { .folder }
+    var capabilities: NSFileProviderItemCapabilities { [.allowsContentEnumerating, .allowsDeleting] }
+}
