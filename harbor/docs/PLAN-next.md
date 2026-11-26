@@ -100,7 +100,7 @@ Goal: QNAP, UniFi (UNAS), UGREEN, TrueNAS and others, without a separate app.
 
 Free download, plus **Ownhold Pro: one-time $9.99**, a single universal
 purchase covering iPhone, iPad and Mac, with Family Sharing on. No
-subscription. Optional $0 non-consumable trial (e.g. 14 days).
+subscription. No free trial of Pro for now.
 
 - **Free:** browse, open, preview, search, upload/download, players and PiP,
   offline files, Favorites, Recents, share links, compress/extract, one saved
