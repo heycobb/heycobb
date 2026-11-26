@@ -133,18 +133,34 @@ struct BrowserView: View {
         }
         #endif
         .refreshable { await loadShares() }
-        .overlay {
-            if shares.isEmpty, model.connection == .connecting {
-                ProgressView()
-            } else if shares.isEmpty, model.connection == .offline {
-                ContentUnavailableView {
-                    Label("Can't Reach NAS", systemImage: "wifi.slash")
-                } description: {
-                    Text("Offline files are still available.")
-                } actions: {
-                    Button("Try Again") { Task { await model.reconnect() } }
-                }
+    }
+
+    /// Stands in for the shared folders while connecting or unreachable.
+    /// A row in the list (not an overlay), so it never covers the rows below.
+    @ViewBuilder private var sharesPlaceholder: some View {
+        if shares.isEmpty, model.connection == .connecting {
+            HStack(spacing: Theme.Spacing.s) {
+                ProgressView().controlSize(.small)
+                Text("Connecting…").foregroundStyle(Theme.Sidebar.secondary)
             }
+            .listRowBackground(Color.clear)
+        } else if shares.isEmpty, model.connection == .offline {
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                Label {
+                    Text("Can't Reach NAS").foregroundStyle(Theme.Sidebar.text)
+                } icon: {
+                    Image(systemName: "wifi.slash").foregroundStyle(.orange)
+                }
+                .font(.headline)
+                Text("Offline files are still available.")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.Sidebar.secondary)
+                Button("Try Again") { Task { await model.reconnect() } }
+                    .buttonStyle(.borderless)
+                    .padding(.top, Theme.Spacing.xs)
+            }
+            .padding(.vertical, Theme.Spacing.xs)
+            .listRowBackground(Color.clear)
         }
     }
 
@@ -157,6 +173,7 @@ struct BrowserView: View {
     private var sidebarList: some View {
         List {
             Section {
+                sharesPlaceholder
                 ForEach(shares) { share in
                     macRow(.share(share), title: share.name, symbol: "externaldrive")
                 }
@@ -217,6 +234,7 @@ struct BrowserView: View {
         List(selection: $selection) {
             Section {} header: { serverHeading }
             Section {
+                sharesPlaceholder
                 ForEach(shares) { share in
                     NavigationLink(value: SidebarItem.share(share)) {
                         sidebarLabel(share.name, symbol: "externaldrive", item: .share(share))
