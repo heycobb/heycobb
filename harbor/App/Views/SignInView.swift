@@ -89,8 +89,6 @@ struct SignInView: View {
                 } footer: {
                     if needsCode {
                         Text("Your NAS uses 2-factor sign-in. If you remember this device, you won't be asked for a code here again.")
-                    } else {
-                        Text("Your password goes only to your NAS and isn't stored by Ownhold.")
                     }
                 }
 

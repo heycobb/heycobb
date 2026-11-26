@@ -170,9 +170,6 @@ struct OnboardingView: View {
                 link("Where do I find this?") { showingGuide = true }
             case .signIn:
                 primary(working ? "Signing In…" : "Sign In", enabled: canSignIn && !working, action: signIn)
-                Text("Your password goes only to your NAS.")
-                    .font(Onboard.note)
-                    .foregroundStyle(.secondary)
             case .away:
                 primary("Continue", enabled: vpnAddress.isEmpty || vpnEndpoint != nil) {
                     Task {
@@ -198,7 +195,7 @@ struct OnboardingView: View {
             VStack(spacing: Theme.Spacing.s) {
                 Text("Ownhold")
                     .font(Onboard.hero)
-                Text("The files and photos on your NAS, at home and away. Nothing in between: no account, no cloud.")
+                Text("Open and save the files on your NAS.")
                     .font(Onboard.detail)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

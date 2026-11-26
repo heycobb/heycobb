@@ -117,12 +117,7 @@ struct BrowserView: View {
         // iPhone Duo would otherwise split the screen in half).
         .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 360)
         #endif
-        #if os(macOS)
-        // The Mac sidebar is too narrow for toolbar items next to the window
-        // controls, so connection status and the server menu live in a footer,
-        // like the account switcher at the bottom of Mail's sidebar.
-        .safeAreaInset(edge: .bottom) { macFooter }
-        #else
+        #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .automatic) {
                 ConnectionBadge(connection: model.connection)
@@ -172,6 +167,7 @@ struct BrowserView: View {
     /// the tinted sidebar.
     private var sidebarList: some View {
         List {
+            Section { macServerRow }
             Section {
                 sharesPlaceholder
                 ForEach(shares) { share in
@@ -333,36 +329,61 @@ struct BrowserView: View {
     }
 
     #if os(macOS)
-    private var macFooter: some View {
-        HStack(spacing: Theme.Spacing.s) {
-            // Mac sidebars don't show a title, so the NAS name lives here,
-            // above how it's connected (like the account in Mail's sidebar).
-            VStack(alignment: .leading, spacing: 2) {
-                Text(model.activeServer?.name ?? "Ownhold")
-                    .font(.callout.weight(.medium))
-                    .foregroundStyle(Theme.Sidebar.text)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                ConnectionBadge(connection: model.connection)
-                    .labelStyle(.titleAndIcon)
-                    .font(.caption)
-                    .lineLimit(1)
+    /// The NAS in use, at the top of the Mac sidebar (like the account in
+    /// Mail): one line, with a dot for the connection. Clicking it opens
+    /// the server menu, which also says how it's connected.
+    private var macServerRow: some View {
+        Menu {
+            Section(ConnectionBadge.title(for: model.connection)) {
+                serverMenuItems
             }
-            Spacer(minLength: 0)
-            serverMenu
-                .menuStyle(.button)
-                .buttonStyle(.borderless)
-                .labelStyle(.iconOnly)
-                .menuIndicator(.hidden)
-                .fixedSize()
+        } label: {
+            HStack(spacing: Theme.Spacing.s) {
+                Circle()
+                    .fill(connectionColor)
+                    .frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
+                Text(model.activeServer?.name ?? "Ownhold")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.Sidebar.text)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.Sidebar.secondary)
+                Spacer(minLength: 0)
+            }
+            .contentShape(.rect)
         }
-        .padding(.horizontal, Theme.Spacing.m)
-        .padding(.vertical, Theme.Spacing.s)
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        // The whole row opens the menu, not just the name.
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .help(ConnectionBadge.title(for: model.connection))
+        .accessibilityLabel("\(model.activeServer?.name ?? "Ownhold"), \(ConnectionBadge.title(for: model.connection))")
+        .listRowBackground(Color.clear)
+        .padding(.vertical, 2)
+    }
+
+    private var connectionColor: Color {
+        switch model.connection {
+        case .online: .green
+        case .offline: .orange
+        case .idle, .connecting: .secondary
+        }
     }
     #endif
 
     private var serverMenu: some View {
         Menu {
+            serverMenuItems
+        } label: {
+            Label("Servers", systemImage: "externaldrive.connected.to.line.below")
+        }
+    }
+
+    @ViewBuilder private var serverMenuItems: some View {
             ForEach(model.servers) { server in
                 Button {
                     Task { await model.activate(server) }
@@ -384,9 +405,6 @@ struct BrowserView: View {
             Button(model.activeServer?.isDemo == true ? "Leave Demo" : "Sign Out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
                 Task { await model.signOut() }
             }
-        } label: {
-            Label("Servers", systemImage: "externaldrive.connected.to.line.below")
-        }
     }
 
     private func loadShares() async {
@@ -435,7 +453,9 @@ struct ConnectionBadge: View {
             .accessibilityLabel("Connection: \(title)")
     }
 
-    private var title: String {
+    private var title: String { Self.title(for: connection) }
+
+    static func title(for connection: AppModel.Connection) -> String {
         switch connection {
         case .idle: "Not connected"
         case .connecting: "Connecting…"
