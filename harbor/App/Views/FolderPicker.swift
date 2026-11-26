@@ -1,21 +1,24 @@
 import OwnholdKit
 import SwiftUI
 
-/// Chooses a destination folder for Move. Shows folders only.
+/// Chooses a destination folder: for Move (pass the items being moved),
+/// or for anything else (pass a title and button label). Shows folders only.
 struct FolderPicker: View {
     let items: [RemoteItem]
+    var title: String?
+    var actionTitle = "Move Here"
     let onPick: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
-            FolderPickerLevel(folder: nil, items: items) { destination in
+            FolderPickerLevel(folder: nil, items: items, customTitle: title, actionTitle: actionTitle) { destination in
                 dismiss()
                 onPick(destination)
             }
             .navigationDestination(for: RemoteItem.self) { folder in
-                FolderPickerLevel(folder: folder, items: items) { destination in
+                FolderPickerLevel(folder: folder, items: items, customTitle: title, actionTitle: actionTitle) { destination in
                     dismiss()
                     onPick(destination)
                 }
@@ -31,6 +34,8 @@ private struct FolderPickerLevel: View {
     /// nil = the list of shared folders.
     let folder: RemoteItem?
     let items: [RemoteItem]
+    let customTitle: String?
+    let actionTitle: String
     let onPick: (String) -> Void
 
     @Environment(AppModel.self) private var model
@@ -63,7 +68,7 @@ private struct FolderPickerLevel: View {
                 Button("Cancel") { dismiss() }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Move Here") { if let folder { onPick(folder.path) } }
+                Button(actionTitle) { if let folder { onPick(folder.path) } }
                     .disabled(!canMoveHere)
             }
         }
@@ -71,13 +76,15 @@ private struct FolderPickerLevel: View {
     }
 
     private var title: String {
-        items.count == 1 ? "Move “\(items[0].name)”" : "Move \(items.count) Items"
+        if let customTitle { return customTitle }
+        return items.count == 1 ? "Move “\(items[0].name)”" : "Move \(items.count) Items"
     }
 
     /// Not the shares list, not where everything already is, and not inside
     /// a folder that's being moved.
     private var canMoveHere: Bool {
         guard let folder else { return false }
+        if items.isEmpty { return true }
         if items.allSatisfy({ $0.parentPath == folder.path }) { return false }
         return !items.contains { folder.path == $0.path || folder.path.hasPrefix($0.path + "/") }
     }

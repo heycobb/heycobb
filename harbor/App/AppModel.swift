@@ -47,6 +47,10 @@ final class AppModel {
     private(set) var folderRevisions: [String: Int] = [:]
     /// Uploads the user started. Runs only while the app is open.
     @ObservationIgnored private(set) lazy var uploads = UploadQueue(model: self)
+    #if os(iOS)
+    /// Photo Backup for the active server (iPhone and iPad).
+    @ObservationIgnored private(set) lazy var backup = PhotoBackup(model: self)
+    #endif
 
     /// Set when the active server needs a password (first use or expired session).
     var signInRequest: ServerProfile?
@@ -136,6 +140,9 @@ final class AppModel {
         offline = OfflineStore(namespace: profile.id.uuidString)
         thumbnails = ThumbnailCache(namespace: profile.id.uuidString)
         loadLibrary(for: profile)
+        #if os(iOS)
+        backup.load(for: profile)
+        #endif
         await refreshSaved()
 
         if profile.isDemo {
@@ -203,6 +210,10 @@ final class AppModel {
         await OfflineStore(namespace: profile.id.uuidString).removeAll()
         await ThumbnailCache(namespace: profile.id.uuidString).removeAll()
         forgetLibrary(for: profile)
+        #if os(iOS)
+        backup.forget(profile)
+        if activeServer == nil { backup.load(for: nil) }
+        #endif
         keychain.remove(sessionKey(profile))
         for endpoint in profile.allEndpoints {
             trust.forget(host: CertificateTrustKey.make(endpoint.url))
@@ -446,6 +457,9 @@ final class AppModel {
             service = client
             connection = .online(endpoint)
             await filesAppSignedIn(profile)
+            #if os(iOS)
+            backup.runIfAutomatic()
+            #endif
             await refreshOffline()
         } catch {
             service = nil

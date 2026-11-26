@@ -329,6 +329,45 @@ struct FileChangeTests {
         #expect(link.url.host() == "nas.example.com")
     }
 
+    @Test func backupFoldersByMonth() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/New_York")!
+        let date = ISO8601DateFormatter().date(from: "2026-03-05T12:00:00Z")!
+        #expect(BackupPlanner.folder(for: date, in: "/home/Backup", calendar: calendar) == "/home/Backup/2026/03")
+        #expect(BackupPlanner.folder(for: nil, in: "/home/Backup", calendar: calendar) == "/home/Backup/Undated")
+    }
+
+    @Test func backupSkipsWhatsDoneAndAvoidsClashes() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let date = ISO8601DateFormatter().date(from: "2026-11-02T10:00:00Z")!
+        let live = BackupPlanner.Asset(id: "A", created: date, resources: [
+            .init(name: "IMG_0001.HEIC", size: 100), .init(name: "IMG_0001.MOV", size: 900),
+        ])
+        let photo = BackupPlanner.Asset(id: "B", created: date, resources: [.init(name: "IMG_0002.HEIC", size: 200)])
+        let clash = BackupPlanner.Asset(id: "C", created: date, resources: [.init(name: "IMG_0003.HEIC", size: 300)])
+        let done = BackupPlanner.Asset(id: "D", created: date, resources: [.init(name: "IMG_0004.HEIC", size: 400)])
+        let plan = BackupPlanner.plan(
+            [live, photo, clash, done],
+            destination: "/home/Backup",
+            history: [BackupPlanner.historyKey(assetID: "D", resource: "IMG_0004.HEIC")],
+            existing: ["/home/Backup/2026/11": ["img_0002.heic": 200, "img_0003.heic": 999]],
+            calendar: calendar
+        )
+        // B is already on the NAS (same name and size); D was backed up before.
+        #expect(plan.alreadyThere == [BackupPlanner.historyKey(assetID: "B", resource: "IMG_0002.HEIC")])
+        #expect(plan.jobs.map(\.name) == ["IMG_0001.HEIC", "IMG_0001.MOV", "IMG_0003 2.HEIC"])
+        #expect(Set(plan.jobs.map(\.folder)) == ["/home/Backup/2026/11"])
+        #expect(plan.bytes == 1300)
+    }
+
+    @Test func backupChecksUnknownSizesLater() {
+        let asset = BackupPlanner.Asset(id: "A", created: nil, resources: [.init(name: "IMG_1.HEIC", size: nil), .init(name: "IMG_2.HEIC", size: nil)])
+        let plan = BackupPlanner.plan([asset], destination: "/b", history: [], existing: ["/b/Undated": ["img_1.heic": 10]])
+        #expect(plan.jobs.map(\.checkExisting) == [true, false])
+        #expect(plan.jobs.map(\.name) == ["IMG_1.HEIC", "IMG_2.HEIC"])
+    }
+
     @Test func sharedChangesMergeAndClear() {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: directory) }

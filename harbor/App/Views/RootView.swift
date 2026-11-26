@@ -48,6 +48,15 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { model.lockIfNeeded() }
             if phase == .active, model.isLocked { Task { await model.unlock() } }
+            #if os(iOS)
+            if phase == .active {
+                model.backup.refreshAccess()
+                model.backup.runIfAutomatic()
+            }
+            if phase == .background, model.backup.settings.automatic {
+                PhotoBackup.scheduleBackground(model.backup.settings)
+            }
+            #endif
         }
         .task {
             // Cold launch: the scene may already be active, so onChange won't fire.

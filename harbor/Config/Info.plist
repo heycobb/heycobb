@@ -10,12 +10,21 @@
 	<string>$(AppIdentifierPrefix)app.ownhold.shared</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Ownhold connects to your NAS on your home network.</string>
-	<!-- iOS: audio keeps playing with the screen locked, and video can float in
-	     Picture in Picture. Only while a player is open; nothing syncs in the background. -->
+	<!-- iOS: audio keeps playing with the screen locked and video can float in
+	     Picture in Picture (only while a player is open); "processing" runs Photo
+	     Backup in the background, only with Back Up Automatically turned on. -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
+		<string>processing</string>
 	</array>
+	<!-- Photo Backup › Back Up Automatically (off unless turned on). -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>app.ownhold.Ownhold.backup</string>
+	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Ownhold backs up your photos and videos to your NAS when you turn on Photo Backup.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Ownhold can use Face ID to keep your files private.</string>
 	<key>NSAppTransportSecurity</key>

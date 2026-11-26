@@ -6,6 +6,7 @@ enum SidebarItem: Hashable {
     case favorite(RemoteItem)
     case recents
     case offline
+    case backup
 }
 
 /// Sidebar of shares + a folder stack. On iPhone this collapses into a single
@@ -77,6 +78,12 @@ struct BrowserView: View {
             FolderView(folder: folder)
         case .recents:
             RecentsView()
+        case .backup:
+            #if os(iOS)
+            BackupView()
+            #else
+            EmptyView()
+            #endif
         case .offline:
             OfflineView()
         case nil:
@@ -241,6 +248,10 @@ struct BrowserView: View {
                         .badge(model.savedPaths.count)
                 }
                 .listRowBackground(rowBackground(.offline))
+                NavigationLink(value: SidebarItem.backup) {
+                    sidebarLabel("Photo Backup", symbol: "photo.on.rectangle", item: .backup)
+                }
+                .listRowBackground(rowBackground(.backup))
             }
         }
         .listItemTint(.fixed(Theme.accent))

@@ -4,11 +4,20 @@ import SwiftUI
 @main
 struct OwnholdApp: App {
     static let mainWindowID = "main"
-    @State private var model = AppModel()
+    @State private var model: AppModel
     #if os(macOS)
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
     #endif
+
+    init() {
+        let model = AppModel()
+        _model = State(initialValue: model)
+        #if os(iOS)
+        // Must be registered before launch finishes.
+        PhotoBackup.registerBackgroundTask(model: model)
+        #endif
+    }
 
     var body: some Scene {
         #if os(macOS)
