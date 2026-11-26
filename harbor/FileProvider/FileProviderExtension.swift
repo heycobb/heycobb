@@ -1,4 +1,5 @@
 import FileProvider
+import os
 import OwnholdKit
 import UniformTypeIdentifiers
 
@@ -177,16 +178,25 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
             SharedChanges.record(domain: domainID, folders: Array(parents))
             let manager = NSFileProviderManager(for: domain)
             manager?.signalEnumerator(for: .workingSet) { _ in }
-            reply.handler(nil)
             // The keep policy alone leaves downloads to a background scheduler
-            // that can wait a long time; ask for each file now instead.
+            // that can wait a long time; ask for each file now instead. Done
+            // before replying: the system may stop the extension once it has.
             if keep, let manager {
-                for path in await filesInside(paths) {
-                    manager.requestDownloadForItem(withIdentifier: FileProviderItem.identifier(for: path), requestedRange: NSRange(location: NSNotFound, length: 0)) { _ in }
+                let files = await filesInside(paths)
+                Self.log.info("Keep Downloaded: requesting \(files.count) files")
+                for path in files {
+                    do {
+                        try await manager.requestDownloadForItem(withIdentifier: FileProviderItem.identifier(for: path), requestedRange: NSRange(location: NSNotFound, length: 0))
+                    } catch {
+                        Self.log.error("Keep Downloaded: request failed: \(String(describing: error), privacy: .public)")
+                    }
                 }
             }
+            reply.handler(nil)
         }
     }
+
+    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "files-extension")
 
     /// Every file in (or among) the kept items, listing folders on the way
     /// so Finder learns about them too. Capped, so a huge folder can't run away.
