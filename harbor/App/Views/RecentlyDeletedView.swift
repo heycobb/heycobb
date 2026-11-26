@@ -4,15 +4,15 @@ import SwiftUI
 /// Recently Deleted: each shared folder's DSM Recycle Bin, browsable like a
 /// folder, with Restore and Delete Permanently.
 struct RecentlyDeletedView: View {
-    let bins: [RemoteItem]
+    let bins: [AppModel.RecycleBinFolder]
 
     var body: some View {
         List {
-            ForEach(bins) { share in
+            ForEach(bins) { bin in
                 NavigationLink {
-                    RecycleFolderView(path: RecycleBin.folder(forShare: share.path), title: share.name)
+                    RecycleFolderView(path: bin.path, title: bin.title)
                 } label: {
-                    Label(share.name, systemImage: "externaldrive")
+                    Label(bin.title, systemImage: "externaldrive")
                 }
             }
         }
@@ -68,15 +68,21 @@ private struct RecycleFolderView: View {
         }
     }
 
-    @ViewBuilder private func row(_ item: RemoteItem) -> some View {
-        if item.isDirectory {
-            NavigationLink {
-                RecycleFolderView(path: item.path, title: item.name)
-            } label: {
+    private func row(_ item: RemoteItem) -> some View {
+        HStack {
+            if item.isDirectory {
+                NavigationLink {
+                    RecycleFolderView(path: item.path, title: item.name)
+                } label: {
+                    ItemRow(item: item, saved: false, busy: false)
+                }
+            } else {
                 ItemRow(item: item, saved: false, busy: false)
             }
-        } else {
-            ItemRow(item: item, saved: false, busy: false)
+            // Visible, not only in the menu: restoring is why you're here.
+            Button("Restore") { Task { await restore(item) } }
+                .buttonStyle(.borderless)
+                .foregroundStyle(Theme.accent)
         }
     }
 

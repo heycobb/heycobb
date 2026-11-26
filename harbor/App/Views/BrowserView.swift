@@ -20,7 +20,7 @@ struct BrowserView: View {
     @State private var selection: SidebarItem?
     @State private var shares: [RemoteItem] = []
     /// Shared folders with a Recycle Bin this account can open.
-    @State private var recycleBins: [RemoteItem] = []
+    @State private var recycleBins: [AppModel.RecycleBinFolder] = []
     @State private var path: [RemoteItem] = []
     @State private var showingSettings = false
     // Both columns from the start wherever they fit; one column on iPhone either way.

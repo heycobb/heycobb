@@ -2,16 +2,37 @@ import Foundation
 import OwnholdKit
 
 /// Recently Deleted: DSM's Recycle Bin (see `RecycleBin`).
+import os
+
 extension AppModel {
-    /// Shared folders whose Recycle Bin this account can open. A share
-    /// without one (turned off, never used, or admin-only) isn't listed.
-    func recycleBins(in shares: [RemoteItem]) async -> [RemoteItem] {
-        guard let service else { return [] }
-        var bins: [RemoteItem] = []
+    fileprivate static let recycleLog = Logger(subsystem: "app.ownhold.Ownhold", category: "recycle-bin")
+
+    /// A Recycle Bin to show: a shared folder's, or for "home" the
+    /// account's part of the homes shared folder's (DSM keeps deleted home
+    /// files in /homes/#recycle/<account>).
+    struct RecycleBinFolder: Identifiable, Hashable {
+        let title: String
+        let path: String
+        var id: String { path }
+    }
+
+    /// Recycle Bins this account can open. A shared folder without one
+    /// (turned off, never used, or admin-only) isn't listed.
+    func recycleBins(in shares: [RemoteItem]) async -> [RecycleBinFolder] {
+        guard let service, let account = activeServer?.account else { return [] }
+        var bins: [RecycleBinFolder] = []
         for share in shares {
-            let folder = RecycleBin.folder(forShare: share.path)
-            if (try? await service.list(folder: folder, offset: 0, limit: 1, sort: .name, ascending: true)) != nil {
-                bins.append(share)
+            let candidates = share.path == "/home"
+                ? [RemoteItem.join(RecycleBin.folder(forShare: "/homes"), account), RecycleBin.folder(forShare: share.path)]
+                : [RecycleBin.folder(forShare: share.path)]
+            for folder in candidates {
+                do {
+                    _ = try await service.list(folder: folder, offset: 0, limit: 1, sort: .name, ascending: true)
+                    bins.append(RecycleBinFolder(title: share.name, path: folder))
+                    break
+                } catch {
+                    Self.recycleLog.notice("No Recycle Bin at a candidate path: \(String(describing: error), privacy: .public)")
+                }
             }
         }
         return bins
@@ -20,7 +41,11 @@ extension AppModel {
     /// Moves an item back where it was deleted from, recreating folders on
     /// the way if they're gone too. Fails, with a message, on a name clash.
     func restore(_ item: RemoteItem) async -> Bool {
-        guard let service, let original = RecycleBin.originalPath(of: item.path) else { return false }
+        guard let service, var original = RecycleBin.originalPath(of: item.path) else { return false }
+        // From the account's part of the homes bin: back into "home".
+        if let account = activeServer?.account, original.hasPrefix("/homes/\(account)/") {
+            original = "/home/" + original.dropFirst("/homes/\(account)/".count)
+        }
         let parent = (original as NSString).deletingLastPathComponent
         do {
             try await ensureFolderExists(parent, service: service)
