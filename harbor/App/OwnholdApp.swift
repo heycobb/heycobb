@@ -90,7 +90,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// running there (uploads keep going). Without it, Ownhold quits like
     /// other single-window apps.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        !(UserDefaults.standard.object(forKey: "showMenuBarItem") as? Bool ?? true)
+        !DockIcon.keepsRunning
+    }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let center = NotificationCenter.default
+        // A window closing may leave none open; one opening needs the Dock icon back.
+        for name in [NSWindow.willCloseNotification, NSWindow.didBecomeKeyNotification, NSWindow.didBecomeMainNotification] {
+            center.addObserver(forName: name, object: nil, queue: .main) { _ in
+                // After the close finishes, so the closing window no longer counts.
+                DispatchQueue.main.async { MainActor.assumeIsolated { DockIcon.update() } }
+            }
+        }
+    }
+}
+
+/// Settings › Menu Bar › Hide Dock Icon When Closed: while Ownhold has no
+/// window open it lives only in the menu bar, like other menu bar apps.
+@MainActor
+enum DockIcon {
+    nonisolated static var keepsRunning: Bool {
+        UserDefaults.standard.object(forKey: "showMenuBarItem") as? Bool ?? true
+    }
+
+    static var hidesWhenClosed: Bool {
+        keepsRunning && (UserDefaults.standard.object(forKey: "hideDockWhenClosed") as? Bool ?? true)
+    }
+
+    /// Shows the Dock icon while any window (main or Settings) is open, and
+    /// hides it once the last one closes, if the setting is on.
+    static func update() {
+        // The menu bar item's own windows can't become main, so they don't count.
+        let hasWindow = NSApp.windows.contains { $0.isVisible && $0.canBecomeMain }
+        let policy: NSApplication.ActivationPolicy = hidesWhenClosed && !hasWindow ? .accessory : .regular
+        guard NSApp.activationPolicy() != policy else { return }
+        NSApp.setActivationPolicy(policy)
+        if policy == .regular {
+            // Coming back from the menu bar: restore the chosen icon and bring the window forward.
+            ThemeSettings.shared.appIcon.apply()
+            NSApp.activate()
+        }
+    }
+
+    /// Call before opening a window from the menu bar, so it opens as a normal app window.
+    static func show() {
+        if NSApp.activationPolicy() != .regular {
+            NSApp.setActivationPolicy(.regular)
+            ThemeSettings.shared.appIcon.apply()
+        }
+        NSApp.activate()
     }
 }
 #endif

@@ -12,6 +12,7 @@ struct SettingsView: View {
     @AppStorage(PlaybackPositions.settingKey) private var rememberPosition = true
     #if os(macOS)
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
+    @AppStorage("hideDockWhenClosed") private var hideDockWhenClosed = true
     #endif
 
     var body: some View {
@@ -49,6 +50,9 @@ struct SettingsView: View {
             #if os(macOS)
             Section("Menu Bar") {
                 Toggle("Show Ownhold in Menu Bar", isOn: $showMenuBarItem)
+                if showMenuBarItem {
+                    Toggle("Hide Dock Icon When Closed", isOn: $hideDockWhenClosed)
+                }
             }
             #endif
 

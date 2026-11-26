@@ -133,7 +133,7 @@ struct MenuBarMenu: View {
     @ViewBuilder private var appItems: some View {
         Button("Open Ownhold") { showMainWindow() }
         Button("Settings…") {
-            NSApp.activate()
+            DockIcon.show()
             openSettings()
         }
         .keyboardShortcut(",")
@@ -145,8 +145,8 @@ struct MenuBarMenu: View {
     // MARK: Actions
 
     private func showMainWindow() {
+        DockIcon.show()
         openWindow(id: OwnholdApp.mainWindowID)
-        NSApp.activate()
     }
 
     private func show(_ target: SidebarItem) {
