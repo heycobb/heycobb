@@ -34,9 +34,9 @@ final class AppModel {
     /// Folders pinned to the sidebar, for the active server.
     var favorites: [RemoteItem] = []
     /// Files opened recently on the active server, newest first. Kept on
-    /// this device only, and not at all with Keep Recent Files off.
+    /// this device only, and not at all with Show Recents off.
     var recents: [RemoteItem] = []
-    /// Settings › Privacy › Keep Recent Files.
+    /// Settings › Show Recents.
     var keepRecents: Bool {
         didSet {
             defaults.set(keepRecents, forKey: Keys.keepRecents)

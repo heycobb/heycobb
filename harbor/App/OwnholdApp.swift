@@ -56,7 +56,7 @@ struct OwnholdApp: App {
         Settings {
             SettingsView()
                 .environment(model)
-                .frame(width: 520, height: 560)
+                .frame(width: 540, height: 520)
         }
         #endif
     }

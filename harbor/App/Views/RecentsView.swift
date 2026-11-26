@@ -2,7 +2,7 @@ import OwnholdKit
 import SwiftUI
 
 /// Files opened recently on this NAS, newest first. Kept on this device
-/// only; Settings › Privacy › Keep Recent Files turns it off.
+/// only; Settings › Show Recents turns it off.
 struct RecentsView: View {
     @Environment(AppModel.self) private var model
     @State private var previewURL: URL?
