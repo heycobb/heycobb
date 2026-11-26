@@ -662,3 +662,12 @@ struct PhotoTimelineTests {
         #expect(!PhotoTimeline.shouldSkipFolder(RemoteItem(path: "/home/2024", name: "2024", isDirectory: true)))
     }
 }
+
+@Suite struct CertificateKeyTests {
+    /// URLSession reports hosts in lowercase; a NAS found on the network
+    /// keeps its name's case ("FirelandsDS25.local").
+    @Test func hostKeyIgnoresCase() {
+        #expect(CertificateTrust.hostKey(host: "FirelandsDS25.local", port: 5001) == "firelandsds25.local:5001")
+        #expect(CertificateTrust.hostKey(host: "FirelandsDS25.local", port: 5001) == CertificateTrust.hostKey(host: "firelandsds25.local", port: 5001))
+    }
+}

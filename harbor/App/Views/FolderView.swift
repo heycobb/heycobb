@@ -324,7 +324,7 @@ struct FolderView: View {
                 Button("Try Again") { Task { await reload() } }
             }
         } else if items.isEmpty, !loaded, searchResults == nil {
-            ProgressView()
+            DelayedProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         } else if shown.isEmpty, !loading {
@@ -359,7 +359,7 @@ struct FolderView: View {
                 row(for: item)
                     .onAppear { loadMoreIfNeeded(item) }
             }
-            if loading { ProgressView().frame(maxWidth: .infinity) }
+            if loading { DelayedProgressView().frame(maxWidth: .infinity) }
         }
         .listStyle(.plain)
     }
@@ -421,7 +421,7 @@ struct FolderView: View {
             } else {
                 labeledGrid(shown)
             }
-            if loading { ProgressView().padding() }
+            if loading { DelayedProgressView().padding() }
         }
     }
 

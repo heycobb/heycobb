@@ -70,6 +70,10 @@ struct MenuBarMenu: View {
 
     @ViewBuilder private var uploads: some View {
         let queue = model.uploads
+        if let progress = model.syncProgress, progress.kind == .folderBackup {
+            Divider()
+            Text(progress.fraction.map { "\(progress.title): \(progress.detail) (\(Int($0 * 100))%)" } ?? "\(progress.title)…")
+        }
         if queue.isRunning {
             Divider()
             Text("Uploading \(queue.completed + 1) of \(queue.jobs.count { $0.state != .cancelled }) (\(Int(queue.fraction * 100))%)")

@@ -18,7 +18,9 @@ public final class CertificateTrust: NSObject, URLSessionDelegate, @unchecked Se
 
     public init(keychain: Keychain = Keychain()) {
         self.keychain = keychain
-        self.pins = keychain.codable([String: String].self, for: Self.pinsKey) ?? [:]
+        let saved = keychain.codable([String: String].self, for: Self.pinsKey) ?? [:]
+        // Older versions kept the host's case; keys are lowercase now.
+        self.pins = Dictionary(saved.map { ($0.key.lowercased(), $0.value) }, uniquingKeysWith: { first, _ in first })
     }
 
     /// Trust a certificate the user has checked, for the address it came
@@ -28,7 +30,7 @@ public final class CertificateTrust: NSObject, URLSessionDelegate, @unchecked Se
     /// addresses may present: exactly this key.
     public func trust(_ info: CertificateInfo, alsoFor hostKeys: [String] = []) {
         lock.withLock {
-            for key in Set([info.host] + hostKeys) {
+            for key in Set(([info.host] + hostKeys).map { $0.lowercased() }) {
                 pins[key] = info.fingerprint
             }
             keychain.setCodable(pins, for: Self.pinsKey)
@@ -40,8 +42,8 @@ public final class CertificateTrust: NSObject, URLSessionDelegate, @unchecked Se
     /// none of `existingKeys` is pinned (a publicly trusted certificate).
     public func extendPin(from existingKeys: [String], to newKeys: [String]) {
         lock.withLock {
-            guard let fingerprint = existingKeys.lazy.compactMap({ self.pins[$0] }).first else { return }
-            for key in newKeys where pins[key] == nil {
+            guard let fingerprint = existingKeys.lazy.compactMap({ self.pins[$0.lowercased()] }).first else { return }
+            for key in newKeys.map({ $0.lowercased() }) where pins[key] == nil {
                 pins[key] = fingerprint
             }
             keychain.setCodable(pins, for: Self.pinsKey)
@@ -50,7 +52,7 @@ public final class CertificateTrust: NSObject, URLSessionDelegate, @unchecked Se
 
     public func forget(host: String) {
         lock.withLock {
-            pins.removeValue(forKey: host)
+            pins.removeValue(forKey: host.lowercased())
             keychain.setCodable(pins, for: Self.pinsKey)
         }
     }
@@ -61,7 +63,9 @@ public final class CertificateTrust: NSObject, URLSessionDelegate, @unchecked Se
         lock.withLock { rejections.removeValue(forKey: hostKey) }
     }
 
-    static func hostKey(host: String, port: Int) -> String { "\(host):\(port)" }
+    /// Host names are compared without case: URLSession reports
+    /// "FirelandsDS25.local" as "firelandsds25.local".
+    public static func hostKey(host: String, port: Int) -> String { "\(host.lowercased()):\(port)" }
 
     public func urlSession(
         _ session: URLSession,

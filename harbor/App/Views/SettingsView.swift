@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var showingGuide = false
     @State private var showingPro = false
     @AppStorage(PlaybackPositions.settingKey) private var rememberPosition = true
+    @AppStorage(SyncIndicator.liveActivityKey) private var showLiveActivity = true
     @AppStorage(AppModel.filesAppChecksKey) private var keepFilesAppUpdated = true
     @AppStorage(NetworkPolicy.Use.backups.key) private var cellularBackups = NetworkPolicy.Use.backups.allowedByDefault
     @AppStorage(NetworkPolicy.Use.largeUploads.key) private var cellularLargeUploads = NetworkPolicy.Use.largeUploads.allowedByDefault
@@ -79,6 +80,7 @@ struct SettingsView: View {
             AppearanceSection()
             securitySection
             filesAppSection
+            lockScreenSection
             cellularSection
             browsingSection
             storageSection
@@ -196,6 +198,16 @@ struct SettingsView: View {
             Text("Low Data Mode pauses automatic backups and downloads.")
         }
     }
+
+    #if os(iOS)
+    /// The Live Activity for long backups and uploads.
+    private var lockScreenSection: some View {
+        Section("Lock Screen") {
+            Toggle("Show Backup and Upload Progress", isOn: $showLiveActivity)
+                .onChange(of: showLiveActivity) { SyncIndicator.shared.settingChanged(showLiveActivity) }
+        }
+    }
+    #endif
 
     private var browsingSection: some View {
         @Bindable var model = model

@@ -44,6 +44,9 @@ targets:
         embed: true
       - target: OwnholdShare
         embed: true
+      - target: OwnholdWidgets
+        embed: true
+        destinationFilters: [iOS]
     settings:
       base:
         PRODUCT_NAME: Ownhold
@@ -55,6 +58,8 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Ownhold
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        # Progress of long backups and uploads on the Lock Screen (Settings can turn it off).
+        INFOPLIST_KEY_NSSupportsLiveActivities: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -117,6 +122,26 @@ targets:
         CODE_SIGN_ENTITLEMENTS: ShareExtension/Share-iOS.entitlements
         "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": ShareExtension/Share-macOS$(OWNHOLD_ENTITLEMENTS_SUFFIX).entitlements
         ENABLE_HARDENED_RUNTIME: YES
+        SKIP_INSTALL: YES
+
+  # The Live Activity for long backups and uploads (iPhone and iPad).
+  OwnholdWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+        excludes: ["Info.plist"]
+    dependencies:
+      - package: OwnholdKit
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    settings:
+      base:
+        PRODUCT_NAME: OwnholdWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: app.ownhold.Ownhold.Widgets
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_FILE: Widgets/Info.plist
+        GENERATE_INFOPLIST_FILE: YES
         SKIP_INSTALL: YES
 
 schemes:

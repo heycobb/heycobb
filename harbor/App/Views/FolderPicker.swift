@@ -54,7 +54,7 @@ private struct FolderPickerLevel: View {
         }
         .overlay {
             if loading {
-                ProgressView()
+                DelayedProgressView()
             } else if folders.isEmpty {
                 ContentUnavailableView("No Folders", systemImage: "folder")
             }

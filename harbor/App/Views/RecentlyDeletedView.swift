@@ -48,7 +48,7 @@ private struct RecycleFolderView: View {
         .navigationTitle(title)
         .overlay {
             if items == nil {
-                ProgressView()
+                DelayedProgressView()
             } else if items?.isEmpty == true {
                 ContentUnavailableView("Nothing Deleted", systemImage: "trash")
             }

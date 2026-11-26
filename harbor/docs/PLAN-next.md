@@ -134,7 +134,9 @@ subscription. No free trial of Pro for now.
 - Photo Backup on the Mac (reads the Mac's Photos library: ask first).
 - NAS status at a glance (item 6), share with NAS users, file versions.
 
-## Feedback to do (2026-11-26)
+## Feedback (2026-11-26), done
+
+Done: spinner waits 0.4 s; Photos text rewritten; `.local` fixed (certificate keys are now case-insensitive, the mixed-case name made the certificate prompt show as "unreachable"); double sign-in fixed (reconnecting to the same NAS no longer signs out first); Live Activity (iPhone, Settings › Lock Screen) and Dock progress bar plus menu bar activity icon (Mac). Still to check on a real iPhone: the Live Activity during a real backup.
 
 1. **Folder spinner flash.** The small spinner when opening a folder shows for a split second and looks like a stutter. Only show it after a short delay (about 0.4 s), and keep it up long enough not to flicker once it does appear.
 2. **Sync activity indicator.** Live Activity on iPhone and/or a Mac menu bar indicator. Recommendation below.

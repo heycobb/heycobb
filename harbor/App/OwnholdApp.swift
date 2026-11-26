@@ -51,6 +51,7 @@ struct OwnholdApp: App {
                 .task { await model.start() }
         } label: {
             MenuBarLabel()
+                .environment(model)
         }
         .menuBarExtraStyle(.menu)
         #else
@@ -78,11 +79,21 @@ struct OwnholdApp: App {
 /// with a menu bar item, SwiftUI doesn't reopen a window that was closed
 /// when Ownhold last quit, which would leave nothing on screen.
 private struct MenuBarLabel: View {
+    @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Image("MenuBarIcon")
-            .accessibilityLabel("Ownhold")
+        Group {
+            // While a backup or upload runs, the icon changes so it's visible
+            // at a glance; the menu has the details.
+            if let progress = model.syncProgress {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .accessibilityLabel("Ownhold, \(progress.title)")
+            } else {
+                Image("MenuBarIcon")
+                    .accessibilityLabel("Ownhold")
+            }
+        }
             .task {
                 guard !Self.didLaunch else { return }
                 Self.didLaunch = true

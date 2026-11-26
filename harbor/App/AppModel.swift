@@ -132,6 +132,7 @@ final class AppModel {
     func start() async {
         guard !started, activeServer == nil else { return }
         started = true
+        trackSyncProgress()
         await syncFilesApp()
         startFilesAppChecks()
         #if DEBUG
@@ -160,7 +161,11 @@ final class AppModel {
         // `-demoName "…"` renames the demo NAS: used to test long names.
         if profile.isDemo, let name = UserDefaults.standard.string(forKey: "demoName") { profile.name = name }
         #endif
-        await service?.signOut()
+        // Switching NAS ends the old session. Reconnecting to the same one
+        // keeps it: signing out first would expire the saved session and
+        // ask for the password again (after setup's away-from-home step,
+        // or after trusting a certificate).
+        if activeServer?.id != profile.id { await service?.signOut() }
         activeServer = profile
         defaults.set(profile.id.uuidString, forKey: Keys.lastServer)
         offline = OfflineStore(namespace: profile.id.uuidString)
@@ -688,7 +693,7 @@ struct CertificateReview: Identifiable, Equatable {
 
 enum CertificateTrustKey {
     static func make(_ url: URL) -> String {
-        "\(url.host() ?? ""):\(url.port ?? 443)"
+        CertificateTrust.hostKey(host: url.host() ?? "", port: url.port ?? 443)
     }
 }
 

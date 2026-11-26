@@ -18,9 +18,9 @@ struct PhotoLibraryView: View {
         Group {
             if library.folders.isEmpty {
                 ContentUnavailableView {
-                    Label("Choose Photo Folders", systemImage: "photo.on.rectangle.angled")
+                    Label("No Folders Chosen", systemImage: "photo.on.rectangle.angled")
                 } description: {
-                    Text("Ownhold shows every photo and video in the folders you choose, by month.")
+                    Text("Pick the folders on your NAS that have your photos.")
                 } actions: {
                     Button("Choose Folder…") { choosingFolder = true }
                         .buttonStyle(.borderedProminent)
@@ -29,7 +29,7 @@ struct PhotoLibraryView: View {
                 if library.isRefreshing {
                     ProgressView("Finding photos…")
                 } else {
-                    ContentUnavailableView("No Photos", systemImage: "photo", description: Text("No photos or videos in the chosen folders."))
+                    ContentUnavailableView("No Photos", systemImage: "photo", description: Text("These folders don’t have any photos or videos."))
                 }
             } else {
                 grid(months)
