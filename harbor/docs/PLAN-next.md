@@ -129,7 +129,7 @@ subscription. No free trial of Pro for now.
   multicast entitlement (request before release if the direct send isn't
   reliable enough).
 
-- Real-iPhone tests: background Photo Backup, Live Photos, Lock Screen
+- Real-iPhone tests: Scan to NAS (scanner, PDF, naming, Shortcuts action), background Photo Backup, Live Photos, Lock Screen
   controls, iPhone Picture in Picture.
 - Photo Backup on the Mac (reads the Mac's Photos library: ask first).
 - NAS status at a glance (item 6), share with NAS users, file versions.
