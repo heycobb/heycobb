@@ -124,8 +124,8 @@ struct PhotoTile: View {
     }
 }
 
-/// Loads a NAS-generated thumbnail for photos and videos; falls back to a
-/// symbol for everything else.
+/// Loads a thumbnail (from the NAS for photos and videos, made on the device
+/// for documents); falls back to a symbol.
 struct ThumbnailView: View {
     let item: RemoteItem
     let size: ThumbnailSize
@@ -156,7 +156,7 @@ struct ThumbnailView: View {
         .clipShape(.rect(cornerRadius: side == nil ? 0 : Theme.thumbnailRadius * 0.75))
         .animation(.easeOut(duration: 0.15), value: image != nil)
         .task(id: item.id) {
-            guard item.hasThumbnail, let cache = model.thumbnails, let service = model.service else { return }
+            guard item.canShowThumbnail, let cache = model.thumbnails, let service = model.service else { return }
             let pixels = Int((side ?? Theme.gridMinimumRegular * 1.4) * scale)
             image = await cache.image(for: item, size: size, maxPixel: pixels, service: service)
         }

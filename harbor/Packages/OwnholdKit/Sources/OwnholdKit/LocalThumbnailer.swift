@@ -2,6 +2,7 @@ import AVFoundation
 import CoreGraphics
 import Foundation
 import ImageIO
+import QuickLookThumbnailing
 import UniformTypeIdentifiers
 import os
 
@@ -15,6 +16,9 @@ import os
 ///   photo is a last resort, skipped in Low Power Mode and for large files.
 /// - Videos: fetch only the byte ranges needed to decode one keyframe.
 ///   Skipped in Low Power Mode.
+/// - Documents (PDF, Office, iWork, text): download small files once and
+///   let Quick Look draw the first page. Skipped in Low Power Mode, Low Data
+///   Mode and on cellular; a file that fails isn't tried again this session.
 /// - At most two at a time; results are cached on disk by ThumbnailCache, so
 ///   each file is done once.
 actor LocalThumbnailer {
@@ -24,10 +28,15 @@ actor LocalThumbnailer {
     static let headBytes = 256 * 1024
     /// Largest photo downloaded whole when it has no embedded preview.
     static let maxFullDownload: Int64 = 12 * 1024 * 1024
+    /// Largest document downloaded to draw its first page.
+    static let maxDocumentDownload: Int64 = 10 * 1024 * 1024
 
     private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "thumbnails")
     private var running = 0
     private var waiting: [CheckedContinuation<Void, Never>] = []
+    /// Documents that gave no thumbnail, so scrolling past them again
+    /// doesn't download them again.
+    private var failedDocuments: Set<String> = []
 
     /// JPEG data for a thumbnail, or nil.
     func thumbnail(for item: RemoteItem, maxPixel: Int, service: any FileService) async -> Data? {
@@ -41,9 +50,46 @@ actor LocalThumbnailer {
         case .video:
             guard !lowPower, item.isStreamable else { return nil }
             return await videoFrame(item, maxPixel: maxPixel, service: service)
+        case _ where item.hasDocumentThumbnail:
+            return await document(item, maxPixel: maxPixel, service: service, lowPower: lowPower)
         default:
             return nil
         }
+    }
+
+    // MARK: Documents
+
+    private func document(_ item: RemoteItem, maxPixel: Int, service: any FileService, lowPower: Bool) async -> Data? {
+        let key = "\(item.path)|\(item.modified?.timeIntervalSince1970 ?? 0)"
+        let network = NetworkStatus.shared
+        guard !lowPower, !network.isExpensive, !network.isConstrained, !failedDocuments.contains(key),
+              let size = item.size, size > 0, size <= Self.maxDocumentDownload else { return nil }
+        guard let download = try? await service.download(item) else {
+            failedDocuments.insert(key)
+            return nil
+        }
+        // Quick Look picks the renderer by file extension.
+        let folder = FileManager.default.temporaryDirectory.appending(path: "DocThumb-\(UUID().uuidString)", directoryHint: .isDirectory)
+        let file = folder.appending(path: item.name)
+        defer {
+            try? FileManager.default.removeItem(at: download)
+            try? FileManager.default.removeItem(at: folder)
+        }
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try FileManager.default.moveItem(at: download, to: file)
+        } catch {
+            return nil
+        }
+        let side = CGFloat(maxPixel)
+        let request = QLThumbnailGenerator.Request(fileAt: file, size: CGSize(width: side, height: side), scale: 1, representationTypes: .thumbnail)
+        let image = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request).cgImage
+        Self.log.info("document: \(image == nil ? "failed" : "ok", privacy: .public) (\(item.fileExtension, privacy: .public))")
+        guard let image else {
+            failedDocuments.insert(key)
+            return nil
+        }
+        return Self.jpeg(image)
     }
 
     // MARK: Photos

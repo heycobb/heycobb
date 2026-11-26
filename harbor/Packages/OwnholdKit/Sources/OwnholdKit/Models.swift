@@ -26,6 +26,18 @@ public struct RemoteItem: Identifiable, Hashable, Sendable, Codable {
     /// Whether the NAS can generate a thumbnail for this item.
     public var hasThumbnail: Bool { kind == .image || kind == .video }
 
+    /// Documents Ownhold makes its own thumbnail for (the NAS can't).
+    public var hasDocumentThumbnail: Bool {
+        guard !isDirectory else { return false }
+        switch kind {
+        case .pdf, .document, .spreadsheet, .presentation, .text: return true
+        default: return false
+        }
+    }
+
+    /// Whether a thumbnail can be shown, from the NAS or made on the device.
+    public var canShowThumbnail: Bool { hasThumbnail || hasDocumentThumbnail }
+
     /// Formats Apple's player plays natively, so they can stream from the
     /// NAS instead of downloading first. (MKV, AVI, WMV and WebM can't.)
     public var isStreamable: Bool {

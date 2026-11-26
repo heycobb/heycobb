@@ -36,15 +36,21 @@ public actor ThumbnailCache {
                 return CGImageBox(image)
             }
             let data: Data
-            do {
-                data = try await service.thumbnail(for: item, size: size)
-            } catch NASError.notFound {
-                // The NAS has no thumbnail for this format (HEIC and video in
-                // folders it hasn't indexed): make one on the device, cheaply.
+            if item.hasDocumentThumbnail {
+                // The NAS only makes thumbnails for photos and videos.
                 guard let local = await LocalThumbnailer.shared.thumbnail(for: item, maxPixel: maxPixel, service: service) else { return nil }
                 data = local
-            } catch {
-                return nil
+            } else {
+                do {
+                    data = try await service.thumbnail(for: item, size: size)
+                } catch NASError.notFound {
+                    // The NAS has no thumbnail for this format (HEIC and video in
+                    // folders it hasn't indexed): make one on the device, cheaply.
+                    guard let local = await LocalThumbnailer.shared.thumbnail(for: item, maxPixel: maxPixel, service: service) else { return nil }
+                    data = local
+                } catch {
+                    return nil
+                }
             }
             try? data.write(to: file, options: [.atomic])
             return ImageDecoding.downsample(data, maxPixel: maxPixel).map(CGImageBox.init)

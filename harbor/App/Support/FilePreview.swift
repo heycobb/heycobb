@@ -39,11 +39,19 @@ private struct QuickLookPresenter: UIViewControllerRepresentable {
         let preview = QLPreviewController()
         preview.dataSource = coordinator
         preview.delegate = coordinator
+        // A sheet can be swiped down to close; Quick Look's default full
+        // screen presentation needs a tap, then the close button.
+        preview.modalPresentationStyle = .pageSheet
+        if let sheet = preview.sheetPresentationController {
+            sheet.detents = [.large()]
+            sheet.prefersGrabberVisible = false
+        }
         host.present(preview, animated: true)
+        preview.presentationController?.delegate = coordinator
     }
 
     // Quick Look calls its data source and delegate on the main thread.
-    final class Coordinator: NSObject, QLPreviewControllerDataSource, @preconcurrency QLPreviewControllerDelegate {
+    final class Coordinator: NSObject, QLPreviewControllerDataSource, @preconcurrency QLPreviewControllerDelegate, UIAdaptivePresentationControllerDelegate {
         var url: URL?
         var onDismiss: () -> Void = {}
 
@@ -60,6 +68,16 @@ private struct QuickLookPresenter: UIViewControllerRepresentable {
         }
 
         func previewControllerDidDismiss(_ controller: QLPreviewController) {
+            finish()
+        }
+
+        /// Swiped down.
+        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+            finish()
+        }
+
+        private func finish() {
+            guard url != nil else { return }
             url = nil
             onDismiss()
         }
