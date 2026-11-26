@@ -1,3 +1,4 @@
+import AppIntents
 import OwnholdKit
 import SwiftUI
 
@@ -13,6 +14,9 @@ struct OwnholdApp: App {
     init() {
         let model = AppModel()
         _model = State(initialValue: model)
+        // Shortcuts and Siri actions reach the model through this, including
+        // when they launch the app without a window.
+        AppDependencyManager.shared.add(dependency: model)
         #if os(iOS)
         // Must be registered before launch finishes.
         PhotoBackup.registerBackgroundTask(model: model)
