@@ -121,6 +121,14 @@ subscription. No free trial of Pro for now.
 
 ## Still open from before
 
+- Recently Deleted: Restore and Delete Permanently untested (Recycle Bin is
+  off for homes/home on the test NAS). Turn it on, then delete and restore a
+  file inside TEST FOLDER. If it still isn't in #recycle, check whether DSM's
+  File Station Delete API skips the Recycle Bin.
+- Wake NAS: not yet tried on a sleeping NAS; iOS broadcast needs Apple's
+  multicast entitlement (request before release if the direct send isn't
+  reliable enough).
+
 - Real-iPhone tests: background Photo Backup, Live Photos, Lock Screen
   controls, iPhone Picture in Picture.
 - Photo Backup on the Mac (reads the Mac's Photos library: ask first).
