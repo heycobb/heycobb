@@ -539,6 +539,19 @@ final class AppModel {
     /// opened recently there and folders kept downloaded (see
     /// `SnapshotStore.foldersToCheck`). Skipped in Low Power Mode.
     private func startFilesAppChecks() {
+        #if os(macOS)
+        // Finder's Keep Downloaded: download now rather than when macOS gets to it.
+        KeptDownloader.observe {
+            Task { @MainActor [weak self] in
+                guard let self, showInFilesApp, !requireUnlock else { return }
+                await KeptDownloader.downloadKeptFiles()
+            }
+        }
+        // Catch up on anything kept while Ownhold wasn't running.
+        if showInFilesApp, !requireUnlock {
+            Task { await KeptDownloader.downloadKeptFiles() }
+        }
+        #endif
         Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: Self.filesAppCheckInterval)
@@ -549,6 +562,9 @@ final class AppModel {
                 for domain in domains {
                     NSFileProviderManager(for: domain)?.signalEnumerator(for: .workingSet) { _ in }
                 }
+                #if os(macOS)
+                await KeptDownloader.downloadKeptFiles()
+                #endif
             }
         }
     }

@@ -193,6 +193,10 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
                 }
             }
             reply.handler(nil)
+            // Ownhold, if it's running, downloads them straight away.
+            if keep {
+                CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName("app.ownhold.keptDownloadsChanged" as CFString), nil, nil, true)
+            }
         }
     }
 
