@@ -17,6 +17,8 @@ final class NASDiscovery {
         let name: String
         /// "FirelandsDS25.local"
         let host: String
+        /// Its IP addresses, so a typed address can be matched to its name.
+        let addresses: Set<String>
         var id: String { host }
     }
 
@@ -58,11 +60,36 @@ final class NASDiscovery {
             guard checked.insert(host).inserted else { continue }
             Task {
                 if await Self.isSynology(host: host) {
-                    found.append(Found(name: name, host: host))
+                    found.append(Found(name: name, host: host, addresses: await Self.addresses(of: host)))
                     found.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
                 }
             }
         }
+    }
+
+    /// The name a typed address belongs to, if it's one of the NAS found.
+    func name(forAddress address: String) -> String? {
+        let host = address.split(separator: ":").first.map(String.init)?.lowercased() ?? ""
+        return found.first { $0.host.lowercased() == host || $0.addresses.contains(host) }?.name
+    }
+
+    private nonisolated static func addresses(of host: String) async -> Set<String> {
+        await Task.detached {
+            var hints = addrinfo(ai_flags: 0, ai_family: AF_UNSPEC, ai_socktype: SOCK_STREAM, ai_protocol: 0, ai_addrlen: 0, ai_canonname: nil, ai_addr: nil, ai_next: nil)
+            var result: UnsafeMutablePointer<addrinfo>?
+            guard getaddrinfo(host, nil, &hints, &result) == 0, let first = result else { return [] }
+            defer { freeaddrinfo(first) }
+            var found = Set<String>()
+            var pointer: UnsafeMutablePointer<addrinfo>? = first
+            while let info = pointer?.pointee {
+                var buffer = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+                if getnameinfo(info.ai_addr, info.ai_addrlen, &buffer, socklen_t(buffer.count), nil, 0, NI_NUMERICHOST) == 0 {
+                    found.insert(String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self))
+                }
+                pointer = info.ai_next
+            }
+            return found
+        }.value
     }
 
     /// Asks DSM's public API list whether this is a Synology NAS. No account

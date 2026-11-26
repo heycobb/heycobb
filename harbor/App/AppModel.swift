@@ -120,6 +120,11 @@ final class AppModel {
         await syncFilesApp()
         startFilesAppChecks()
         #if DEBUG
+        // `-onboarding` shows the first-run screens even with a NAS saved.
+        if CommandLine.arguments.contains("-onboarding") {
+            isOnboarding = true
+            return
+        }
         // `-demo` opens the demo library directly: used for screenshots.
         if CommandLine.arguments.contains("-demo") {
             await startDemo()

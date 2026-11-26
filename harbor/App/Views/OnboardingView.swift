@@ -130,7 +130,7 @@ struct OnboardingView: View {
                 secondary("Try the Demo") { Task { await model.startDemo() } }
             case .find:
                 primary("Continue", enabled: canContinueFromFind) {
-                    if name.isEmpty { name = usesQuickConnect ? quickConnectID : address }
+                    if name.isEmpty, usesQuickConnect { name = trimmedQuickConnectID }
                     step = .signIn
                 }
                 link("Where do I find this?") { showingGuide = true }
@@ -231,8 +231,8 @@ struct OnboardingView: View {
                 } else {
                     field("Or enter its address", text: $address, prompt: "192.168.1.20 or nas.local", focus: .address, monospaced: true)
                         .onChange(of: address) { _, new in
-                            // Typing over a found NAS: its name no longer applies.
-                            if !discovery.found.contains(where: { $0.host == new }) { name = "" }
+                            // A typed address of a NAS found here keeps its name.
+                            name = discovery.name(forAddress: new) ?? ""
                         }
                     if address.lowercased().hasPrefix("http://") {
                         Text("Ownhold only connects over HTTPS. Remove “http://”.")
