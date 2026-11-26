@@ -205,7 +205,8 @@ public actor FileStationClient: FileService {
 
     public func rename(_ item: RemoteItem, to name: String) async throws -> RemoteItem {
         guard RemoteItem.isValidName(name) else { throw NASError.invalidName }
-        let data: FileList = try await call("SYNO.FileStation.Rename", method: "rename", preferredVersion: 2, params: [
+        // The reply is {"files": [...]} without the paging fields of a listing.
+        let data: RenamedFiles = try await call("SYNO.FileStation.Rename", method: "rename", preferredVersion: 2, params: [
             "path": item.path,
             "name": name,
             "additional": #"["size","time"]"#,
@@ -472,6 +473,8 @@ struct SearchStart: Decodable, Sendable { let taskid: String }
 struct TaskStart: Decodable, Sendable { let taskid: String }
 
 struct TaskStatus: Decodable, Sendable { let finished: Bool }
+
+struct RenamedFiles: Decodable, Sendable { let files: [WireFile] }
 
 struct FolderList: Decodable, Sendable {
     let folders: [Folder]

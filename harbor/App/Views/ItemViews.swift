@@ -102,6 +102,16 @@ struct PhotoTile: View {
                         .padding(Theme.Spacing.xs)
                 }
             }
+            .overlay(alignment: .bottomLeading) {
+                // Videos look like photos once they have a frame: mark them.
+                if item.kind == .video {
+                    Image(systemName: "play.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.5), radius: 2)
+                        .padding(Theme.Spacing.xs)
+                }
+            }
             .overlay {
                 if busy { ProgressView() }
             }
@@ -109,7 +119,7 @@ struct PhotoTile: View {
             .contentShape(.rect)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(item.name)
-            .accessibilityValue(saved ? "Available offline" : "")
+            .accessibilityValue([item.kind == .video ? "Video" : nil, saved ? "Available offline" : nil].compactMap { $0 }.joined(separator: ", "))
             .accessibilityAddTraits(.isButton)
     }
 }

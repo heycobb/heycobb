@@ -413,3 +413,14 @@ struct LocalThumbnailTests {
         #expect(max(image.width, image.height) <= 300)
     }
 }
+
+@Suite("DSM replies")
+struct DSMReplyTests {
+    /// The shape DSM 7 returns for Rename: files only, no total/offset.
+    @Test func decodesRenameReply() throws {
+        let json = #"{"data":{"files":[{"additional":{"size":50,"time":{"mtime":1795651740}},"isdir":false,"name":"renamed-test.txt","path":"/home/TEST FOLDER/Ownhold Test/renamed-test.txt"}]},"success":true}"#
+        let envelope = try FileStationClient.decode(Envelope<RenamedFiles>.self, from: Data(json.utf8))
+        #expect(envelope.data?.files.first?.item.name == "renamed-test.txt")
+        #expect(envelope.data?.files.first?.item.size == 50)
+    }
+}
