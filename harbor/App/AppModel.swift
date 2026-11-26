@@ -301,6 +301,15 @@ final class AppModel {
 
     func folderChanged(_ folders: String...) {
         for folder in Set(folders) { folderRevisions[folder, default: 0] += 1 }
+        tellFilesApp(folders: Array(Set(folders)))
+    }
+
+    /// Passes a change made here to the Files app / Finder (see
+    /// `SharedChanges`), so they show it now rather than the next time the
+    /// folder is opened there. Nothing happens with Files access off.
+    func tellFilesApp(folders: [String] = [], removed: [String] = []) {
+        guard showInFilesApp, !requireUnlock, let profile = activeServer else { return }
+        SharedChanges.announce(domain: profile.isDemo ? "demo" : profile.id.uuidString, name: profile.name, folders: folders, removed: removed)
     }
 
     @discardableResult
@@ -322,6 +331,7 @@ final class AppModel {
             let renamed = try await service.rename(item, to: name.trimmingCharacters(in: .whitespaces))
             await offline?.relocate(from: item.path, to: renamed.path)
             libraryItemsChanged(from: item.path, to: renamed)
+            tellFilesApp(removed: [item.path])
             await refreshSaved()
             folderChanged(item.parentPath)
         } catch {
@@ -336,6 +346,7 @@ final class AppModel {
         guard let service, !items.isEmpty else { return false }
         do {
             try await service.move(items, to: folder)
+            tellFilesApp(removed: items.map(\.path))
             for item in items {
                 await offline?.relocate(from: item.path, to: RemoteItem.join(folder, item.name))
                 libraryItemsChanged(from: item.path, to: item.with(path: RemoteItem.join(folder, item.name), name: item.name))
@@ -360,6 +371,7 @@ final class AppModel {
         defer { for parent in Set(items.map(\.parentPath)) { folderChanged(parent) } }
         do {
             try await service.delete(items)
+            tellFilesApp(removed: items.map(\.path))
             // The offline copies would be dropped at the next refresh anyway.
             for item in items {
                 await offline?.remove(item.path)

@@ -264,6 +264,7 @@ struct SaveView: View {
         defer { makingFolder = false }
         do {
             let folder = try await service.createFolder(named: name, in: parent.path)
+            if let server { SharedChanges.announce(domain: server.id.uuidString, name: server.name, folders: [parent.path]) }
             path.append(folder)
         } catch {
             phase = .failed(Self.message(for: error))
@@ -331,6 +332,7 @@ struct SaveView: View {
                 }
             }
             SharedConnection.setLastFolder(folder.path, for: server)
+            SharedChanges.announce(domain: server.id.uuidString, name: server.name, folders: [folder.path])
             phase = .done
             try? await Task.sleep(for: .milliseconds(700))
             finish(false)

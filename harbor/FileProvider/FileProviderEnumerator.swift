@@ -6,6 +6,8 @@ import OwnholdKit
 /// Ownhold doesn't sync in the background, so there's no change feed: when
 /// asked for changes, the folder is listed again and compared with the last
 /// listing, which is kept in memory for as long as the extension runs.
+/// The working set reports changes made in the Ownhold app itself, which it
+/// records in `SharedChanges` before asking the system to check.
 final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @unchecked Sendable {
     private let container: NSFileProviderItemIdentifier
     private let context: ProviderContext
@@ -48,7 +50,7 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
         let box = ChangeObserverBox(observer)
         Task {
             guard container != .workingSet else {
-                box.observer.finishEnumeratingChanges(upTo: Self.anchor(), moreComing: false)
+                await reportAppChanges(to: box)
                 return
             }
             do {
@@ -64,6 +66,47 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
                 box.observer.finishEnumeratingChanges(upTo: Self.anchor(), moreComing: false)
             } catch {
                 box.observer.finishEnumeratingWithError(error)
+            }
+        }
+    }
+
+    /// Lists each folder the app changed and reports its contents, plus
+    /// whatever the app removed or moved away. A folder that can't be
+    /// listed right now is recorded again for the next check.
+    private func reportAppChanges(to box: ChangeObserverBox) async {
+        let domain = context.domainID
+        let pending = SharedChanges.take(domain: domain)
+        var updated: [FileProviderItem] = []
+        var removed = Set(pending.removed)
+        var unknown: [String] = []
+        for folder in pending.folders {
+            do {
+                let items = try await context.run { service in
+                    try await service.list(folder: folder, offset: 0, limit: 5000, sort: .name, ascending: true).items
+                }
+                let previous = await snapshots.paths(for: folder)
+                if previous.isEmpty { unknown.append(folder) }
+                await snapshots.record(items.map(\.path), for: folder, replacing: true)
+                removed.formUnion(Set(previous).subtracting(items.map(\.path)))
+                updated += items.map(FileProviderItem.init)
+            } catch let error as NSFileProviderError where error.code == .noSuchItem {
+                removed.insert(folder)
+            } catch {
+                SharedChanges.record(domain: domain, folders: [folder])
+            }
+        }
+        removed.subtract(updated.map { FileProviderItem.path(for: $0.itemIdentifier) })
+        if !updated.isEmpty { box.observer.didUpdate(updated) }
+        if !removed.isEmpty { box.observer.didDeleteItems(withIdentifiers: removed.map(FileProviderItem.identifier(for:))) }
+        box.observer.finishEnumeratingChanges(upTo: Self.anchor(), moreComing: false)
+        // With no earlier listing to compare against (the extension was
+        // restarted), deletions made before can't be worked out here: have
+        // the system import those folders again, which drops anything that
+        // is no longer on the NAS.
+        if !unknown.isEmpty {
+            let manager = NSFileProviderManager(for: NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(domain), displayName: ""))
+            for folder in unknown {
+                manager?.reimportItems(below: FileProviderItem.identifier(for: folder)) { _ in }
             }
         }
     }

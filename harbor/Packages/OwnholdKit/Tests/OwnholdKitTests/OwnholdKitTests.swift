@@ -329,6 +329,19 @@ struct FileChangeTests {
         #expect(link.url.host() == "nas.example.com")
     }
 
+    @Test func sharedChangesMergeAndClear() {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        SharedChanges.record(domain: "abc", folders: ["/home/a"], in: directory)
+        SharedChanges.record(domain: "abc", folders: ["/home/a", "/home/b"], removed: ["/home/a/x"], in: directory)
+        SharedChanges.record(domain: "other", folders: ["/z"], in: directory)
+        let taken = SharedChanges.take(domain: "abc", in: directory)
+        #expect(taken.folders == ["/home/a", "/home/b"])
+        #expect(taken.removed == ["/home/a/x"])
+        #expect(SharedChanges.take(domain: "abc", in: directory).isEmpty)
+        #expect(SharedChanges.take(domain: "other", in: directory).folders == ["/z"])
+    }
+
     @Test func searchPatterns() {
         #expect(FileStationClient.searchPattern("tax") == "*tax*")
         #expect(FileStationClient.searchPattern(" Ownhold Extract ") == "*Ownhold Extract*")
