@@ -18,6 +18,10 @@ struct FolderView: View {
     @State private var items: [RemoteItem] = []
     @State private var total = 0
     @State private var loading = false
+    /// True once the folder has been listed: until then an empty list means
+    /// "not loaded yet", not "Empty Folder".
+    @State private var loaded = false
+    @State private var retries = 0
     @State private var failed: NASError?
     @State private var query = ""
     @State private var searchResults: [RemoteItem]?
@@ -272,6 +276,10 @@ struct FolderView: View {
             } actions: {
                 Button("Try Again") { Task { await reload() } }
             }
+        } else if items.isEmpty, !loaded, searchResults == nil {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
         } else if shown.isEmpty, !loading {
             if searchResults != nil {
                 ContentUnavailableView.search(text: query)
@@ -623,10 +631,21 @@ struct FolderView: View {
             items = page.items
             total = page.total
             failed = nil
+            loaded = true
             // Something changed here: refresh open search results too, so
             // they don't keep showing deleted or renamed items.
             if searchResults != nil, !query.isEmpty { await runSearch() }
         } catch is CancellationError {
+            // On iPhone, pushing a folder can briefly take its screen off and
+            // back on, which cancels the first load without starting it
+            // again. Retry from outside the cancelled task, a few times.
+            if !loaded, retries < 3 {
+                retries += 1
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(150))
+                    if !loaded, !loading { await reload() }
+                }
+            }
         } catch {
             failed = error as? NASError ?? .malformedResponse
             model.handle(error)

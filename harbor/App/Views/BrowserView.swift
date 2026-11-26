@@ -29,6 +29,9 @@ struct BrowserView: View {
         } detail: {
             NavigationStack(path: $path) {
                 detailRoot
+                    // A new screen per sidebar item, so a folder's first load
+                    // isn't cancelled by swapping it in place of another.
+                    .id(selection)
                     .navigationDestination(for: RemoteItem.self) { folder in
                         FolderView(folder: folder)
                     }

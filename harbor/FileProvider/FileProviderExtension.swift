@@ -11,7 +11,7 @@ import UniformTypeIdentifiers
 final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, NSFileProviderThumbnailing, @unchecked Sendable {
     private let domain: NSFileProviderDomain
     private let context: ProviderContext
-    private let snapshots = SnapshotStore()
+    private let snapshots: SnapshotStore
 
     /// iOS keeps a default "Ownhold" location whenever Ownhold has none of
     /// its own (Settings › Privacy › Show NAS in Files App is off), and apps
@@ -23,6 +23,7 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
     required init(domain: NSFileProviderDomain) {
         self.domain = domain
         self.context = ProviderContext(domainID: domain.identifier.rawValue)
+        self.snapshots = SnapshotStore(domainID: domain.identifier.rawValue)
         super.init()
     }
 

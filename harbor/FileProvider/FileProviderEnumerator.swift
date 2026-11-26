@@ -78,14 +78,12 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
         let pending = SharedChanges.take(domain: domain)
         var updated: [FileProviderItem] = []
         var removed = Set(pending.removed)
-        var unknown: [String] = []
         for folder in pending.folders {
             do {
                 let items = try await context.run { service in
                     try await service.list(folder: folder, offset: 0, limit: 5000, sort: .name, ascending: true).items
                 }
                 let previous = await snapshots.paths(for: folder)
-                if previous.isEmpty { unknown.append(folder) }
                 await snapshots.record(items.map(\.path), for: folder, replacing: true)
                 removed.formUnion(Set(previous).subtracting(items.map(\.path)))
                 updated += items.map(FileProviderItem.init)
@@ -99,16 +97,6 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
         if !updated.isEmpty { box.observer.didUpdate(updated) }
         if !removed.isEmpty { box.observer.didDeleteItems(withIdentifiers: removed.map(FileProviderItem.identifier(for:))) }
         box.observer.finishEnumeratingChanges(upTo: Self.anchor(), moreComing: false)
-        // With no earlier listing to compare against (the extension was
-        // restarted), deletions made before can't be worked out here: have
-        // the system import those folders again, which drops anything that
-        // is no longer on the NAS.
-        if !unknown.isEmpty {
-            let manager = NSFileProviderManager(for: NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(domain), displayName: ""))
-            for folder in unknown {
-                manager?.reimportItems(below: FileProviderItem.identifier(for: folder)) { _ in }
-            }
-        }
     }
 
     func currentSyncAnchor(completionHandler: @escaping (NSFileProviderSyncAnchor?) -> Void) {
@@ -128,14 +116,28 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
     }
 }
 
-/// The last listing of each folder, to work out what was deleted.
+/// The last listing of each folder, to work out what was deleted. Kept in
+/// the extension's own container (paths only), so it survives the system
+/// stopping and restarting the extension.
 actor SnapshotStore {
-    private var children: [String: [String]] = [:]
+    private var children: [String: [String]]
+    private let file: URL?
+
+    init(domainID: String) {
+        let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+        let safe = domainID.filter { $0.isLetter || $0.isNumber || $0 == "-" }
+        file = base?.appending(path: "Listings-\(safe).json")
+        children = file.flatMap { try? Data(contentsOf: $0) }
+            .flatMap { try? JSONDecoder().decode([String: [String]].self, from: $0) } ?? [:]
+    }
 
     func paths(for folder: String) -> [String] { children[folder] ?? [] }
 
     func record(_ paths: [String], for folder: String, replacing: Bool) {
         children[folder] = replacing ? paths : (children[folder] ?? []) + paths
+        if let file, let data = try? JSONEncoder().encode(children) {
+            try? data.write(to: file, options: .atomic)
+        }
     }
 }
 

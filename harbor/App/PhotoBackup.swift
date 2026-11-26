@@ -88,6 +88,7 @@ final class PhotoBackup {
         guard path != settings.destination, let serverID else { return }
         try? FileManager.default.removeItem(at: Self.historyURL(serverID))
         settings.destination = path
+        settings.lastBackup = nil
         waiting = nil
     }
 
