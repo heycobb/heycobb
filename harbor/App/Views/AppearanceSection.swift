@@ -102,15 +102,20 @@ private struct AccentSwatch: View {
         }
         .frame(width: 28, height: 28)
         .overlay {
-            Circle().strokeBorder(.primary.opacity(0.12), lineWidth: 0.5)
-        }
-        .overlay {
             if selected {
                 Image(systemName: "checkmark")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(choice.onAccent)
                     .shadow(color: .black.opacity(choice == .system ? 0.4 : 0), radius: 1)
             }
+        }
+        // Always show each accent's own color. In dark mode the app uses a
+        // lighter version so it stays readable, but the swatch shouldn't
+        // change: Midnight should look like midnight in both modes.
+        .environment(\.colorScheme, .light)
+        // Outside the light override, so dark swatches keep an edge in dark mode.
+        .overlay {
+            Circle().strokeBorder(.primary.opacity(0.18), lineWidth: 0.5)
         }
         .contentShape(.circle)
     }

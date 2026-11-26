@@ -2,6 +2,8 @@ import OwnholdKit
 import SwiftUI
 #if os(macOS)
 import AppKit
+#else
+import UIKit
 #endif
 
 /// Design tokens. One accent color, system typography, monospaced digits for
@@ -88,7 +90,20 @@ extension View {
         #if os(macOS)
         onChange(of: choice, initial: true) { NSApp.appearance = choice.nsAppearance }
         #else
-        preferredColorScheme(choice.colorScheme)
+        // Set on the windows rather than with preferredColorScheme: an open
+        // sheet (Settings) then changes right away, not after it closes.
+        onChange(of: choice, initial: true) {
+            let style: UIUserInterfaceStyle = switch choice {
+            case .system: .unspecified
+            case .light: .light
+            case .dark: .dark
+            }
+            for scene in UIApplication.shared.connectedScenes {
+                for window in (scene as? UIWindowScene)?.windows ?? [] {
+                    window.overrideUserInterfaceStyle = style
+                }
+            }
+        }
         #endif
     }
 }
