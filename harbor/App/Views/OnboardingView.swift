@@ -39,21 +39,52 @@ struct OnboardingView: View {
     private enum Step: Int, CaseIterable { case welcome, find, signIn, away, options }
     private enum Field { case address, quickConnect, account, password, code, vpn }
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// iPhone: buttons at the bottom, in thumb reach. Mac and iPad: one
+    /// centered column, so the buttons aren't stranded at the bottom of a
+    /// big window.
+    private var isCompact: Bool {
+        #if os(iOS)
+        sizeClass == .compact
+        #else
+        false
+        #endif
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            if step != .welcome { header }
-            ScrollView {
-                content
-                    .frame(maxWidth: 480, alignment: .leading)
-                    .padding(.horizontal, Theme.Spacing.xl)
-                    .padding(.top, step == .welcome ? 0 : Theme.Spacing.l)
-                    .frame(maxWidth: .infinity, minHeight: step == .welcome ? 420 : nil)
+        Group {
+            if isCompact {
+                VStack(spacing: 0) {
+                    if step != .welcome { header }
+                    ScrollView {
+                        content
+                            .frame(maxWidth: 480, alignment: .leading)
+                            .padding(.horizontal, Theme.Spacing.xl)
+                            .padding(.top, step == .welcome ? 0 : Theme.Spacing.l)
+                            .frame(maxWidth: .infinity, minHeight: step == .welcome ? 420 : nil)
+                    }
+                    .scrollBounceBehavior(.basedOnSize)
+                    footer
+                        .frame(maxWidth: 480)
+                        .padding(.horizontal, Theme.Spacing.xl)
+                        .padding(.vertical, Theme.Spacing.l)
+                }
+            } else {
+                ScrollView {
+                    VStack(spacing: Theme.Spacing.xl) {
+                        if step != .welcome { header }
+                        content.frame(maxWidth: .infinity, alignment: .leading)
+                        footer
+                    }
+                    .frame(maxWidth: 440)
+                    .padding(Theme.Spacing.xl)
+                    .frame(maxWidth: .infinity)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                // Centers the column when it fits in the window.
+                .defaultScrollAnchor(.center, for: .alignment)
             }
-            .scrollBounceBehavior(.basedOnSize)
-            footer
-                .frame(maxWidth: 480)
-                .padding(.horizontal, Theme.Spacing.xl)
-                .padding(.vertical, Theme.Spacing.l)
         }
         .tint(Theme.accent)
         .animation(.snappy(duration: 0.3), value: step)
@@ -275,7 +306,7 @@ struct OnboardingView: View {
     private var away: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.l) {
             title("Use it away from home", detail: "Optional. With Tailscale on your NAS and this \(Self.deviceName), Ownhold reaches your NAS from anywhere, without opening your router.")
-            field("Tailscale or VPN address", text: $vpnAddress, prompt: "nas.tailnet.ts.net or 100.x.y.z", focus: .vpn, monospaced: true)
+            field("Tailscale or VPN address", text: $vpnAddress, prompt: "nas.tailnet.ts.net", focus: .vpn, monospaced: true)
             Link(destination: URL(string: "https://tailscale.com/download")!) {
                 Label("Get Tailscale", systemImage: "arrow.up.forward.square")
             }
