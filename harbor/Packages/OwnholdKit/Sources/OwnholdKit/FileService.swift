@@ -32,5 +32,17 @@ public protocol FileService: Sendable {
         replacing: Bool,
         progress: @escaping @Sendable (Double) -> Void
     ) async throws
+    /// Compresses items into a zip at `destination` (a full path). Fails
+    /// rather than replacing an existing file.
+    func compress(_ items: [RemoteItem], to destination: String) async throws
+    /// The names at the top level of an archive (at most a few), so the
+    /// caller can tell whether it holds a single folder.
+    func archiveTopLevel(_ archive: RemoteItem) async throws -> [String]
+    /// Extracts an archive into `folder`, without replacing anything there.
+    func extract(_ archive: RemoteItem, into folder: String) async throws
+    /// Creates a link anyone can open (DSM's Sharing Links).
+    func createShareLink(for item: RemoteItem, password: String?, expires: Date?) async throws -> SharingLink
+    /// Removes a link so it stops working.
+    func deleteShareLink(_ link: SharingLink) async throws
     func signOut() async
 }

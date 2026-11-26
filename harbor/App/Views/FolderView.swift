@@ -42,6 +42,7 @@ struct FolderView: View {
     @State private var dropTargeted = false
     @State private var shareTask: Task<Void, Never>?
     @State private var playing: MediaPlayback?
+    @State private var linkItem: RemoteItem?
 
     typealias MoveRequest = FolderViewMoveRequest
     typealias UploadBatch = FolderViewUploadBatch
@@ -70,6 +71,9 @@ struct FolderView: View {
             .filePreview($previewURL)
             .sheet(item: $info) { item in
                 ItemInfoView(item: item)
+            }
+            .sheet(item: $linkItem) { item in
+                ShareLinkView(item: item)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 ActivityBar(working: working, onCancel: shareTask == nil ? nil : { shareTask?.cancel() })
@@ -163,7 +167,9 @@ struct FolderView: View {
                 shareTask = nil
             }
             do {
-                let urls = try await model.shareableCopies(of: items)
+                let urls = try await model.shareableCopies(of: items) { done, total in
+                    working = "Copying \(done + 1) of \(total)…"
+                }
                 try Task.checkCancellation()
                 endSelecting()
                 SharePresenter.present(urls)
@@ -172,6 +178,18 @@ struct FolderView: View {
                 model.handle(error)
             }
         }
+    }
+
+    private func compress(_ items: [RemoteItem]) async {
+        working = items.count == 1 ? "Compressing “\(items[0].name)”…" : "Compressing \(items.count) items…"
+        defer { working = nil }
+        if await model.compress(items, in: folder.path, existing: Set(self.items.map(\.name))) { endSelecting() }
+    }
+
+    private func extract(_ archive: RemoteItem) async {
+        working = "Extracting “\(archive.name)”…"
+        defer { working = nil }
+        await model.extract(archive, existing: Set(items.map(\.name)))
     }
 
     private func askToDelete(_ items: [RemoteItem]) {
@@ -444,6 +462,13 @@ struct FolderView: View {
         }
         Button("Share…", systemImage: "square.and.arrow.up") { share([item]) }
             .disabled(model.service == nil && !saved)
+        if model.service != nil {
+            Button("Share Link…", systemImage: "link") { linkItem = item }
+        }
+        if item.isDirectory {
+            Button(model.isFavorite(item) ? "Remove from Favorites" : "Add to Favorites",
+                   systemImage: model.isFavorite(item) ? "star.slash" : "star") { model.toggleFavorite(item) }
+        }
         Button("Get Info", systemImage: "info.circle") { info = item }
         Button("Copy Path", systemImage: "doc.on.doc") {
             #if os(iOS)
@@ -460,6 +485,10 @@ struct FolderView: View {
                 renaming = item
             }
             Button("Move…", systemImage: "folder") { moveRequest = MoveRequest(items: [item]) }
+            Button("Compress", systemImage: "archivebox") { Task { await compress([item]) } }
+            if item.isArchive {
+                Button("Extract Here", systemImage: "archivebox.circle") { Task { await extract(item) } }
+            }
             Button("Delete…", systemImage: "trash", role: .destructive) { askToDelete([item]) }
         }
     }
@@ -520,6 +549,11 @@ struct FolderView: View {
         #endif
         Button("Move", systemImage: "folder") { moveRequest = MoveRequest(items: chosen) }
             .disabled(chosen.isEmpty || !canChange)
+        #if os(iOS)
+        Spacer()
+        #endif
+        Button("Compress", systemImage: "archivebox") { Task { await compress(chosen) } }
+            .disabled(chosen.isEmpty || !canChange || working != nil)
         #if os(iOS)
         Spacer()
         #endif
@@ -616,22 +650,11 @@ struct FolderView: View {
         opening = item.path
         Task {
             defer { opening = nil }
-            // Video and audio stream straight from the NAS, unless saved offline.
-            if item.isStreamable, !model.savedPaths.contains(item.path), let service = model.service {
-                let loader = StreamingLoader(item: item, service: service)
-                do {
-                    try await loader.probe()
-                    playing = MediaPlayback(item: item, loader: loader)
-                    return
-                } catch NASError.streamingUnsupported {
-                    // Fall back to downloading it for Quick Look.
-                } catch {
-                    model.handle(error)
-                    return
-                }
-            }
             do {
-                previewURL = try await model.localCopy(of: item)
+                switch try await model.openFile(item, siblings: shown) {
+                case let .play(playback): playing = playback
+                case let .preview(url): previewURL = url
+                }
             } catch {
                 model.handle(error)
             }

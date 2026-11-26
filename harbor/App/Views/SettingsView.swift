@@ -24,6 +24,7 @@ struct SettingsView: View {
                 #if os(iOS)
                 Toggle("Hide Files in App Switcher", isOn: $model.hideInSwitcher)
                 #endif
+                Toggle("Keep Recent Files", isOn: $model.keepRecents)
                 Toggle(Platform.isMac ? "Show NAS in Finder" : "Show NAS in Files App", isOn: $model.showInFilesApp)
                     .disabled(model.requireUnlock)
             } header: {

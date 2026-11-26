@@ -289,6 +289,58 @@ public actor FileStationClient: FileService {
         progress(1)
     }
 
+    // MARK: Archives
+
+    public func compress(_ items: [RemoteItem], to destination: String) async throws {
+        guard !items.isEmpty else { return }
+        let started: TaskStart = try await call("SYNO.FileStation.Compress", method: "start", preferredVersion: 3, params: [
+            "path": try Self.pathList(items),
+            "dest_file_path": destination,
+            "level": "moderate",
+            "mode": "add",
+            "format": "zip",
+        ])
+        try await waitForTask("SYNO.FileStation.Compress", taskID: started.taskid, timeout: .seconds(60 * 60))
+    }
+
+    public func archiveTopLevel(_ archive: RemoteItem) async throws -> [String] {
+        let data: ArchiveListing = try await call("SYNO.FileStation.Extract", method: "list", preferredVersion: 2, params: [
+            "file_path": archive.path,
+            "offset": "0",
+            "limit": "3",
+            "item_id": "-1",
+        ])
+        return data.items.map(\.name)
+    }
+
+    /// Extracts into `folder` without replacing anything already there.
+    public func extract(_ archive: RemoteItem, into folder: String) async throws {
+        let started: TaskStart = try await call("SYNO.FileStation.Extract", method: "start", preferredVersion: 2, params: [
+            "file_path": archive.path,
+            "dest_folder_path": folder,
+            "overwrite": "false",
+            "keep_dir": "true",
+            "create_subfolder": "false",
+        ])
+        try await waitForTask("SYNO.FileStation.Extract", taskID: started.taskid, timeout: .seconds(60 * 60))
+    }
+
+    // MARK: Sharing links
+
+    public func createShareLink(for item: RemoteItem, password: String?, expires: Date?) async throws -> SharingLink {
+        var params = ["path": try Self.pathList([item])]
+        if let password, !password.isEmpty { params["password"] = password }
+        // DSM takes expiry as a plain day.
+        if let expires { params["date_expired"] = expires.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day()) }
+        let data: SharingLinks = try await call("SYNO.FileStation.Sharing", method: "create", preferredVersion: 3, params: params)
+        guard let link = data.links.first, let url = URL(string: link.url) else { throw NASError.malformedResponse }
+        return SharingLink(id: link.id, url: url, expires: expires, hasPassword: !(password ?? "").isEmpty)
+    }
+
+    public func deleteShareLink(_ link: SharingLink) async throws {
+        let _: Empty = try await call("SYNO.FileStation.Sharing", method: "delete", preferredVersion: 3, params: ["id": link.id])
+    }
+
     /// Polls a File Station background task until it finishes. A failure
     /// comes back as an error envelope from `status`.
     private func waitForTask(_ api: String, taskID: String, timeout: Duration) async throws {
@@ -475,6 +527,19 @@ struct TaskStart: Decodable, Sendable { let taskid: String }
 struct TaskStatus: Decodable, Sendable { let finished: Bool }
 
 struct RenamedFiles: Decodable, Sendable { let files: [WireFile] }
+
+struct ArchiveListing: Decodable, Sendable {
+    let items: [Entry]
+    struct Entry: Decodable, Sendable { let name: String }
+}
+
+struct SharingLinks: Decodable, Sendable {
+    let links: [Link]
+    struct Link: Decodable, Sendable {
+        let id: String
+        let url: String
+    }
+}
 
 struct FolderList: Decodable, Sendable {
     let folders: [Folder]

@@ -309,6 +309,33 @@ struct FileChangeTests {
         #expect(items[0].size == 6)
     }
 
+    @Test func demoCompressesExtractsAndShares() async throws {
+        let demo = DemoFileService()
+        let folder = try await demo.list(folder: "/Projects", offset: 0, limit: 10, sort: .name, ascending: true).items.first { $0.name == "Website" }!
+        try await demo.compress([folder], to: "/Projects/Website.zip")
+        await #expect(throws: NASError.alreadyExists) { try await demo.compress([folder], to: "/Projects/Website.zip") }
+        let zip = try await demo.list(folder: "/Projects", offset: 0, limit: 10, sort: .name, ascending: true).items.first { $0.name == "Website.zip" }!
+        #expect(zip.isArchive)
+        #expect((zip.size ?? 0) > 0)
+        #expect(try await demo.archiveTopLevel(zip) == ["Website"])
+        // Extracting where "Website" exists would clash; into a new folder it doesn't.
+        await #expect(throws: NASError.alreadyExists) { try await demo.extract(zip, into: "/Projects") }
+        let target = try await demo.createFolder(named: "Unzipped", in: "/Projects")
+        try await demo.extract(zip, into: target.path)
+        let copied = try await demo.list(folder: "/Projects/Unzipped/Website", offset: 0, limit: 10, sort: .name, ascending: true).items
+        #expect(Set(copied.map(\.name)) == ["index.html", "hero.jpg"])
+        let link = try await demo.createShareLink(for: zip, password: "pw", expires: nil)
+        #expect(link.hasPassword)
+        #expect(link.url.host() == "nas.example.com")
+    }
+
+    @Test func archiveNames() {
+        #expect(RemoteItem(path: "/a/b.tar.gz", name: "b.tar.gz", isDirectory: false).isArchive)
+        #expect(RemoteItem(path: "/a/b.7Z", name: "b.7Z", isDirectory: false).isArchive)
+        #expect(!RemoteItem(path: "/a/b.txt", name: "b.txt", isDirectory: false).isArchive)
+        #expect(!RemoteItem(path: "/a/b.zip", name: "b.zip", isDirectory: true).isArchive)
+    }
+
     @Test func offlineFilesFollowRenames() async throws {
         let store = OfflineStore(namespace: "test-\(UUID().uuidString)")
         let demo = DemoFileService()

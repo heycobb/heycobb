@@ -32,6 +32,13 @@ public struct RemoteItem: Identifiable, Hashable, Sendable, Codable {
         !isDirectory && ["mov", "mp4", "m4v", "mp3", "m4a", "aac", "wav", "aif", "aiff", "flac", "caf"].contains(fileExtension)
     }
 
+    /// Archives the NAS can extract.
+    public var isArchive: Bool {
+        guard !isDirectory else { return false }
+        let lower = name.lowercased()
+        return ["zip", "7z", "rar", "tar", "gz", "tgz", "bz2", "xz"].contains(fileExtension) || lower.hasSuffix(".tar.gz")
+    }
+
     /// The folder this item is in.
     public var parentPath: String { (path as NSString).deletingLastPathComponent }
 
@@ -167,5 +174,21 @@ public struct Session: Sendable, Codable, Equatable {
     public init(sid: String, deviceToken: String?) {
         self.sid = sid
         self.deviceToken = deviceToken
+    }
+}
+
+/// A link to a file or folder that anyone with the URL can open, created by
+/// the NAS (DSM's Sharing Links). It works until it expires or is removed.
+public struct SharingLink: Identifiable, Hashable, Sendable {
+    public let id: String
+    public let url: URL
+    public let expires: Date?
+    public let hasPassword: Bool
+
+    public init(id: String, url: URL, expires: Date?, hasPassword: Bool) {
+        self.id = id
+        self.url = url
+        self.expires = expires
+        self.hasPassword = hasPassword
     }
 }

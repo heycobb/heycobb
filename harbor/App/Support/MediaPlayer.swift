@@ -8,11 +8,45 @@ struct MediaPlayback: Identifiable {
     let item: RemoteItem
     /// Must live as long as the player: the asset holds it weakly.
     let loader: StreamingLoader
+    /// For audio: the folder's audio files in order (including `item`), so
+    /// the player can go on to the next one. Empty for a single file.
+    var queue: [RemoteItem] = []
+    var service: (any FileService)?
 
     @MainActor func makePlayer() -> AVPlayer {
         let player = AVPlayer(playerItem: AVPlayerItem(asset: loader.makeAsset()))
         player.allowsExternalPlayback = true // AirPlay
         return player
+    }
+}
+
+/// What opening a file leads to: streaming it, or a local copy for Quick Look.
+enum OpenedFile {
+    case play(MediaPlayback)
+    case preview(URL)
+}
+
+extension AppModel {
+    /// Streams video and audio straight from the NAS (unless saved offline),
+    /// and downloads everything else for Quick Look. `siblings` are the
+    /// other files in the folder, so audio can play on through them.
+    func openFile(_ item: RemoteItem, siblings: [RemoteItem] = []) async throws -> OpenedFile {
+        noteOpened(item)
+        if item.isStreamable, !savedPaths.contains(item.path), let service {
+            let loader = StreamingLoader(item: item, service: service)
+            do {
+                try await loader.probe()
+                var playback = MediaPlayback(item: item, loader: loader, service: service)
+                if item.kind == .audio {
+                    let audio = siblings.filter { $0.kind == .audio && $0.isStreamable }
+                    if audio.count > 1, audio.contains(where: { $0.path == item.path }) { playback.queue = audio }
+                }
+                return .play(playback)
+            } catch NASError.streamingUnsupported {
+                // Fall back to downloading it for Quick Look.
+            }
+        }
+        return .preview(try await localCopy(of: item))
     }
 }
 
@@ -65,8 +99,10 @@ private struct PlayerPresenter: UIViewControllerRepresentable {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
         let controller = AVPlayerViewController()
         controller.player = playback.makePlayer()
-        controller.allowsPictureInPicturePlayback = false
+        controller.allowsPictureInPicturePlayback = true
+        controller.canStartPictureInPictureAutomaticallyFromInline = true
         controller.delegate = coordinator
+        coordinator.host = host
         controller.modalPresentationStyle = .fullScreen
         coordinator.item = playback.item
         host.present(controller, animated: true) {
@@ -79,20 +115,51 @@ private struct PlayerPresenter: UIViewControllerRepresentable {
         var current: UUID?
         var loader: StreamingLoader?
         var item: RemoteItem?
+        weak var host: UIViewController?
         var onDismiss: () -> Void = {}
+        /// While Picture in Picture is showing, the full-screen player is
+        /// dismissed but playback carries on.
+        private var inPictureInPicture = false
 
         // Called when the user closes a modally presented player.
         @MainActor
         func playerViewController(_ controller: AVPlayerViewController, willEndFullScreenPresentationWithAnimationCoordinator coordinator: any UIViewControllerTransitionCoordinator) {
             coordinator.animate(alongsideTransition: nil) { [weak self] context in
-                guard !context.isCancelled, let self else { return }
-                controller.player?.pause()
-                if let item = self.item { PlaybackPositions.save(controller.player, item: item) }
-                controller.player = nil
-                self.current = nil
-                self.loader = nil
-                self.onDismiss()
+                guard !context.isCancelled, let self, !self.inPictureInPicture else { return }
+                self.finish(controller)
             }
+        }
+
+        @MainActor
+        func playerViewControllerWillStartPictureInPicture(_ controller: AVPlayerViewController) {
+            inPictureInPicture = true
+        }
+
+        @MainActor
+        func playerViewControllerDidStopPictureInPicture(_ controller: AVPlayerViewController) {
+            inPictureInPicture = false
+            // Closed from the floating window (rather than returned to full screen).
+            if controller.presentingViewController == nil { finish(controller) }
+        }
+
+        // Back to full screen from the floating window.
+        @MainActor
+        func playerViewController(_ controller: AVPlayerViewController, restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
+            guard let host, host.view.window != nil, host.presentedViewController == nil else {
+                completionHandler(false)
+                return
+            }
+            host.present(controller, animated: true) { completionHandler(true) }
+        }
+
+        @MainActor
+        private func finish(_ controller: AVPlayerViewController) {
+            controller.player?.pause()
+            if let item { PlaybackPositions.save(controller.player, item: item) }
+            controller.player = nil
+            current = nil
+            loader = nil
+            onDismiss()
         }
     }
 }
@@ -136,7 +203,7 @@ private struct MacPlayerView: NSViewRepresentable {
     func makeNSView(context: Context) -> AVPlayerView {
         let view = AVPlayerView()
         view.controlsStyle = .floating
-        view.allowsPictureInPicturePlayback = false
+        view.allowsPictureInPicturePlayback = true
         view.showsFullScreenToggleButton = true
         view.player = player
         return view

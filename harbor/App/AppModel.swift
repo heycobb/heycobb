@@ -31,6 +31,18 @@ final class AppModel {
     /// Set from outside the main window (the Mac menu bar) to show a share
     /// or the Offline list there.
     var navigationRequest: SidebarItem?
+    /// Folders pinned to the sidebar, for the active server.
+    var favorites: [RemoteItem] = []
+    /// Files opened recently on the active server, newest first. Kept on
+    /// this device only, and not at all with Keep Recent Files off.
+    var recents: [RemoteItem] = []
+    /// Settings › Privacy › Keep Recent Files.
+    var keepRecents: Bool {
+        didSet {
+            defaults.set(keepRecents, forKey: Keys.keepRecents)
+            if !keepRecents { clearRecents() }
+        }
+    }
     /// Bumped when a folder's contents change, so open folder views reload.
     private(set) var folderRevisions: [String: Int] = [:]
     /// Uploads the user started. Runs only while the app is open.
@@ -75,12 +87,14 @@ final class AppModel {
         static let lastServer = "lastServerID"
         static let requireUnlock = "requireUnlock"
         static let hideInSwitcher = "hideInSwitcher"
+        static let keepRecents = "keepRecents"
     }
 
     init() {
         requireUnlock = defaults.bool(forKey: Keys.requireUnlock)
         showInFilesApp = SharedContainer.isFilesAppEnabled
         hideInSwitcher = defaults.object(forKey: Keys.hideInSwitcher) as? Bool ?? true
+        keepRecents = defaults.object(forKey: Keys.keepRecents) as? Bool ?? true
         isLocked = requireUnlock
         servers = SharedContainer.loadServers()
         PreviewFiles.purge()
@@ -121,6 +135,7 @@ final class AppModel {
         defaults.set(profile.id.uuidString, forKey: Keys.lastServer)
         offline = OfflineStore(namespace: profile.id.uuidString)
         thumbnails = ThumbnailCache(namespace: profile.id.uuidString)
+        loadLibrary(for: profile)
         await refreshSaved()
 
         if profile.isDemo {
@@ -187,6 +202,7 @@ final class AppModel {
         }
         await OfflineStore(namespace: profile.id.uuidString).removeAll()
         await ThumbnailCache(namespace: profile.id.uuidString).removeAll()
+        forgetLibrary(for: profile)
         keychain.remove(sessionKey(profile))
         for endpoint in profile.allEndpoints {
             trust.forget(host: CertificateTrustKey.make(endpoint.url))
@@ -252,15 +268,20 @@ final class AppModel {
     }
 
     /// Local copies ready for the share sheet: files as they are (offline
-    /// copies if saved), folders as zips made by the NAS.
-    func shareableCopies(of items: [RemoteItem]) async throws -> [URL] {
+    /// copies if saved), folders as real folders so "Save to Files" keeps
+    /// them as folders. Very large folders come as a zip made by the NAS.
+    func shareableCopies(of items: [RemoteItem], progress: @escaping (Int, Int) -> Void = { _, _ in }) async throws -> [URL] {
         var urls: [URL] = []
         for item in items {
             try Task.checkCancellation()
             if item.isDirectory {
                 guard let service else { throw NASError.unreachable }
-                let zip = try await service.download(item)
-                urls.append(try PreviewFiles.adopt(zip, named: item.name + ".zip"))
+                if let folder = try await FolderCopy.make(of: item, using: service, progress: progress) {
+                    urls.append(folder)
+                } else {
+                    let zip = try await service.download(item)
+                    urls.append(try PreviewFiles.adopt(zip, named: item.name + ".zip"))
+                }
             } else {
                 urls.append(try await localCopy(of: item))
             }
@@ -300,6 +321,7 @@ final class AppModel {
         do {
             let renamed = try await service.rename(item, to: name.trimmingCharacters(in: .whitespaces))
             await offline?.relocate(from: item.path, to: renamed.path)
+            libraryItemsChanged(from: item.path, to: renamed)
             await refreshSaved()
             folderChanged(item.parentPath)
         } catch {
@@ -316,6 +338,7 @@ final class AppModel {
             try await service.move(items, to: folder)
             for item in items {
                 await offline?.relocate(from: item.path, to: RemoteItem.join(folder, item.name))
+                libraryItemsChanged(from: item.path, to: item.with(path: RemoteItem.join(folder, item.name), name: item.name))
             }
             await refreshSaved()
             for parent in Set(items.map(\.parentPath)) { folderChanged(parent) }
@@ -338,7 +361,10 @@ final class AppModel {
         do {
             try await service.delete(items)
             // The offline copies would be dropped at the next refresh anyway.
-            for item in items { await offline?.remove(item.path) }
+            for item in items {
+                await offline?.remove(item.path)
+                libraryItemsChanged(from: item.path, to: nil)
+            }
             await refreshSaved()
             return true
         } catch {

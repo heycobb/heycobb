@@ -3,6 +3,8 @@ import SwiftUI
 
 enum SidebarItem: Hashable {
     case share(RemoteItem)
+    case favorite(RemoteItem)
+    case recents
     case offline
 }
 
@@ -71,6 +73,10 @@ struct BrowserView: View {
         switch selection {
         case let .share(share):
             FolderView(folder: share)
+        case let .favorite(folder):
+            FolderView(folder: folder)
+        case .recents:
+            RecentsView()
         case .offline:
             OfflineView()
         case nil:
@@ -147,7 +153,20 @@ struct BrowserView: View {
             } header: {
                 sectionHeader("Shared Folders")
             }
+            if !model.favorites.isEmpty {
+                Section {
+                    ForEach(model.favorites) { folder in
+                        macRow(.favorite(folder), title: folder.name, symbol: "star")
+                            .contextMenu { unfavoriteButton(folder) }
+                    }
+                } header: {
+                    sectionHeader("Favorites")
+                }
+            }
             Section {
+                if model.keepRecents {
+                    macRow(.recents, title: "Recents", symbol: "clock")
+                }
                 macRow(.offline, title: "Offline", symbol: "arrow.down.circle", badge: model.savedPaths.count)
             }
         }
@@ -196,7 +215,27 @@ struct BrowserView: View {
             } header: {
                 sectionHeader("Shared Folders")
             }
+            if !model.favorites.isEmpty {
+                Section {
+                    ForEach(model.favorites) { folder in
+                        NavigationLink(value: SidebarItem.favorite(folder)) {
+                            sidebarLabel(folder.name, symbol: "star", item: .favorite(folder))
+                        }
+                        .listRowBackground(rowBackground(.favorite(folder)))
+                        .contextMenu { unfavoriteButton(folder) }
+                        .swipeActions { unfavoriteButton(folder) }
+                    }
+                } header: {
+                    sectionHeader("Favorites")
+                }
+            }
             Section {
+                if model.keepRecents {
+                    NavigationLink(value: SidebarItem.recents) {
+                        sidebarLabel("Recents", symbol: "clock", item: .recents)
+                    }
+                    .listRowBackground(rowBackground(.recents))
+                }
                 NavigationLink(value: SidebarItem.offline) {
                     sidebarLabel("Offline", symbol: "arrow.down.circle", item: .offline)
                         .badge(model.savedPaths.count)
@@ -248,6 +287,13 @@ struct BrowserView: View {
         return Theme.Sidebar.isTinted ? AnyView(Color.clear) : nil
     }
     #endif
+
+    private func unfavoriteButton(_ folder: RemoteItem) -> some View {
+        Button("Remove from Favorites", systemImage: "star.slash") {
+            if selection == .favorite(folder) { selection = nil }
+            model.toggleFavorite(folder)
+        }
+    }
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title).foregroundStyle(Theme.Sidebar.secondary)

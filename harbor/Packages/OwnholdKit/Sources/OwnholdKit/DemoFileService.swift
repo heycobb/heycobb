@@ -15,6 +15,8 @@ public actor DemoFileService: FileService {
     private var tree: [String: [RemoteItem]] = DemoFileService.initialTree
     /// Where a file's bytes come from, by its current path.
     private var sources: [String: Source] = [:]
+    /// What went into each archive made with Compress, so Extract can recreate it.
+    private var archives: [String: [RemoteItem]] = [:]
     private let uploads = FileManager.default.temporaryDirectory.appending(path: "DemoUploads", directoryHint: .isDirectory)
 
     private enum Source {
@@ -218,6 +220,77 @@ public actor DemoFileService: FileService {
         tree[folder, default: []].append(RemoteItem(path: path, name: name, isDirectory: false, size: size, modified: .now))
     }
 
+    // MARK: Archives and links
+
+    public func compress(_ items: [RemoteItem], to destination: String) async throws {
+        let folder = (destination as NSString).deletingLastPathComponent
+        let name = (destination as NSString).lastPathComponent
+        guard RemoteItem.isValidName(name) else { throw NASError.invalidName }
+        try checkFree(name, in: folder)
+        let fm = FileManager.default
+        let staging = fm.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        defer { try? fm.removeItem(at: staging) }
+        let root = staging.appending(path: (name as NSString).deletingPathExtension, directoryHint: .isDirectory)
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        for item in items { try export(item, into: root) }
+        let zipped = try zipDirectory(root)
+        try fm.createDirectory(at: uploads, withIntermediateDirectories: true)
+        let stored = uploads.appending(path: UUID().uuidString)
+        try fm.moveItem(at: zipped, to: stored)
+        let size = (try? stored.resourceValues(forKeys: [.fileSizeKey]))?.fileSize.map(Int64.init)
+        sources[destination] = .uploaded(stored)
+        tree[folder, default: []].append(RemoteItem(path: destination, name: name, isDirectory: false, size: size, modified: .now))
+        archives[destination] = items
+    }
+
+    public func archiveTopLevel(_ archive: RemoteItem) async throws -> [String] {
+        guard let items = archives[archive.path] else { throw NASError.archiveUnreadable }
+        return items.map(\.name)
+    }
+
+    /// Demo archives made with Compress extract to copies of what went in.
+    public func extract(_ archive: RemoteItem, into folder: String) async throws {
+        guard let items = archives[archive.path] else { throw NASError.archiveUnreadable }
+        guard tree[folder] != nil else { throw NASError.notFound }
+        for item in items { try checkFree(item.name, in: folder) }
+        for item in items { duplicate(item, into: folder) }
+    }
+
+    public func createShareLink(for item: RemoteItem, password: String?, expires: Date?) async throws -> SharingLink {
+        // example.com is reserved for examples, so this can't reach anyone.
+        let id = String(UUID().uuidString.prefix(8))
+        return SharingLink(id: id, url: URL(string: "https://nas.example.com/sharing/\(id)")!, expires: expires, hasPassword: !(password ?? "").isEmpty)
+    }
+
+    public func deleteShareLink(_ link: SharingLink) async throws {}
+
+    /// Writes an item (and a folder's contents) into a local directory.
+    private func export(_ item: RemoteItem, into directory: URL) throws {
+        let fm = FileManager.default
+        let target = directory.appending(path: item.name)
+        if item.isDirectory {
+            try fm.createDirectory(at: target, withIntermediateDirectories: true)
+            for child in tree[item.path] ?? [] { try export(child, into: target) }
+        } else {
+            switch source(for: item.path) {
+            case let .uploaded(file): try fm.copyItem(at: file, to: target)
+            case let .builtIn(original, name): try (Self.content(path: original, name: name) ?? Data()).write(to: target)
+            }
+        }
+    }
+
+    /// Copies an item (and a folder's contents) into `folder` in the tree.
+    private func duplicate(_ item: RemoteItem, into folder: String) {
+        let copy = item.with(path: RemoteItem.join(folder, item.name), name: item.name)
+        tree[folder, default: []].append(copy)
+        if item.isDirectory {
+            tree[copy.path] = []
+            for child in tree[item.path] ?? [] { duplicate(child, into: copy.path) }
+        } else {
+            sources[copy.path] = source(for: item.path)
+        }
+    }
+
     /// A folder downloads as a zip, as it does from DSM.
     private func zip(_ folder: RemoteItem) throws -> URL {
         let fm = FileManager.default
@@ -239,6 +312,12 @@ public actor DemoFileService: FileService {
             }
         }
         try copy(folder.path, into: root)
+        return try zipDirectory(root)
+    }
+
+    /// Zips a local directory (reading it "for uploading" gives a zip).
+    private func zipDirectory(_ root: URL) throws -> URL {
+        let fm = FileManager.default
         var result: URL?
         var copyError: Error?
         var coordinationError: NSError?

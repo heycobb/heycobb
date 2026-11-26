@@ -22,6 +22,8 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
     case noSpace
     case invalidName
     case streamingUnsupported
+    case archiveNeedsPassword
+    case archiveUnreadable
 
     public var errorDescription: String? {
         switch self {
@@ -65,6 +67,10 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
             "That name isn't allowed. Names can't be empty, contain “/”, or be too long."
         case .streamingUnsupported:
             "This NAS can't stream that file, so Ownhold will download it instead."
+        case .archiveNeedsPassword:
+            "This archive is protected with a password. Extract it in DSM's File Station."
+        case .archiveUnreadable:
+            "The NAS couldn't open this archive. It may be damaged or in a format it doesn't support."
         }
     }
 
@@ -95,6 +101,9 @@ public enum NASError: Error, Equatable, Sendable, LocalizedError {
             case 412, 413, 418, 419, 420: return .invalidName
             case 414, 1003, 1004, 1805: return .alreadyExists
             case 415, 416, 1804: return .noSpace
+            case 1403: return .archiveNeedsPassword
+            case 1400, 1401, 1402, 1404: return .archiveUnreadable
+            case 2000, 2002: return .permissionDenied
             default: return .server(code: code, api: api)
             }
         }

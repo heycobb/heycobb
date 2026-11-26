@@ -39,6 +39,8 @@
     <li><strong>Files you keep offline:</strong> stored on your device, encrypted while your iPhone or iPad is locked, and excluded from backups.</li>
     <li><strong>Thumbnails and previews:</strong> kept in a cache your device can clear at any time. Files opened for a quick preview are deleted the next time the app starts.</li>
     <li><strong>Settings:</strong> your choices such as list or grid view, sort order and the Face ID lock.</li>
+    <li><strong>Recent files:</strong> the last 20 files you opened, so you can find them again. Turning off <strong>Settings › Privacy › Keep Recent Files</strong> deletes the list.</li>
+    <li><strong>Favorites:</strong> the folders you pin to the sidebar.</li>
     <li><strong>Playback positions:</strong> where you stopped in a video or audio file, so it continues there next time. Files are identified by a scrambled code rather than their names. Turning off <strong>Settings › Playback › Remember Playback Position</strong> deletes them all.</li>
   </ul>
 
@@ -52,6 +54,9 @@
   <p>Ownhold connects to the NAS addresses you enter: on your home network, through a private network (VPN) such as Tailscale, or over the internet. In the built-in demo library, it makes no network connections at all.</p>
   <p><strong>QuickConnect (optional):</strong> if you enter a Synology QuickConnect ID, Ownhold asks Synology's QuickConnect service (quickconnect.to) for your NAS's current addresses each time it connects. Only the QuickConnect ID is sent to Synology, under Synology's privacy policy, and Synology can see the network address your request comes from, as with any internet request. Your account name, password and files are never sent to Synology, and Ownhold never routes your connection through Synology's relay servers. If you don't enter a QuickConnect ID, Ownhold never contacts Synology.</p>
   <p>If you use Tailscale or another VPN, that connection is provided by its own app, under its own privacy policy. Ownhold doesn't communicate with their servers.</p>
+
+  <h2>Share links</h2>
+  <p>When you choose <strong>Share Link…</strong>, your NAS creates the link and serves the file to whoever opens it. The link, and any password you set, are stored on your NAS, not by Ownhold or by us. <strong>Stop Sharing</strong> removes it.</p>
 
   <h2>Save to Ownhold</h2>
   <p>When you choose Ownhold in another app's share sheet, the items you shared are uploaded directly to the folder you pick on your NAS. Ownhold makes a temporary copy while uploading and deletes it afterwards. Nothing is sent anywhere else.</p>
