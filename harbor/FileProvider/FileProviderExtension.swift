@@ -168,12 +168,6 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
         return task { [self] in
             if keep {
                 kept.keep(paths)
-                // List kept folders now, so the next check walks into them.
-                for path in paths {
-                    if let items = try? await context.run({ try await $0.list(folder: path, offset: 0, limit: 5000, sort: .name, ascending: true).items }) {
-                        await snapshots.record(items.map(\.path), for: path, replacing: true)
-                    }
-                }
                 await snapshots.walkKeptSoon()
             } else {
                 kept.stop(paths)
@@ -181,9 +175,37 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
             // Report the items again (from their folders) with the new policy.
             let parents = Set(paths.map { ($0 as NSString).deletingLastPathComponent })
             SharedChanges.record(domain: domainID, folders: Array(parents))
-            NSFileProviderManager(for: domain)?.signalEnumerator(for: .workingSet) { _ in }
+            let manager = NSFileProviderManager(for: domain)
+            manager?.signalEnumerator(for: .workingSet) { _ in }
             reply.handler(nil)
+            // The keep policy alone leaves downloads to a background scheduler
+            // that can wait a long time; ask for each file now instead.
+            if keep, let manager {
+                for path in await filesInside(paths) {
+                    manager.requestDownloadForItem(withIdentifier: FileProviderItem.identifier(for: path), requestedRange: NSRange(location: NSNotFound, length: 0)) { _ in }
+                }
+            }
         }
+    }
+
+    /// Every file in (or among) the kept items, listing folders on the way
+    /// so Finder learns about them too. Capped, so a huge folder can't run away.
+    private func filesInside(_ paths: [String]) async -> [String] {
+        var files: [String] = []
+        var queue = paths
+        var listed = 0
+        while !queue.isEmpty, listed < SnapshotStore.folderLimit, files.count < 2000 {
+            let path = queue.removeFirst()
+            guard let items = try? await context.run({ try await $0.list(folder: path, offset: 0, limit: 5000, sort: .name, ascending: true).items }) else {
+                files.append(path) // not a folder: a kept file
+                continue
+            }
+            listed += 1
+            await snapshots.record(items.map(\.path), for: path, replacing: true)
+            files += items.filter { !$0.isDirectory }.map(\.path)
+            queue += items.filter(\.isDirectory).map(\.path)
+        }
+        return Array(files.prefix(2000))
     }
 
     static let keepAction = "app.ownhold.keepDownloaded"
