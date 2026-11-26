@@ -620,3 +620,16 @@ struct WakeOnLANTests {
         #expect(profile.macAddress == nil)
     }
 }
+
+@Suite("Recycle Bin")
+struct RecycleBinTests {
+    @Test func originalPaths() {
+        #expect(RecycleBin.folder(forShare: "/home") == "/home/#recycle")
+        #expect(RecycleBin.originalPath(of: "/home/#recycle/TEST FOLDER/a.txt") == "/home/TEST FOLDER/a.txt")
+        #expect(RecycleBin.originalPath(of: "/home/#recycle/a.txt") == "/home/a.txt")
+        #expect(RecycleBin.originalPath(of: "/home/#recycle") == nil)
+        #expect(RecycleBin.originalPath(of: "/home/Photos/a.jpg") == nil)
+        #expect(RecycleBin.contains("/home/#recycle/x"))
+        #expect(!RecycleBin.contains("/home/x/#recycle"))
+    }
+}

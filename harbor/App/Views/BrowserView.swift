@@ -7,6 +7,7 @@ enum SidebarItem: Hashable {
     case recents
     case offline
     case backup
+    case recentlyDeleted
 }
 
 /// Sidebar of shares + a folder stack. On iPhone this collapses into a single
@@ -18,6 +19,8 @@ struct BrowserView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var selection: SidebarItem?
     @State private var shares: [RemoteItem] = []
+    /// Shared folders with a Recycle Bin this account can open.
+    @State private var recycleBins: [RemoteItem] = []
     @State private var path: [RemoteItem] = []
     @State private var showingSettings = false
     // Both columns from the start wherever they fit; one column on iPhone either way.
@@ -89,6 +92,8 @@ struct BrowserView: View {
             #endif
         case .offline:
             OfflineView()
+        case .recentlyDeleted:
+            RecentlyDeletedView(bins: recycleBins)
         case nil:
             ContentUnavailableView("Choose a folder", systemImage: "sidebar.left")
         }
@@ -204,6 +209,9 @@ struct BrowserView: View {
                 }
                 macRow(.offline, title: "Offline", symbol: "arrow.down.circle", badge: model.savedPaths.count)
                 macRow(.backup, title: "Folder Backup", symbol: "clock.arrow.circlepath")
+                if !recycleBins.isEmpty {
+                    macRow(.recentlyDeleted, title: "Recently Deleted", symbol: "trash")
+                }
             }
         }
     }
@@ -282,6 +290,12 @@ struct BrowserView: View {
                     sidebarLabel("Photo Backup", symbol: "photo.on.rectangle", item: .backup)
                 }
                 .listRowBackground(rowBackground(.backup))
+                if !recycleBins.isEmpty {
+                    NavigationLink(value: SidebarItem.recentlyDeleted) {
+                        sidebarLabel("Recently Deleted", symbol: "trash", item: .recentlyDeleted)
+                    }
+                    .listRowBackground(rowBackground(.recentlyDeleted))
+                }
             }
         }
         .listItemTint(.fixed(Theme.accent))
@@ -431,6 +445,7 @@ struct BrowserView: View {
         do {
             shares = try await service.listShares()
             if showsTwoColumns { selectInitialShare() }
+            recycleBins = await model.recycleBins(in: shares)
         } catch {
             model.handle(error)
         }
