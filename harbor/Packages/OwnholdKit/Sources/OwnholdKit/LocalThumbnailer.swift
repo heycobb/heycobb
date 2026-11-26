@@ -49,8 +49,11 @@ actor LocalThumbnailer {
     // MARK: Photos
 
     private func photo(_ item: RemoteItem, maxPixel: Int, service: any FileService, lowPower: Bool) async -> Data? {
-        // 1. The embedded preview, from the first part of the file.
-        if let head = try? await service.read(item, from: 0, length: Self.headBytes),
+        // 1. The embedded preview, from the first part of the file. Skipped
+        // for HEIC: its preview is rarely in the first part, and decoding a
+        // cut-off HEIC only fails (with errors logged by ImageIO).
+        if !["heic", "heif"].contains(item.fileExtension),
+           let head = try? await service.read(item, from: 0, length: Self.headBytes),
            let image = Self.embeddedPreview(head.data, maxPixel: maxPixel) {
             Self.log.info("photo: embedded preview (\(item.fileExtension, privacy: .public))")
             return Self.jpeg(image)
