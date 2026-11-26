@@ -218,9 +218,15 @@ final class UploadQueue {
         let scoped = job.source.startAccessingSecurityScopedResource()
         defer { if scoped { job.source.stopAccessingSecurityScopedResource() } }
         do {
-            try await service.upload(job.source, as: job.name, to: job.folder, replacing: job.replacing) { [weak self] fraction in
+            let progress: @Sendable (Double) -> Void = { [weak self] fraction in
                 Task { @MainActor in self?.setProgress(fraction, for: id) }
             }
+            #if os(iOS)
+            // Large files keep uploading after you leave Ownhold.
+            try await service.uploadAllowingBackground(job.source, as: job.name, to: job.folder, replacing: job.replacing, progress: progress)
+            #else
+            try await service.upload(job.source, as: job.name, to: job.folder, replacing: job.replacing, progress: progress)
+            #endif
             setState(.done, for: id)
             discard(job)
             refreshFolders(force: false)

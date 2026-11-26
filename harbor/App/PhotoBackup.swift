@@ -165,7 +165,7 @@ final class PhotoBackup {
                     name = RemoteItem.uniqueName(for: name, avoiding: Set(existing.keys))
                 }
                 do {
-                    try await service.upload(file, as: name, to: job.folder, replacing: false) { _ in }
+                    try await service.uploadAllowingBackground(file, as: name, to: job.folder, replacing: false) { _ in }
                 } catch NASError.alreadyExists {
                     // Uploaded by another device meanwhile: leave it.
                 }

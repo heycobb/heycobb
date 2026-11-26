@@ -260,6 +260,30 @@ public actor FileStationClient: FileService {
         replacing: Bool,
         progress: @escaping @Sendable (Double) -> Void
     ) async throws {
+        let prepared = try await prepareUpload(file, as: name, to: folder, replacing: replacing)
+        defer { try? FileManager.default.removeItem(at: prepared.body) }
+        let delegate = UploadProgress(progress)
+        let (data, response) = try await perform { [request = prepared.request, body = prepared.body] in
+            try await self.session.upload(for: request, fromFile: body, delegate: delegate)
+        }
+        do {
+            try Self.checkUploadResponse(data: data, response: response)
+        } catch NASError.sessionExpired {
+            sid = nil
+            throw NASError.sessionExpired
+        }
+        progress(1)
+    }
+
+    /// An upload ready to send: the request, and its multipart body in a
+    /// file (which the caller deletes when done). Used directly, and by the
+    /// iPhone's background uploads, which can only send from a file.
+    public struct PreparedUpload: Sendable {
+        public let request: URLRequest
+        public let body: URL
+    }
+
+    public func prepareUpload(_ file: URL, as name: String, to folder: String, replacing: Bool) async throws -> PreparedUpload {
         guard RemoteItem.isValidName(name) else { throw NASError.invalidName }
         let api = "SYNO.FileStation.Upload"
         let info = try await apiInfo(api)
@@ -280,26 +304,24 @@ public actor FileStationClient: FileService {
         }
         let boundary = "Ownhold-" + UUID().uuidString
         let body = try Multipart.write(fields: fields, file: file, fileName: name, boundary: boundary)
-        defer { try? FileManager.default.removeItem(at: body) }
 
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
         request.timeoutInterval = 120 // DSM may take a while to store a big file after the last byte
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        let delegate = UploadProgress(progress)
-        let (data, response) = try await perform { [request] in
-            try await self.session.upload(for: request, fromFile: body, delegate: delegate)
-        }
+        return PreparedUpload(request: request, body: body)
+    }
+
+    /// Reads DSM's answer to an upload; throws what went wrong.
+    public static func checkUploadResponse(data: Data, response: URLResponse?) throws {
+        let api = "SYNO.FileStation.Upload"
         if let http = response as? HTTPURLResponse, !(200 ..< 300).contains(http.statusCode) {
             throw http.statusCode == 413 ? NASError.noSpace : NASError.server(code: http.statusCode, api: api)
         }
-        let envelope = try Self.decode(Envelope<Empty>.self, from: data)
+        let envelope = try decode(Envelope<Empty>.self, from: data)
         guard envelope.success else {
-            let error = NASError.from(code: envelope.error?.code ?? 100, api: api)
-            if error == .sessionExpired { self.sid = nil }
-            throw error
+            throw NASError.from(code: envelope.error?.code ?? 100, api: api)
         }
-        progress(1)
     }
 
     // MARK: Archives

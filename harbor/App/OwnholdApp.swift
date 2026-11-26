@@ -9,6 +9,8 @@ struct OwnholdApp: App {
     #if os(macOS)
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
+    #else
+    @UIApplicationDelegateAdaptor private var appDelegate: IOSAppDelegate
     #endif
 
     init() {
@@ -18,6 +20,10 @@ struct OwnholdApp: App {
         // when they launch the app without a window.
         AppDependencyManager.shared.add(dependency: model)
         #if os(iOS)
+        // Large uploads check certificates like everything else, and pick
+        // up results of uploads that finished while Ownhold wasn't running.
+        BackgroundUploads.shared.trust = model.trust
+        BackgroundUploads.shared.reconnect()
         // Must be registered before launch finishes.
         PhotoBackup.registerBackgroundTask(model: model)
         #endif
