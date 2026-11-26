@@ -57,6 +57,7 @@ public actor DemoFileService: FileService {
                 file("/Documents/Read me.md", days: 5),
                 file("/Documents/Packing list.txt", days: 12),
                 file("/Documents/Home network notes.md", days: 40),
+                file("/Documents/Harbor bells.wav", days: 8),
             ],
             "/Projects": [
                 folder("/Projects/Website", days: 1),
@@ -316,6 +317,7 @@ public actor DemoFileService: FileService {
         if name.hasSuffix(".mov") {
             return DemoVideo.url.flatMap { try? Data(contentsOf: $0, options: .mappedIfSafe) }
         }
+        if name.hasSuffix(".wav") { return DemoAudio.data }
         if FileKind(extension: (name as NSString).pathExtension.lowercased()) == .image {
             return renderPhoto(seed: path, width: 2400, height: 1600)
         }
@@ -537,4 +539,37 @@ enum DemoVideo {
             ctx.fill(CGRect(x: shift + w * 0.35, y: y, width: w * 0.08, height: 2))
         }
     }
+}
+
+/// A short recording for the demo library: soft bell tones over a low
+/// swell, synthesized once as a small WAV so nothing ships in the app.
+enum DemoAudio {
+    static let data: Data = {
+        let rate = 22_050, seconds = 24
+        let count = rate * seconds
+        // A bell every three seconds, alternating between two pitches.
+        let bells: [(start: Double, freq: Double)] = (0 ..< 8).map { i in (Double(i) * 3, i % 2 == 0 ? 523.25 : 392.0) }
+        var samples = [Int16](repeating: 0, count: count)
+        for n in 0 ..< count {
+            let t = Double(n) / Double(rate)
+            var v = 0.12 * sin(2 * .pi * 110 * t) * (0.6 + 0.4 * sin(2 * .pi * t / 8))
+            for bell in bells where t >= bell.start {
+                let dt = t - bell.start
+                let decay = exp(-dt * 1.4)
+                guard decay > 0.001 else { continue }
+                v += 0.35 * decay * (sin(2 * .pi * bell.freq * dt) + 0.4 * sin(2 * .pi * bell.freq * 2.76 * dt))
+            }
+            let fade = min(1, t / 1.5, (Double(seconds) - t) / 2)
+            samples[n] = Int16(max(-1, min(1, v * fade)) * 30_000)
+        }
+        var out = Data()
+        func append<T: FixedWidthInteger>(_ value: T) { withUnsafeBytes(of: value.littleEndian) { out.append(contentsOf: $0) } }
+        let bytes = count * 2
+        out.append(contentsOf: Array("RIFF".utf8)); append(UInt32(36 + bytes))
+        out.append(contentsOf: Array("WAVEfmt ".utf8)); append(UInt32(16)); append(UInt16(1)); append(UInt16(1))
+        append(UInt32(rate)); append(UInt32(rate * 2)); append(UInt16(2)); append(UInt16(16))
+        out.append(contentsOf: Array("data".utf8)); append(UInt32(bytes))
+        samples.withUnsafeBufferPointer { out.append(Data(buffer: $0)) }
+        return out
+    }()
 }

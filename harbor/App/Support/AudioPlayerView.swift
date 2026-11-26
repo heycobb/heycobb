@@ -132,6 +132,8 @@ final class AudioController {
     @ObservationIgnored private var player: AVPlayer?
     @ObservationIgnored private var observer: Any?
     @ObservationIgnored private var loader: StreamingLoader?
+    @ObservationIgnored private var endObserver: NSObjectProtocol?
+    private var atEnd = false
 
     func start(_ playback: MediaPlayback) async {
         #if os(iOS)
@@ -147,6 +149,14 @@ final class AudioController {
                 self.isPlaying = player.timeControlStatus != .paused
             }
         }
+        endObserver = NotificationCenter.default.addObserver(forName: AVPlayerItem.didPlayToEndTimeNotification, object: player.currentItem, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.isPlaying = false
+                self.atEnd = true
+                if self.duration > 0 { self.position = self.duration }
+            }
+        }
         player.play()
         isPlaying = true
         guard let asset = player.currentItem?.asset else { return }
@@ -157,18 +167,31 @@ final class AudioController {
     func stop() {
         player?.pause()
         if let observer { player?.removeTimeObserver(observer) }
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         observer = nil
+        endObserver = nil
         player = nil
         loader = nil
     }
 
     func toggle() {
         guard let player else { return }
-        if player.timeControlStatus == .paused { player.play() } else { player.pause() }
+        if atEnd {
+            // Play again from the start once the track has finished.
+            atEnd = false
+            position = 0
+            player.seek(to: .zero)
+            player.play()
+        } else if player.timeControlStatus == .paused {
+            player.play()
+        } else {
+            player.pause()
+        }
         isPlaying = player.timeControlStatus != .paused
     }
 
     func seek(to seconds: Double) {
+        atEnd = seconds >= duration && duration > 0
         player?.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
     }
 
