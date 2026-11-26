@@ -9,7 +9,12 @@
 	<key>OwnholdKeychainGroup</key>
 	<string>$(AppIdentifierPrefix)app.ownhold.shared</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Ownhold connects to your NAS on your home network.</string>
+	<string>Ownhold finds and connects to your NAS on your home network.</string>
+	<!-- Setup looks for NAS by their file sharing (SMB) announcement. -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_smb._tcp</string>
+	</array>
 	<!-- iOS: audio keeps playing with the screen locked and video can float in
 	     Picture in Picture (only while a player is open); "processing" runs Photo
 	     Backup in the background, only with Back Up Automatically turned on. -->

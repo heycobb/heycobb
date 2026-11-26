@@ -59,6 +59,8 @@ final class AppModel {
     var signInRequest: ServerProfile?
     /// Shows the Add NAS sheet (from the welcome screen or the server menu).
     var isAddingServer = false
+    /// The first-run screens stay up after signing in, for their last steps.
+    var isOnboarding = false
     /// Set when a server presents a certificate the user must review.
     var certificateReview: CertificateReview?
     var banner: String?
