@@ -117,9 +117,12 @@ struct OnboardingView: View {
                 Button {
                     if let previous = Step(rawValue: step.rawValue - 1) { step = previous }
                 } label: {
-                    Label("Back", systemImage: "chevron.left")
+                    Image(systemName: "chevron.left")
+                        .font(Onboard.back)
+                        .frame(width: 32, height: 32)
+                        .contentShape(.rect)
                 }
-                .labelStyle(.iconOnly)
+                .accessibilityLabel("Back")
                 .buttonStyle(.borderless)
                 .disabled(working || step == .away)
                 .opacity(step == .away ? 0 : 1)
@@ -168,7 +171,7 @@ struct OnboardingView: View {
             case .signIn:
                 primary(working ? "Signing In…" : "Sign In", enabled: canSignIn && !working, action: signIn)
                 Text("Your password goes only to your NAS.")
-                    .font(.footnote)
+                    .font(Onboard.note)
                     .foregroundStyle(.secondary)
             case .away:
                 primary("Continue", enabled: vpnAddress.isEmpty || vpnEndpoint != nil) {
@@ -194,9 +197,9 @@ struct OnboardingView: View {
                 .accessibilityHidden(true)
             VStack(spacing: Theme.Spacing.s) {
                 Text("Ownhold")
-                    .font(.system(.largeTitle, weight: .semibold))
+                    .font(Onboard.hero)
                 Text("The files and photos on your NAS, at home and away. Nothing in between: no account, no cloud.")
-                    .font(.title3)
+                    .font(Onboard.detail)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -224,8 +227,8 @@ struct OnboardingView: View {
                                 .foregroundStyle(Theme.accent)
                                 .frame(width: 32)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(nas.name).font(.headline)
-                                Text(nas.host).font(.path).foregroundStyle(.secondary)
+                                Text(nas.name).font(Onboard.rowTitle)
+                                Text(nas.host).font(Onboard.note.monospaced()).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Image(systemName: selected ? "checkmark.circle.fill" : "circle")
@@ -249,7 +252,7 @@ struct OnboardingView: View {
                             Text("None found on this network. Enter its address below.")
                         }
                     }
-                    .font(.callout)
+                    .font(Onboard.note)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, Theme.Spacing.s)
                 }
@@ -267,7 +270,7 @@ struct OnboardingView: View {
                         }
                     if address.lowercased().hasPrefix("http://") {
                         Text("Ownhold only connects over HTTPS. Remove “http://”.")
-                            .font(.footnote)
+                            .font(Onboard.note)
                             .foregroundStyle(.red)
                     }
                     link("Use a QuickConnect ID instead") { usesQuickConnect = true }
@@ -282,8 +285,9 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: Theme.Spacing.m) {
                 field("Account", text: $account, prompt: "Account name", focus: .account, contentType: .username)
                 VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-                    Text("Password").font(.subheadline.weight(.medium))
+                    Text("Password").font(Onboard.label)
                     SecureField("Password", text: $password, prompt: Text("Password"))
+                        .font(Onboard.field)
                         .textContentType(.password)
                         .focused($focus, equals: .password)
                         .onSubmit(signIn)
@@ -311,7 +315,7 @@ struct OnboardingView: View {
                 Label("Get Tailscale", systemImage: "arrow.up.forward.square")
             }
             Text("You can add this later in Settings.")
-                .font(.footnote)
+                .font(Onboard.note)
                 .foregroundStyle(.secondary)
         }
     }
@@ -337,7 +341,7 @@ struct OnboardingView: View {
             .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 12))
             if model.requireUnlock {
                 Text(Platform.isMac ? "Finder can't ask for Touch ID, so it stays off while the lock is on." : "The Files app can't ask for Face ID, so it stays off while the lock is on.")
-                    .font(.footnote)
+                    .font(Onboard.note)
                     .foregroundStyle(.secondary)
             }
         }
@@ -348,10 +352,10 @@ struct OnboardingView: View {
     private func title(_ text: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
             Text(text)
-                .font(.system(.largeTitle, weight: .semibold))
+                .font(Onboard.title)
                 .fixedSize(horizontal: false, vertical: true)
             Text(detail)
-                .font(.title3)
+                .font(Onboard.detail)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -361,9 +365,9 @@ struct OnboardingView: View {
 
     private func field(_ label: String, text: Binding<String>, prompt: String, focus field: Field, monospaced: Bool = false, contentType: TextContentTypeChoice? = nil) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            Text(label).font(.subheadline.weight(.medium))
+            Text(label).font(Onboard.label)
             TextField(label, text: text, prompt: Text(prompt))
-                .font(monospaced ? .body.monospaced() : .body)
+                .font(monospaced ? Onboard.field.monospaced() : Onboard.field)
                 .focused($focus, equals: field)
                 .autocorrectionDisabled()
                 #if os(iOS)
@@ -378,7 +382,7 @@ struct OnboardingView: View {
     private func optionRow(_ title: String, symbol: String, isOn: Binding<Bool>) -> some View {
         Toggle(isOn: isOn) {
             Label {
-                Text(title)
+                Text(title).font(Onboard.field)
             } icon: {
                 Image(systemName: symbol)
                     .foregroundStyle(Theme.accent)
@@ -391,26 +395,30 @@ struct OnboardingView: View {
 
     private func primary(_ title: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).frame(maxWidth: .infinity)
+            Text(title).font(Onboard.button).frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
-        .controlSize(.large)
+        .controlSize(Onboard.buttonSize)
         .disabled(!enabled)
         .keyboardShortcut(.defaultAction)
     }
 
     private func secondary(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).frame(maxWidth: .infinity)
+            Text(title).font(Onboard.button).frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
-        .controlSize(.large)
+        .controlSize(Onboard.buttonSize)
+        #if os(macOS)
+        // The accent-tinted fill all but disappears on a dark Mac window.
+        .tint(.secondary)
+        #endif
     }
 
     private func link(_ title: String, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
             .buttonStyle(.borderless)
-            .font(.callout)
+            .font(Onboard.note)
     }
 
     // MARK: Logic
@@ -507,6 +515,36 @@ struct OnboardingView: View {
         if setUpBackup { model.navigationRequest = .backup }
         model.isOnboarding = false
     }
+}
+
+// MARK: - Type
+
+/// Onboarding type sizes. The Mac's system sizes are a step smaller than
+/// iPhone's (a 13 pt body), which made these screens hard to read there.
+private enum Onboard {
+    #if os(macOS)
+    static let hero = Font.system(size: 34, weight: .semibold)
+    static let title = Font.system(size: 30, weight: .semibold)
+    static let detail = Font.system(size: 17)
+    static let label = Font.system(size: 14, weight: .medium)
+    static let field = Font.system(size: 15)
+    static let rowTitle = Font.system(size: 15, weight: .semibold)
+    static let note = Font.system(size: 13)
+    static let back = Font.system(size: 17, weight: .medium)
+    static let button: Font? = .system(size: 15, weight: .medium)
+    static let buttonSize = ControlSize.extraLarge
+    #else
+    static let hero = Font.system(.largeTitle, weight: .semibold)
+    static let title = Font.system(.largeTitle, weight: .semibold)
+    static let detail = Font.title3
+    static let label = Font.subheadline.weight(.medium)
+    static let field = Font.body
+    static let rowTitle = Font.headline
+    static let note = Font.footnote
+    static let back = Font.title3.weight(.medium)
+    static let button: Font? = nil
+    static let buttonSize = ControlSize.large
+    #endif
 }
 
 // MARK: - Text fields
