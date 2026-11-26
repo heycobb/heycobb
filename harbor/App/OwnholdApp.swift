@@ -78,7 +78,7 @@ private struct MenuBarLabel: View {
                 ThemeSettings.shared.appIcon.apply() // the Dock icon chosen in Settings
                 try? await Task.sleep(for: .milliseconds(300))
                 let hasWindow = NSApp.windows.contains { $0.isVisible && $0.canBecomeMain }
-                if !hasWindow { openWindow(id: OwnholdApp.mainWindowID) }
+                if !hasWindow, !DockIcon.isStartingInMenuBar { openWindow(id: OwnholdApp.mainWindowID) }
             }
     }
 
@@ -93,7 +93,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         !DockIcon.keepsRunning
     }
 
+    /// Read before launch finishes, while the launch event is still current.
+    private var launchedAtLogin = false
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        launchedAtLogin = LoginItem.launchedAtLogin()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Opened at login with the menu bar item on: start quietly in the menu
+        // bar instead of putting a window in front of everything.
+        if launchedAtLogin, DockIcon.keepsRunning {
+            DockIcon.startInMenuBar()
+        }
         let center = NotificationCenter.default
         // A window closing may leave none open; one opening needs the Dock icon back.
         for name in [NSWindow.willCloseNotification, NSWindow.didBecomeKeyNotification, NSWindow.didBecomeMainNotification] {
@@ -120,6 +132,7 @@ enum DockIcon {
     /// Shows the Dock icon while any window (main or Settings) is open, and
     /// hides it once the last one closes, if the setting is on.
     static func update() {
+        guard !isStartingInMenuBar else { return }
         // The menu bar item's own windows can't become main, so they don't count.
         let hasWindow = NSApp.windows.contains { $0.isVisible && $0.canBecomeMain }
         let policy: NSApplication.ActivationPolicy = hidesWhenClosed && !hasWindow ? .accessory : .regular
@@ -129,6 +142,23 @@ enum DockIcon {
             // Coming back from the menu bar: restore the chosen icon and bring the window forward.
             ThemeSettings.shared.appIcon.apply()
             NSApp.activate()
+        }
+    }
+
+    /// Login launch: closes the window SwiftUI opens at launch (and the one
+    /// the menu bar item opens if none is showing) and leaves the Dock.
+    static var isStartingInMenuBar = false
+
+    static func startInMenuBar() {
+        isStartingInMenuBar = true
+        Task { @MainActor in
+            // SwiftUI opens the main window just after launch; wait for it.
+            for _ in 0..<10 {
+                try? await Task.sleep(for: .milliseconds(100))
+                for window in NSApp.windows where window.isVisible && window.canBecomeMain { window.close() }
+            }
+            isStartingInMenuBar = false
+            update()
         }
     }
 

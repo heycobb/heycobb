@@ -13,6 +13,7 @@ struct SettingsView: View {
     #if os(macOS)
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
     @AppStorage("hideDockWhenClosed") private var hideDockWhenClosed = true
+    @Bindable private var loginItem = LoginItem.shared
     #endif
 
     var body: some View {
@@ -48,6 +49,21 @@ struct SettingsView: View {
             }
 
             #if os(macOS)
+            Section {
+                Toggle("Open at Login", isOn: $loginItem.isOn)
+                if loginItem.needsApproval {
+                    Button("Allow in System Settings…") { loginItem.openSystemSettings() }
+                }
+            } header: {
+                Text("Startup")
+            } footer: {
+                // Needed: the switch is on but macOS won't open Ownhold until it's allowed.
+                if loginItem.needsApproval {
+                    Text("Allow Ownhold in Login Items so macOS can open it.")
+                }
+            }
+            .onAppear { loginItem.refresh() }
+
             Section("Menu Bar") {
                 Toggle("Show Ownhold in Menu Bar", isOn: $showMenuBarItem)
                 if showMenuBarItem {
