@@ -49,15 +49,59 @@ struct NASItemQuery: EntityStringQuery {
 
     @MainActor
     func entities(for identifiers: [String]) async throws -> [NASItemEntity] {
-        identifiers.compactMap { id in
-            let serverName = UUID(uuidString: String(id.prefix(36))).flatMap { uuid in model.servers.first { $0.id == uuid }?.name } ?? "NAS"
-            return NASItemEntity(id: id, serverName: serverName)
-        }
+        identifiers.compactMap { NASItemEntity(id: $0, serverName: model.serverName(forItemID: $0)) }
     }
 
-    /// Shared folders and the folders inside them, then Favorites and Recents.
     @MainActor
     func suggestedEntities() async throws -> [NASItemEntity] {
+        await NASItemSearch.suggested(model: model, foldersOnly: false)
+    }
+
+    @MainActor
+    func entities(matching string: String) async throws -> [NASItemEntity] {
+        await NASItemSearch.matching(string, model: model, foldersOnly: false)
+    }
+}
+
+/// A folder on a saved NAS: what Upload Files to NAS needs, so its picker
+/// lists folders only. Same ID format as `NASItemEntity`.
+struct NASFolderEntity: AppEntity {
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "NAS Folder"
+    static let defaultQuery = NASFolderQuery()
+
+    let item: NASItemEntity
+    var id: String { item.id }
+
+    var displayRepresentation: DisplayRepresentation { item.displayRepresentation }
+
+    init(_ item: NASItemEntity) { self.item = item }
+}
+
+struct NASFolderQuery: EntityStringQuery {
+    @Dependency private var model: AppModel
+
+    @MainActor
+    func entities(for identifiers: [String]) async throws -> [NASFolderEntity] {
+        identifiers.compactMap { NASItemEntity(id: $0, serverName: model.serverName(forItemID: $0)) }
+            .filter(\.isFolder).map(NASFolderEntity.init)
+    }
+
+    @MainActor
+    func suggestedEntities() async throws -> [NASFolderEntity] {
+        await NASItemSearch.suggested(model: model, foldersOnly: true).map(NASFolderEntity.init)
+    }
+
+    @MainActor
+    func entities(matching string: String) async throws -> [NASFolderEntity] {
+        await NASItemSearch.matching(string, model: model, foldersOnly: true).map(NASFolderEntity.init)
+    }
+}
+
+/// Suggestions and name search for both pickers.
+@MainActor
+enum NASItemSearch {
+    /// Shared folders and the folders inside them, then Favorites and Recents.
+    static func suggested(model: AppModel, foldersOnly: Bool) async -> [NASItemEntity] {
         await model.start()
         guard let profile = model.activeServer, let service = model.service else { return [] }
         let shares = (try? await service.listShares()) ?? []
@@ -67,30 +111,41 @@ struct NASItemQuery: EntityStringQuery {
             items += folders.filter { $0.isDirectory && !RecycleBin.contains($0.path) }
         }
         items += model.favorites + model.recents
-        return Self.unique(items).map { NASItemEntity(serverID: profile.id, serverName: profile.name, item: $0) }
+        return entities(unique(items), foldersOnly: foldersOnly, profile: profile)
     }
 
-    /// What's typed in the Shortcuts picker: a name search across the shared
-    /// folders (File Station search), up to 60 results, folders first.
-    @MainActor
-    func entities(matching string: String) async throws -> [NASItemEntity] {
+    /// A File Station name search across the shared folders, up to 60
+    /// results, folders first, without Recycle Bins.
+    static func matching(_ string: String, model: AppModel, foldersOnly: Bool) async -> [NASItemEntity] {
         let text = string.trimmingCharacters(in: .whitespaces)
-        guard !text.isEmpty else { return try await suggestedEntities() }
+        guard !text.isEmpty else { return await suggested(model: model, foldersOnly: foldersOnly) }
         await model.start()
         guard let profile = model.activeServer, let service = model.service else { return [] }
         let shares = (try? await service.listShares()) ?? []
         var found = shares.filter { $0.name.localizedCaseInsensitiveContains(text) }
         for share in shares where found.count < 60 {
             let results = (try? await service.search(in: share.path, matching: text)) ?? []
-            found += results.filter { !RecycleBin.contains($0.path) }
+            found += results.filter { !RecycleBin.contains($0.path) && (!foldersOnly || $0.isDirectory) }
         }
-        let sorted = Self.unique(found).sorted { ($0.isDirectory ? 0 : 1, $0.name.lowercased()) < ($1.isDirectory ? 0 : 1, $1.name.lowercased()) }
-        return sorted.prefix(60).map { NASItemEntity(serverID: profile.id, serverName: profile.name, item: $0) }
+        let sorted = unique(found).sorted { ($0.isDirectory ? 0 : 1, $0.name.lowercased()) < ($1.isDirectory ? 0 : 1, $1.name.lowercased()) }
+        return entities(Array(sorted.prefix(60)), foldersOnly: foldersOnly, profile: profile)
+    }
+
+    private static func entities(_ items: [RemoteItem], foldersOnly: Bool, profile: ServerProfile) -> [NASItemEntity] {
+        items.filter { !foldersOnly || $0.isDirectory }
+            .map { NASItemEntity(serverID: profile.id, serverName: profile.name, item: $0) }
     }
 
     private static func unique(_ items: [RemoteItem]) -> [RemoteItem] {
         var seen = Set<String>()
         return items.filter { seen.insert($0.path).inserted }
+    }
+}
+
+extension AppModel {
+    /// The saved NAS's name for an item ID ("<NAS id>|…").
+    func serverName(forItemID id: String) -> String {
+        UUID(uuidString: String(id.prefix(36))).flatMap { uuid in servers.first { $0.id == uuid }?.name } ?? "NAS"
     }
 }
 
@@ -133,15 +188,16 @@ struct UploadFilesIntent: AppIntent {
     static let description = IntentDescription("Uploads files to a folder on your NAS. Files with the same name are kept as copies.")
 
     @Parameter(title: "Files", supportedContentTypes: [.item]) var files: [IntentFile]
-    @Parameter(title: "Folder") var folder: NASItemEntity
+    @Parameter(title: "Folder") var destination: NASFolderEntity
     @Dependency private var model: AppModel
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Upload \(\.$files) to \(\.$folder)")
+        Summary("Upload \(\.$files) to \(\.$destination)")
     }
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        let folder = destination.item
         guard folder.isFolder else { throw OwnholdIntentError.notAFolder }
         let service = try await model.serviceForIntent(serverID: folder.serverID)
         let staging = FileManager.default.temporaryDirectory.appending(path: "Shortcuts-" + UUID().uuidString, directoryHint: .isDirectory)
