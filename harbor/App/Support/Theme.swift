@@ -17,7 +17,7 @@ enum Theme {
 
     /// The sidebar: tinted with the accent, or the system's plain sidebar.
     enum Sidebar {
-        static var isTinted: Bool { ThemeSettings.shared.sidebarStyle == .tinted }
+        static var isTinted: Bool { ThemeSettings.shared.sidebarStyle == .tinted && ThemeSettings.shared.accent != .system }
         static var background: Color { ThemeSettings.shared.accent.sidebarTint }
         static var text: Color { isTinted ? ThemeSettings.shared.accent.sidebarText : .primary }
         static var secondary: Color { isTinted ? ThemeSettings.shared.accent.sidebarSecondary : .secondary }
@@ -97,6 +97,16 @@ extension Font {
     /// Sizes, dates and paths: monospaced so columns line up and the app reads as a precise tool.
     static let meta = Font.caption.monospacedDigit()
     static let path = Font.footnote.monospaced()
+
+    /// Names under grid tiles. The Mac's caption size (10 pt) is too small
+    /// to read at a glance in a window full of folders.
+    #if os(macOS)
+    static let tileName = Font.body
+    static let tileMeta = Font.subheadline.monospacedDigit()
+    #else
+    static let tileName = Font.caption
+    static let tileMeta = Font.meta
+    #endif
 }
 
 extension FileKind {

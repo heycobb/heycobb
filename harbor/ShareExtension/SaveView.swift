@@ -447,7 +447,18 @@ enum SharedAccent {
             "harbor": (0x1F4A6E, 0x7FB2DA),
             "graphite": (0x3B3F45, 0xB9C0C8),
             "rosewood": (0x7A2F3B, 0xE3949F),
+            "forest": (0x0F2E24, 0x4E9C78),
+            "midnight": (0x14213A, 0x6F8FC4),
+            "onyx": (0x16171A, 0xE6E7E9),
+            "espresso": (0x3F2A1E, 0xC9A27E),
         ]
+        if SharedContainer.defaults.string(forKey: "accent") == "system" {
+            #if os(iOS)
+            return Color(uiColor: .systemBlue)
+            #else
+            return Color(nsColor: .controlAccentColor)
+            #endif
+        }
         let pair = palette[SharedContainer.defaults.string(forKey: "accent") ?? ""] ?? palette["evergreen"]!
         return dynamic(light: pair.0, dark: pair.1)
     }

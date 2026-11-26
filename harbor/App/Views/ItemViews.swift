@@ -61,12 +61,12 @@ struct ItemTile: View {
                     }
                 }
             Text(item.name)
-                .font(.caption)
+                .font(.tileName)
                 .lineLimit(2)
                 .truncationMode(.middle)
             if !item.isDirectory {
                 Text(Format.bytes(item.size))
-                    .font(.meta)
+                    .font(.tileMeta)
                     .foregroundStyle(.secondary)
             }
         }

@@ -13,37 +13,39 @@ struct AppearanceSection: View {
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            LabeledContent("Accent Color") {
-                HStack(spacing: Theme.Spacing.m) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                HStack {
+                    Text("Accent Color")
+                    Spacer()
+                    Text(theme.accent.title).foregroundStyle(.secondary)
+                }
+                // One row, spread evenly: nine swatches fit on the narrowest iPhone.
+                HStack(spacing: 0) {
                     ForEach(AccentChoice.allCases) { choice in
                         Button { theme.accent = choice } label: {
-                            Circle()
-                                .fill(choice.accent)
-                                .frame(width: 26, height: 26)
-                                .overlay {
-                                    if theme.accent == choice {
-                                        Image(systemName: "checkmark")
-                                            .font(.caption.weight(.bold))
-                                            .foregroundStyle(choice.onAccent)
-                                    }
-                                }
-                                .contentShape(.circle)
+                            AccentSwatch(choice: choice, selected: theme.accent == choice)
+                                .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.plain)
+                        .help(choice.title)
                         .accessibilityLabel(choice.title)
                         .accessibilityAddTraits(theme.accent == choice ? .isSelected : [])
                     }
                 }
             }
+            .padding(.vertical, Theme.Spacing.xs)
 
-            // Labeled explicitly: a segmented picker hides its own label.
-            LabeledContent("Sidebar") {
-                Picker("Sidebar", selection: $theme.sidebarStyle) {
-                    ForEach(SidebarStyle.allCases) { Text($0.title).tag($0) }
+            // System always uses the plain sidebar, like other Mac apps.
+            if theme.accent != .system {
+                // Labeled explicitly: a segmented picker hides its own label.
+                LabeledContent("Sidebar") {
+                    Picker("Sidebar", selection: $theme.sidebarStyle) {
+                        ForEach(SidebarStyle.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
             }
 
             VStack(alignment: .leading, spacing: Theme.Spacing.s) {
@@ -78,5 +80,38 @@ struct AppearanceSection: View {
             }
             .padding(.vertical, Theme.Spacing.xs)
         }
+    }
+}
+
+/// One accent in the picker. System shows the spectrum of Mac accents, since
+/// its color is whatever the system is set to.
+private struct AccentSwatch: View {
+    let choice: AccentChoice
+    let selected: Bool
+
+    var body: some View {
+        Group {
+            if choice == .system {
+                Circle().fill(AngularGradient(
+                    colors: [.blue, .purple, .pink, .red, .orange, .yellow, .green, .blue],
+                    center: .center
+                ))
+            } else {
+                Circle().fill(choice.accent)
+            }
+        }
+        .frame(width: 28, height: 28)
+        .overlay {
+            Circle().strokeBorder(.primary.opacity(0.12), lineWidth: 0.5)
+        }
+        .overlay {
+            if selected {
+                Image(systemName: "checkmark")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(choice.onAccent)
+                    .shadow(color: .black.opacity(choice == .system ? 0.4 : 0), radius: 1)
+            }
+        }
+        .contentShape(.circle)
     }
 }
