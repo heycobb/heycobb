@@ -42,6 +42,11 @@ struct FolderView: View {
     @State private var showingFiles = false
     @State private var showingPhotos = false
     @State private var photoItems: [PhotosPickerItem] = []
+    #if os(iOS)
+    @State private var scanning = false
+    @State private var scannedFile: URL?
+    @State private var scanName = ""
+    #endif
     @State private var conflictBatch: UploadBatch?
     @State private var dropTargeted = false
     @State private var shareTask: Task<Void, Never>?
@@ -84,6 +89,31 @@ struct FolderView: View {
             }
             .mediaPlayer($playing)
             .modifier(changeSheets)
+            #if os(iOS)
+            .fullScreenCover(isPresented: $scanning) {
+                DocumentScanner { url in
+                    scanning = false
+                    if let url {
+                        scanName = DocumentScanner.defaultName
+                        scannedFile = url
+                    }
+                }
+                .ignoresSafeArea()
+            }
+            .alert("Save Scan", isPresented: Binding(get: { scannedFile != nil && !scanning }, set: { _ in })) {
+                TextField("Name", text: $scanName)
+                Button("Save") { saveScan() }
+                Button("Cancel", role: .cancel) { discardScan() }
+            } message: {
+                Text("In “\(folder.name)”")
+            }
+            // Scan to NAS from Shortcuts opens this folder, then scans.
+            .onChange(of: model.scanRequest, initial: true) {
+                guard model.scanRequest == folder.path, DocumentScanner.isAvailable else { return }
+                model.scanRequest = nil
+                scanning = true
+            }
+            #endif
             .focusedSceneValue(\.folderCommands, menuCommands)
     }
 
@@ -227,6 +257,23 @@ struct FolderView: View {
     }
 
     // MARK: Uploading
+
+    #if os(iOS)
+    /// Queues the scanned PDF under the name the user gave it.
+    private func saveScan() {
+        guard let file = scannedFile else { return }
+        scannedFile = nil
+        var name = scanName.trimmingCharacters(in: .whitespaces)
+        if name.isEmpty { name = DocumentScanner.defaultName }
+        if !name.lowercased().hasSuffix(".pdf") { name += ".pdf" }
+        Task { await prepare([PendingUpload(url: file, name: name, ownsFile: true)]) }
+    }
+
+    private func discardScan() {
+        if let file = scannedFile { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }
+        scannedFile = nil
+    }
+    #endif
 
     /// Checks for name clashes, asking Replace / Keep Both / Skip if needed.
     private func prepare(_ uploads: [PendingUpload]) async {
@@ -518,6 +565,11 @@ struct FolderView: View {
                 Menu {
                     Button("Upload Photos and Videos", systemImage: "photo.on.rectangle") { showingPhotos = true }
                     Button("Upload Files…", systemImage: "arrow.up.doc") { showingFiles = true }
+                    #if os(iOS)
+                    if DocumentScanner.isAvailable {
+                        Button("Scan Document", systemImage: "doc.viewfinder") { scanning = true }
+                    }
+                    #endif
                     Divider()
                     Button("New Folder", systemImage: "folder.badge.plus") {
                         newName = ""

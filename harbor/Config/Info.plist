@@ -8,6 +8,8 @@
 	<string>$(OWNHOLD_APP_GROUP)</string>
 	<key>OwnholdKeychainGroup</key>
 	<string>$(AppIdentifierPrefix)app.ownhold.shared</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Ownhold uses the camera to scan documents to your NAS.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Ownhold finds and connects to your NAS on your home network.</string>
 	<!-- Setup looks for NAS by their file sharing (SMB) announcement. -->

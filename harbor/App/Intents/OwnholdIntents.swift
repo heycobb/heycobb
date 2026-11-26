@@ -300,6 +300,31 @@ struct BackUpNowIntent: AppIntent {
     }
 }
 
+#if os(iOS)
+struct ScanToNASIntent: AppIntent {
+    static let title: LocalizedStringResource = "Scan to NAS"
+    static let description = IntentDescription("Scans a document with the camera and saves it as a PDF in a folder on your NAS.")
+    // The scanner is on screen, so open the app.
+    static var supportedModes: IntentModes { .foreground }
+
+    @Parameter(title: "Folder") var destination: NASFolderEntity
+    @Dependency private var model: AppModel
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Scan a document to \(\.$destination)")
+    }
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        _ = try await model.serviceForIntent(serverID: destination.item.serverID)
+        let folder = destination.item.remoteItem
+        model.scanRequest = folder.path
+        model.navigationRequest = .favorite(folder)
+        return .result()
+    }
+}
+#endif
+
 // MARK: Siri and Spotlight
 
 struct OwnholdShortcuts: AppShortcutsProvider {

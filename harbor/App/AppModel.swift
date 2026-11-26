@@ -59,6 +59,9 @@ final class AppModel {
     var signInRequest: ServerProfile?
     /// Shows the Add NAS sheet (from the welcome screen or the server menu).
     var isAddingServer = false
+    /// Scan to NAS from Shortcuts: the folder (path) that should start a scan
+    /// once it's open.
+    var scanRequest: String?
     /// The first-run screens stay up after signing in, for their last steps.
     var isOnboarding = false
     /// Set when a server presents a certificate the user must review.
