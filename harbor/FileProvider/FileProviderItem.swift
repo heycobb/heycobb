@@ -6,9 +6,14 @@ import UniformTypeIdentifiers
 /// item's path on the NAS; the root lists the shared folders.
 final class FileProviderItem: NSObject, NSFileProviderItem {
     let remote: RemoteItem
+    /// Finder's Keep Downloaded: on this item itself, or on a folder around it.
+    private let keptItself: Bool
+    private let insideKept: Bool
 
-    init(_ remote: RemoteItem) {
+    init(_ remote: RemoteItem, kept: KeptDownloads? = nil) {
         self.remote = remote
+        keptItself = kept?.isKept(remote.path) ?? false
+        insideKept = kept?.isInsideKept(remote.path) ?? false
     }
 
     static func identifier(for path: String) -> NSFileProviderItemIdentifier {
@@ -38,11 +43,30 @@ final class FileProviderItem: NSObject, NSFileProviderItem {
         return caps
     }
 
+    #if os(macOS)
+    /// Kept items download ahead of time and stay downloaded; everything
+    /// inside a kept folder inherits that from it.
+    var contentPolicy: NSFileProviderContentPolicy {
+        keptItself ? .downloadEagerlyAndKeepDownloaded : .inherited
+    }
+
+    /// macOS 27 also lists a kept folder's subfolders ahead of time.
+    @available(macOS 27, *)
+    var namespacePolicy: NSFileProviderNamespacePolicy {
+        keptItself && remote.isDirectory ? .materializeEagerly : .inherited
+    }
+    #endif
+
+    /// Read by the Keep Downloaded actions' rules in Info.plist.
+    var userInfo: [AnyHashable: Any]? {
+        ["kept": keptItself, "insideKept": insideKept]
+    }
+
     /// Changes when the file does, so the Files app knows to download again.
     var itemVersion: NSFileProviderItemVersion {
         let stamp = "\(remote.modified?.timeIntervalSince1970 ?? 0)-\(remote.size ?? 0)"
-        let data = Data(stamp.utf8)
-        return NSFileProviderItemVersion(contentVersion: data, metadataVersion: data)
+        // Keeping or not changes the item's metadata, not its contents.
+        return NSFileProviderItemVersion(contentVersion: Data(stamp.utf8), metadataVersion: Data((stamp + (keptItself ? "-k" : insideKept ? "-i" : "")).utf8))
     }
 }
 

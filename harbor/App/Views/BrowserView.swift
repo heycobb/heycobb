@@ -85,7 +85,7 @@ struct BrowserView: View {
             #if os(iOS)
             BackupView()
             #else
-            EmptyView()
+            FolderBackupView()
             #endif
         case .offline:
             OfflineView()
@@ -178,6 +178,7 @@ struct BrowserView: View {
                     macRow(.recents, title: "Recents", symbol: "clock")
                 }
                 macRow(.offline, title: "Offline", symbol: "arrow.down.circle", badge: model.savedPaths.count)
+                macRow(.backup, title: "Folder Backup", symbol: "clock.arrow.circlepath")
             }
         }
     }

@@ -50,6 +50,9 @@ final class AppModel {
     #if os(iOS)
     /// Photo Backup for the active server (iPhone and iPad).
     @ObservationIgnored private(set) lazy var backup = PhotoBackup(model: self)
+    #else
+    /// Folder Backup for the active server (Mac).
+    @ObservationIgnored private(set) lazy var folderBackup = FolderBackup(model: self)
     #endif
 
     /// Set when the active server needs a password (first use or expired session).
@@ -113,6 +116,7 @@ final class AppModel {
         guard !started, activeServer == nil else { return }
         started = true
         await syncFilesApp()
+        startFilesAppChecks()
         #if DEBUG
         // `-demo` opens the demo library directly: used for screenshots.
         if CommandLine.arguments.contains("-demo") {
@@ -142,6 +146,8 @@ final class AppModel {
         loadLibrary(for: profile)
         #if os(iOS)
         backup.load(for: profile)
+        #else
+        folderBackup.load(for: profile)
         #endif
         await refreshSaved()
 
@@ -213,6 +219,9 @@ final class AppModel {
         #if os(iOS)
         backup.forget(profile)
         if activeServer == nil { backup.load(for: nil) }
+        #else
+        folderBackup.forget(profile)
+        if activeServer == nil { folderBackup.load(for: nil) }
         #endif
         keychain.remove(sessionKey(profile))
         for endpoint in profile.allEndpoints {
@@ -459,6 +468,8 @@ final class AppModel {
             await filesAppSignedIn(profile)
             #if os(iOS)
             backup.runIfAutomatic()
+            #else
+            folderBackup.runIfAutomatic()
             #endif
             await refreshOffline()
         } catch {
@@ -516,6 +527,29 @@ final class AppModel {
             try await manager.signalErrorResolved(NSFileProviderError(.notAuthenticated))
         } catch {
             Self.log.error("Files app: signal resolved failed: \(error)")
+        }
+    }
+
+    /// Settings › Keep Finder Up to Date (Keep Files App Up to Date on iOS).
+    static let filesAppChecksKey = "keepFilesAppUpdated"
+    static let filesAppCheckInterval: Duration = .seconds(180)
+
+    /// While Ownhold is open, every few minutes, asks Finder or the Files
+    /// app to check for changes made elsewhere: the extension lists folders
+    /// opened recently there and folders kept downloaded (see
+    /// `SnapshotStore.foldersToCheck`). Skipped in Low Power Mode.
+    private func startFilesAppChecks() {
+        Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.filesAppCheckInterval)
+                guard let self else { return }
+                let on = UserDefaults.standard.object(forKey: Self.filesAppChecksKey) as? Bool ?? true
+                guard on, showInFilesApp, !requireUnlock, !ProcessInfo.processInfo.isLowPowerModeEnabled else { continue }
+                let domains = (try? await NSFileProviderManager.domains()) ?? []
+                for domain in domains {
+                    NSFileProviderManager(for: domain)?.signalEnumerator(for: .workingSet) { _ in }
+                }
+            }
         }
     }
 

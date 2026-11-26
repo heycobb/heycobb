@@ -3,21 +3,24 @@ import OwnholdKit
 
 /// Lists a NAS folder for the Files app.
 ///
-/// Ownhold doesn't sync in the background, so there's no change feed: when
-/// asked for changes, the folder is listed again and compared with the last
-/// listing, which is kept in memory for as long as the extension runs.
-/// The working set reports changes made in the Ownhold app itself, which it
-/// records in `SharedChanges` before asking the system to check.
+/// File Station has no change feed: when asked for changes, a folder is
+/// listed again and compared with its last listing.
+/// The working set reports changes made in the Ownhold app itself (recorded
+/// in `SharedChanges`), and, when the app asks every few minutes while it's
+/// open, changes made elsewhere in folders opened recently in Finder and in
+/// folders kept downloaded.
 final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @unchecked Sendable {
     private let container: NSFileProviderItemIdentifier
     private let context: ProviderContext
     private let snapshots: SnapshotStore
+    private let kept: KeptDownloads
     private static let pageSize = 500
 
     init(container: NSFileProviderItemIdentifier, context: ProviderContext, snapshots: SnapshotStore) {
         self.container = container
         self.context = context
         self.snapshots = snapshots
+        self.kept = KeptDownloads(domain: context.domainID)
     }
 
     func invalidate() {}
@@ -38,7 +41,9 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
                     try await service.list(folder: path, offset: offset, limit: Self.pageSize, sort: .name, ascending: true)
                 }
                 await snapshots.record(page.items.map(\.path), for: path, replacing: offset == 0)
-                box.observer.didEnumerate(page.items.map(FileProviderItem.init))
+                if offset == 0 { await snapshots.visited(path) }
+                let kept = self.kept
+                box.observer.didEnumerate(page.items.map { FileProviderItem($0, kept: kept) })
                 box.observer.finishEnumerating(upTo: page.hasMore ? Self.page(offset + page.items.count) : nil)
             } catch {
                 box.observer.finishEnumeratingWithError(error)
@@ -61,7 +66,8 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
                 let previous = await snapshots.paths(for: path)
                 await snapshots.record(items.map(\.path), for: path, replacing: true)
                 let gone = Set(previous).subtracting(items.map(\.path))
-                box.observer.didUpdate(items.map(FileProviderItem.init))
+                let kept = self.kept
+                box.observer.didUpdate(items.map { FileProviderItem($0, kept: kept) })
                 box.observer.didDeleteItems(withIdentifiers: gone.map(FileProviderItem.identifier(for:)))
                 box.observer.finishEnumeratingChanges(upTo: Self.anchor(), moreComing: false)
             } catch {
@@ -70,15 +76,22 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
         }
     }
 
-    /// Lists each folder the app changed and reports its contents, plus
-    /// whatever the app removed or moved away. A folder that can't be
-    /// listed right now is recorded again for the next check.
+    /// Lists each folder the app changed (and, at most once a minute, the
+    /// folders worth checking for changes made elsewhere), then reports
+    /// their contents plus whatever went away. A folder the app changed that
+    /// can't be listed right now is recorded again for the next check.
     private func reportAppChanges(to box: ChangeObserverBox) async {
         let domain = context.domainID
         let pending = SharedChanges.take(domain: domain)
+        let watched = await snapshots.foldersToCheck(kept: kept.paths)
         var updated: [FileProviderItem] = []
         var removed = Set(pending.removed)
-        for folder in pending.folders {
+        var queue = pending.folders + watched.folders.filter { !pending.folders.contains($0) }
+        var listed = Set<String>()
+        let fromApp = Set(pending.folders)
+        while !queue.isEmpty, listed.count < SnapshotStore.folderLimit {
+            let folder = queue.removeFirst()
+            guard listed.insert(folder).inserted else { continue }
             do {
                 let items = try await context.run { service in
                     try await service.list(folder: folder, offset: 0, limit: 5000, sort: .name, ascending: true).items
@@ -86,11 +99,16 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
                 let previous = await snapshots.paths(for: folder)
                 await snapshots.record(items.map(\.path), for: folder, replacing: true)
                 removed.formUnion(Set(previous).subtracting(items.map(\.path)))
-                updated += items.map(FileProviderItem.init)
+                updated += items.map { FileProviderItem($0, kept: kept) }
+                // Walking a kept folder: list everything inside it too, so new
+                // files there download without the folder being opened.
+                if watched.walkKept, kept.isInsideKept(folder) {
+                    queue += items.filter(\.isDirectory).map(\.path)
+                }
             } catch let error as NSFileProviderError where error.code == .noSuchItem {
                 removed.insert(folder)
             } catch {
-                SharedChanges.record(domain: domain, folders: [folder])
+                if fromApp.contains(folder) { SharedChanges.record(domain: domain, folders: [folder]) }
             }
         }
         removed.subtract(updated.map { FileProviderItem.path(for: $0.itemIdentifier) })
@@ -116,26 +134,87 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
     }
 }
 
-/// The last listing of each folder, to work out what was deleted. Kept in
-/// the extension's own container (paths only), so it survives the system
-/// stopping and restarting the extension.
+/// The last listing of each folder, to work out what was deleted, and when
+/// each folder was last opened in Finder. Kept in the extension's own
+/// container (paths and dates only), so it survives the system stopping and
+/// restarting the extension.
 actor SnapshotStore {
-    private var children: [String: [String]]
+    private struct Saved: Codable {
+        var children: [String: [String]] = [:]
+        var visits: [String: Date] = [:]
+    }
+
+    private var saved: Saved
     private let file: URL?
+    private var lastCheck = Date.distantPast
+    private var lastWalk = Date.distantPast
+    private var walkSoon = false
+
+    /// Most folders listed in one check, so a huge kept tree can't run away.
+    static let folderLimit = 400
+    /// Folders opened in Finder within this long are checked for changes.
+    static let recentWindow: TimeInterval = 2 * 60 * 60
+    static let recentLimit = 12
+    /// How often the folders are checked, and kept folders walked in full.
+    static let checkInterval: TimeInterval = 60
+    static let walkInterval: TimeInterval = 15 * 60
 
     init(domainID: String) {
         let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
         let safe = domainID.filter { $0.isLetter || $0.isNumber || $0 == "-" }
         file = base?.appending(path: "Listings-\(safe).json")
-        children = file.flatMap { try? Data(contentsOf: $0) }
-            .flatMap { try? JSONDecoder().decode([String: [String]].self, from: $0) } ?? [:]
+        let data = file.flatMap { try? Data(contentsOf: $0) }
+        if let data, let decoded = try? JSONDecoder().decode(Saved.self, from: data) {
+            saved = decoded
+        } else if let data, let old = try? JSONDecoder().decode([String: [String]].self, from: data) {
+            saved = Saved(children: old) // listings saved by an earlier version
+        } else {
+            saved = Saved()
+        }
     }
 
-    func paths(for folder: String) -> [String] { children[folder] ?? [] }
+    func paths(for folder: String) -> [String] { saved.children[folder] ?? [] }
 
     func record(_ paths: [String], for folder: String, replacing: Bool) {
-        children[folder] = replacing ? paths : (children[folder] ?? []) + paths
-        if let file, let data = try? JSONEncoder().encode(children) {
+        saved.children[folder] = replacing ? paths : (saved.children[folder] ?? []) + paths
+        save()
+    }
+
+    func visited(_ folder: String) {
+        saved.visits[folder] = .now
+        saved.visits = saved.visits.filter { $0.value > .now.addingTimeInterval(-Self.recentWindow) }
+        save()
+    }
+
+    /// Right after Keep Downloaded: walk kept folders at the next check.
+    func walkKeptSoon() {
+        walkSoon = true
+        lastCheck = .distantPast
+    }
+
+    /// The folders to check for changes made outside Ownhold: those opened
+    /// recently, and kept ones. Nothing if the last check was under a minute ago.
+    func foldersToCheck(kept: [String]) -> (folders: [String], walkKept: Bool) {
+        guard Date.now.timeIntervalSince(lastCheck) >= Self.checkInterval else { return ([], false) }
+        lastCheck = .now
+        let walk = walkSoon || Date.now.timeIntervalSince(lastWalk) >= Self.walkInterval
+        if walk {
+            lastWalk = .now
+            walkSoon = false
+        }
+        let recent = saved.visits
+            .filter { $0.value > .now.addingTimeInterval(-Self.recentWindow) }
+            .sorted { $0.value > $1.value }
+            .prefix(Self.recentLimit)
+            .map(\.key)
+        // A kept folder is checked itself; a kept file through its folder.
+        let keptFolders = kept.map { saved.children[$0] != nil ? $0 : ($0 as NSString).deletingLastPathComponent }
+        var seen = Set<String>()
+        return ((keptFolders + recent).filter { seen.insert($0).inserted }, walk)
+    }
+
+    private func save() {
+        if let file, let data = try? JSONEncoder().encode(saved) {
             try? data.write(to: file, options: .atomic)
         }
     }

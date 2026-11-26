@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var editing: ServerProfile?
     @State private var showingGuide = false
     @AppStorage(PlaybackPositions.settingKey) private var rememberPosition = true
+    @AppStorage(AppModel.filesAppChecksKey) private var keepFilesAppUpdated = true
     #if os(macOS)
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
     @AppStorage("hideDockWhenClosed") private var hideDockWhenClosed = true
@@ -29,6 +30,9 @@ struct SettingsView: View {
                 Toggle("Keep Recent Files", isOn: $model.keepRecents)
                 Toggle(Platform.isMac ? "Show NAS in Finder" : "Show NAS in Files App", isOn: $model.showInFilesApp)
                     .disabled(model.requireUnlock)
+                if model.showInFilesApp, !model.requireUnlock {
+                    Toggle(Platform.isMac ? "Keep Finder Up to Date" : "Keep Files App Up to Date", isOn: $keepFilesAppUpdated)
+                }
             } header: {
                 Text("Privacy")
             } footer: {

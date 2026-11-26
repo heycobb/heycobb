@@ -77,7 +77,7 @@ targets:
     supportedDestinations: [iOS, macOS]
     sources:
       - path: FileProvider
-        excludes: ["*.entitlements", "Info.plist"]
+        excludes: ["*.entitlements", "Info*.plist"]
     dependencies:
       - package: OwnholdKit
     settings:
@@ -87,6 +87,8 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
         INFOPLIST_FILE: FileProvider/Info.plist
+        # Adds Finder's Keep Downloaded actions (Mac only).
+        "INFOPLIST_FILE[sdk=macosx*]": FileProvider/Info-macOS.plist
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_ENTITLEMENTS: FileProvider/FileProvider-iOS.entitlements
         "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": FileProvider/FileProvider-macOS$(OWNHOLD_ENTITLEMENTS_SUFFIX).entitlements

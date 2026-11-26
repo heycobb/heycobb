@@ -510,3 +510,62 @@ struct DSMReplyTests {
         #expect(envelope.data?.files.first?.item.size == 50)
     }
 }
+
+@Suite("Kept downloads")
+struct KeptDownloadsTests {
+    private func store() -> KeptDownloads {
+        let defaults = UserDefaults(suiteName: "kept-\(UUID().uuidString)")!
+        return KeptDownloads(domain: "test", defaults: defaults)
+    }
+
+    @Test func insideAKeptFolderCountsAsKept() {
+        let kept = store()
+        kept.keep(["/home/Photos"])
+        #expect(kept.isKept("/home/Photos"))
+        #expect(!kept.isKept("/home/Photos/2024"))
+        #expect(kept.isInsideKept("/home/Photos/2024/a.jpg"))
+        #expect(!kept.isInsideKept("/home/Photos 2"))
+    }
+
+    @Test func keepingAFolderDropsEntriesInsideIt() {
+        let kept = store()
+        kept.keep(["/home/Photos/2024", "/home/Docs/a.pdf"])
+        kept.keep(["/home/Photos"])
+        #expect(kept.paths.sorted() == ["/home/Docs/a.pdf", "/home/Photos"])
+    }
+
+    @Test func stopAndMove() {
+        let kept = store()
+        kept.keep(["/home/Photos", "/home/Docs"])
+        kept.stop(["/home/Docs"])
+        kept.move(from: "/home/Photos", to: "/home/Pictures")
+        #expect(kept.paths == ["/home/Pictures"])
+    }
+}
+
+@Suite("Folder backup planner")
+struct FolderBackupPlannerTests {
+    let date = Date(timeIntervalSince1970: 1_700_000_000)
+
+    @Test func copiesOnlyNewAndChangedFiles() {
+        let same = FolderBackupPlanner.LocalFile(relativePath: "a.txt", size: 10, modified: date)
+        let edited = FolderBackupPlanner.LocalFile(relativePath: "b.txt", size: 12, modified: date)
+        let new = FolderBackupPlanner.LocalFile(relativePath: "Sub/c.txt", size: 1, modified: date)
+        let history = ["a.txt": same.signature, "b.txt": "10-1700000000"]
+        #expect(FolderBackupPlanner.changed([same, edited, new], history: history) == [edited, new])
+    }
+
+    @Test func placesFilesUnderTheFolderName() {
+        let file = FolderBackupPlanner.LocalFile(relativePath: "Taxes/2025/return.pdf", size: 1, modified: date)
+        let location = FolderBackupPlanner.remoteLocation(of: file, folderName: "Documents", destination: "/home/Mac Backup")
+        #expect(location.folder == "/home/Mac Backup/Documents/Taxes/2025")
+        #expect(location.name == "return.pdf")
+    }
+
+    @Test func skipsClutterAndKeepsNamesUnique() {
+        #expect(FolderBackupPlanner.shouldSkip(name: ".DS_Store"))
+        #expect(FolderBackupPlanner.shouldSkip(name: "~$Report.docx"))
+        #expect(!FolderBackupPlanner.shouldSkip(name: "Report.docx"))
+        #expect(FolderBackupPlanner.folderNames(["Documents", "documents", "Desktop"]) == ["Documents", "documents 2", "Desktop"])
+    }
+}

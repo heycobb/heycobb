@@ -8,10 +8,11 @@ import UniformTypeIdentifiers
 /// Files are downloaded only when opened, and changes made in the Files app
 /// (new folders, uploads, renames, moves, deletes) go straight to the NAS,
 /// through the same File Station calls and certificate checks as the app.
-final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, NSFileProviderThumbnailing, @unchecked Sendable {
+final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, NSFileProviderThumbnailing, NSFileProviderCustomAction, @unchecked Sendable {
     private let domain: NSFileProviderDomain
     private let context: ProviderContext
     private let snapshots: SnapshotStore
+    private let kept: KeptDownloads
 
     /// iOS keeps a default "Ownhold" location whenever Ownhold has none of
     /// its own (Settings › Privacy › Show NAS in Files App is off), and apps
@@ -26,6 +27,7 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
         self.domain = domain
         self.context = ProviderContext(domainID: domain.identifier.rawValue)
         self.snapshots = SnapshotStore(domainID: domain.identifier.rawValue)
+        self.kept = KeptDownloads(domain: domain.identifier.rawValue)
         super.init()
     }
 
@@ -49,7 +51,7 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
         }
         return task { [self] in
             do {
-                reply.handler(FileProviderItem(try await lookup(identifier)), nil)
+                reply.handler(FileProviderItem(try await lookup(identifier), kept: kept), nil)
             } catch {
                 reply.handler(nil, error)
             }
@@ -62,7 +64,7 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
             do {
                 let remote = try await lookup(itemIdentifier)
                 let url = try await context.run { try await $0.download(remote) }
-                reply.handler(url, FileProviderItem(remote), nil)
+                reply.handler(url, FileProviderItem(remote, kept: kept), nil)
             } catch {
                 reply.handler(nil, nil, error)
             }
@@ -87,11 +89,11 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
             do {
                 if isFolder {
                     let folder = try await context.run { try await $0.createFolder(named: name, in: parent) }
-                    reply.handler(FileProviderItem(folder), [], false, nil)
+                    reply.handler(FileProviderItem(folder, kept: kept), [], false, nil)
                 } else {
                     guard let source else { throw NSFileProviderError(.cannotSynchronize) }
                     try await context.run { try await $0.upload(source.url, as: name, to: parent, replacing: false) { _ in } }
-                    reply.handler(FileProviderItem(try await lookup(path: RemoteItem.join(parent, name))), [], false, nil)
+                    reply.handler(FileProviderItem(try await lookup(path: RemoteItem.join(parent, name)), kept: kept), [], false, nil)
                 }
             } catch {
                 reply.handler(nil, [], false, error)
@@ -108,6 +110,7 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
         return task { [self] in
             do {
                 var remote = try await lookup(identifier)
+                let originalPath = remote.path
                 if changedFields.contains(.parentItemIdentifier), remote.parentPath != newParent {
                     let moving = remote
                     try await context.run { try await $0.move([moving], to: newParent) }
@@ -122,7 +125,8 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
                     try await context.run { try await $0.upload(source.url, as: target.name, to: target.parentPath, replacing: true) { _ in } }
                     remote = try await lookup(path: target.path)
                 }
-                reply.handler(FileProviderItem(remote), [], false, nil)
+                if remote.path != originalPath { kept.move(from: originalPath, to: remote.path) }
+                reply.handler(FileProviderItem(remote, kept: kept), [], false, nil)
             } catch {
                 reply.handler(nil, [], false, error)
             }
@@ -135,6 +139,7 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
             do {
                 let remote = try await lookup(identifier)
                 try await context.run { try await $0.delete([remote]) }
+                kept.stop([remote.path])
                 reply.handler(nil)
             } catch {
                 reply.handler(error)
@@ -152,6 +157,36 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
         if containerItemIdentifier == .trashContainer || isPlaceholder { return EmptyEnumerator() }
         return FileProviderEnumerator(container: containerItemIdentifier, context: context, snapshots: snapshots)
     }
+
+    // MARK: Keep Downloaded (Finder's right-click menu, see Info.plist)
+
+    func performAction(identifier actionIdentifier: NSFileProviderExtensionActionIdentifier, onItemsWithIdentifiers itemIdentifiers: [NSFileProviderItemIdentifier], completionHandler: @escaping (Error?) -> Void) -> Progress {
+        let reply = Reply1(completionHandler)
+        let paths = itemIdentifiers.map(FileProviderItem.path(for:))
+        let keep = actionIdentifier.rawValue == Self.keepAction
+        let domainID = domain.identifier.rawValue
+        return task { [self] in
+            if keep {
+                kept.keep(paths)
+                // List kept folders now, so the next check walks into them.
+                for path in paths {
+                    if let items = try? await context.run({ try await $0.list(folder: path, offset: 0, limit: 5000, sort: .name, ascending: true).items }) {
+                        await snapshots.record(items.map(\.path), for: path, replacing: true)
+                    }
+                }
+                await snapshots.walkKeptSoon()
+            } else {
+                kept.stop(paths)
+            }
+            // Report the items again (from their folders) with the new policy.
+            let parents = Set(paths.map { ($0 as NSString).deletingLastPathComponent })
+            SharedChanges.record(domain: domainID, folders: Array(parents))
+            NSFileProviderManager(for: domain)?.signalEnumerator(for: .workingSet) { _ in }
+            reply.handler(nil)
+        }
+    }
+
+    static let keepAction = "app.ownhold.keepDownloaded"
 
     // MARK: Thumbnails
 
