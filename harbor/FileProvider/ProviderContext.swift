@@ -14,8 +14,13 @@ actor ProviderContext {
     }
 
     func service() async throws -> any FileService {
+        // Checked on every request (not just when connecting), so turning on
+        // the app lock or turning off Files access takes effect at once.
+        guard SharedContainer.isFilesAccessAllowed else {
+            cached = nil
+            throw NSFileProviderError(.notAuthenticated)
+        }
         if let cached { return cached }
-        guard SharedContainer.isFilesAppEnabled else { throw NSFileProviderError(.notAuthenticated) }
         if domainID == ProviderContext.demoDomain {
             let demo = DemoFileService()
             cached = demo

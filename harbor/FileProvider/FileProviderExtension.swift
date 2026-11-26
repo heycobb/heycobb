@@ -16,8 +16,10 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
     /// iOS keeps a default "Ownhold" location whenever Ownhold has none of
     /// its own (Settings › Privacy › Show NAS in Files App is off), and apps
     /// can't remove it. It stays empty: no NAS names, no files, no network.
+    /// The same applies whenever the app lock is on: the Files app and Finder
+    /// can't ask for Face ID or Touch ID, so they get nothing.
     private var isPlaceholder: Bool {
-        domain.identifier.rawValue == "NSFileProviderDomainDefaultIdentifier" || !SharedContainer.isFilesAppEnabled
+        domain.identifier.rawValue == "NSFileProviderDomainDefaultIdentifier" || !SharedContainer.isFilesAccessAllowed
     }
 
     required init(domain: NSFileProviderDomain) {

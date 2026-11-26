@@ -35,6 +35,14 @@ public enum SharedContainer {
         set { defaults.set(newValue, forKey: filesAppKey) }
     }
 
+    /// Whether the Files app / Finder may show the NAS right now: only with
+    /// Show NAS in Files App on and the app lock off. The extension checks
+    /// this itself on every request, so the lock is enforced there even if
+    /// removing the location from Finder ever failed.
+    public static var isFilesAccessAllowed: Bool {
+        isFilesAppEnabled && !SharedConnection.requiresUnlock
+    }
+
     public static var keychain: Keychain { Keychain(accessGroup: keychainGroup) }
 
     public static func sessionKey(_ id: UUID) -> String { "session.\(id.uuidString)" }

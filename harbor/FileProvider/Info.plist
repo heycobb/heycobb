@@ -8,6 +8,16 @@
 	<string>$(OWNHOLD_APP_GROUP)</string>
 	<key>OwnholdKeychainGroup</key>
 	<string>$(AppIdentifierPrefix)app.ownhold.shared</string>
+	<!-- The Finder sidebar icon for the NAS location: the Ownhold mark as a
+	     custom symbol (FileProvider/Assets.xcassets). -->
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleSymbolName</key>
+			<string>OwnholdMark</string>
+		</dict>
+	</dict>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
