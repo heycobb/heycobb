@@ -484,7 +484,14 @@ public actor FileStationClient: FileService {
             throw NASError.malformedResponse
         }
         let error = NASError.from(code: envelope.error?.effectiveCode ?? 100, api: api)
-        Self.log.error("\(api, privacy: .public).\(method, privacy: .public) failed with code \(envelope.error?.code ?? -1) (\(envelope.error?.effectiveCode ?? -1))")
+        // "Not found" is often expected (checking whether a Recycle Bin
+        // exists), so it isn't logged as an error.
+        let code = envelope.error?.code ?? -1, detail = envelope.error?.effectiveCode ?? -1
+        if error == .notFound {
+            Self.log.debug("\(api, privacy: .public).\(method, privacy: .public) found nothing (\(code))")
+        } else {
+            Self.log.error("\(api, privacy: .public).\(method, privacy: .public) failed with code \(code) (\(detail))")
+        }
         if error == .sessionExpired { sid = nil }
         throw error
     }
