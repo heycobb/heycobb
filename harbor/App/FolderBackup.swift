@@ -3,14 +3,14 @@ import CoreServices
 import Foundation
 import Observation
 import os
-import OwnholdKit
+import ArkenalKit
 
 /// Folder Backup (Mac): copies chosen Mac folders to a folder on the NAS,
 /// keeping their structure. New and changed files are copied; nothing is
 /// ever deleted on the NAS, so a file removed here stays backed up there.
 ///
 /// It runs when asked (Back Up Now) and, with Back Up When Files Change on,
-/// a minute after files in those folders change while Ownhold is running
+/// a minute after files in those folders change while Arkenal is running
 /// (the menu bar keeps it running with the window closed). Never in Low
 /// Power Mode. Each NAS has its own folders and destination.
 @MainActor
@@ -39,7 +39,7 @@ final class FolderBackup {
         case failed(String)
     }
 
-    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "folder-backup")
+    private static let log = Logger(subsystem: "com.snowlightlabs.Arkenal", category: "folder-backup")
     /// Wait this long after the last change before copying, so a burst of
     /// saves becomes one backup.
     private static let settleDelay: Duration = .seconds(60)

@@ -2,7 +2,7 @@ import AVKit
 import ImageIO
 import MediaPlayer
 import Observation
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 /// Plays audio streaming from the NAS: artwork and title from the file's

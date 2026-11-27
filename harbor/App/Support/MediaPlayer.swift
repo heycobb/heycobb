@@ -1,5 +1,5 @@
 import AVKit
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 /// A video or audio file streaming from the NAS.

@@ -8,7 +8,7 @@ import AppKit
 typealias PlatformViewController = NSViewController
 #endif
 
-/// Hosts the "Save to Ownhold" sheet in the system share sheet.
+/// Hosts the "Save to Arkenal" sheet in the system share sheet.
 final class ShareViewController: PlatformViewController {
     #if os(macOS)
     override func loadView() {

@@ -1,10 +1,10 @@
 import FileProvider
 import Foundation
-import OwnholdKit
+import ArkenalKit
 
 /// Connects to one NAS for the Files app, reusing the app's sign-in and
 /// trusted certificates. It never asks for a password: if the session has
-/// expired, the Files app shows "Sign in in Ownhold".
+/// expired, the Files app shows "Sign in in Arkenal".
 actor ProviderContext {
     let domainID: String
     private var cached: (any FileService)?
@@ -42,7 +42,7 @@ actor ProviderContext {
     /// best address again (for example after leaving home Wi-Fi).
     func reset() { cached = nil }
 
-    /// Runs a request, translating Ownhold errors into ones the Files app understands.
+    /// Runs a request, translating Arkenal errors into ones the Files app understands.
     func run<T: Sendable>(_ work: @Sendable (any FileService) async throws -> T) async throws -> T {
         do {
             return try await work(service())

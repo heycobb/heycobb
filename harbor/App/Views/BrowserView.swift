@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 enum SidebarItem: Hashable {
@@ -112,7 +112,7 @@ struct BrowserView: View {
             // Tinted: the accent's light tint. Plain: the system's sidebar.
             .scrollContentBackground(Theme.Sidebar.isTinted || isBlackout ? .hidden : .automatic)
             .background(Theme.Sidebar.isTinted ? Theme.Sidebar.background : isBlackout ? Blackout.background : .clear)
-        .navigationTitle(model.activeServer?.name ?? "Ownhold")
+        .navigationTitle(model.activeServer?.name ?? "Arkenal")
         #if os(iOS)
         // The NAS name is shown as a heading in the list instead (see
         // `serverHeading`): navigation bar titles stay on one line, so a long
@@ -187,7 +187,7 @@ struct BrowserView: View {
     // MARK: Sidebar rows
 
     #if os(macOS)
-    /// On the Mac, rows draw their own evergreen selection: the system list
+    /// On the Mac, rows draw their own accent-colored selection: the system list
     /// highlight always uses the user's accent color, which would clash with
     /// the tinted sidebar.
     private var sidebarList: some View {
@@ -255,7 +255,7 @@ struct BrowserView: View {
     }
     #else
     /// iPhone and iPad keep the system list (it drives navigation on iPhone);
-    /// the tint makes the selection highlight evergreen.
+    /// the tint makes the selection highlight the accent color.
     private var sidebarList: some View {
         List(selection: $selection) {
             Section {} header: { serverHeading }
@@ -318,7 +318,7 @@ struct BrowserView: View {
     /// The NAS name, wrapping to two lines (and shrinking a little) rather
     /// than being cut short: "Brian's DS920+ Home Server" fits in a sidebar.
     private var serverHeading: some View {
-        Text(model.activeServer?.name ?? "Ownhold")
+        Text(model.activeServer?.name ?? "Arkenal")
             .font(showsTwoColumns ? .title.bold() : .largeTitle.bold())
             // Explicit: section headers otherwise draw their text in gray.
             .foregroundStyle(Color.primary)
@@ -329,7 +329,7 @@ struct BrowserView: View {
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 4, trailing: 0))
     }
 
-    /// Whether `item` shows the evergreen selection. Only with two columns:
+    /// Whether `item` shows the accent selection. Only with two columns:
     /// in one column, a selected row is the screen you've moved on to.
     private func isHighlighted(_ item: SidebarItem) -> Bool {
         showsTwoColumns && selection == item
@@ -344,7 +344,7 @@ struct BrowserView: View {
         }
     }
 
-    /// The same solid evergreen selection as the Mac, instead of the
+    /// The same solid accent selection as the Mac, instead of the
     /// system's gray (which it uses whenever the file list has focus).
     /// nil keeps the system's row background (the Plain sidebar).
     private func rowBackground(_ item: SidebarItem) -> AnyView? {
@@ -387,7 +387,7 @@ struct BrowserView: View {
                     .fill(connectionColor)
                     .frame(width: 8, height: 8)
                     .accessibilityHidden(true)
-                Text(model.activeServer?.name ?? "Ownhold")
+                Text(model.activeServer?.name ?? "Arkenal")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.Sidebar.text)
                     .lineLimit(1)
@@ -405,7 +405,7 @@ struct BrowserView: View {
         // The whole row opens the menu, not just the name.
         .frame(maxWidth: .infinity, alignment: .leading)
         .help(ConnectionBadge.title(for: model.connection))
-        .accessibilityLabel("\(model.activeServer?.name ?? "Ownhold"), \(ConnectionBadge.title(for: model.connection))")
+        .accessibilityLabel("\(model.activeServer?.name ?? "Arkenal"), \(ConnectionBadge.title(for: model.connection))")
         .listRowBackground(Color.clear)
         .padding(.vertical, 2)
     }

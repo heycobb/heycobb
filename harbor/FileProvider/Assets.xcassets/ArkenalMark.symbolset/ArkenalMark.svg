@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Arkenal mark as a custom symbol: the Finder sidebar icon for the NAS location. -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="3300" height="2200">
+ <g id="Notes">
+  <text style="stroke:none;fill:black;font-family:sans-serif;font-size:13;" transform="matrix(1 0 0 1 263 322)">Template v.3.0</text>
+ </g>
+ <g id="Guides">
+  <line id="Baseline-S" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="696" y2="696"/>
+  <line id="Capline-S" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="625.541" y2="625.541"/>
+  <line id="Baseline-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1126" y2="1126"/>
+  <line id="Capline-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1055.54" y2="1055.54"/>
+  <line id="Baseline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1556" y2="1556"/>
+  <line id="Capline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1485.54" y2="1485.54"/>
+  <line id="left-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1344.50" x2="1344.50" y1="1030.79" y2="1150.4"/>
+  <line id="right-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1437.50" x2="1437.50" y1="1030.79" y2="1150.4"/>
+ </g>
+ <g id="Symbols">
+  <g id="Regular-M">
+   <path d="M1352.50 1042.53 A7.36 7.36 0 0 1 1367.22 1042.53 L1367.22 1132.64 A7.36 7.36 0 0 1 1352.50 1132.64 Z"/>
+   <path d="M1352.50 1085.12 A38.50 38.50 0 0 1 1429.50 1085.12 L1429.50 1132.64 A7.36 7.36 0 0 1 1414.78 1132.64 L1414.78 1085.12 A23.78 23.78 0 0 0 1367.22 1085.12 Z"/>
+   <path d="M1377.56 1111.97 A13.44 13.44 0 1 1 1404.44 1111.97 A13.44 13.44 0 1 1 1377.56 1111.97 Z"/>
+  </g>
+ </g>
+</svg>

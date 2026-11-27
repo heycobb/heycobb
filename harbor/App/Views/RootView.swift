@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 struct RootView: View {
@@ -102,7 +102,7 @@ struct LockView: View {
             Image(systemName: "lock.fill")
                 .font(.system(size: 40, weight: .regular))
                 .foregroundStyle(.secondary)
-            Text("Ownhold is locked")
+            Text("Arkenal is locked")
                 .font(.headline)
             Button("Unlock") { Task { await model.unlock() } }
                 .buttonStyle(.borderedProminent)

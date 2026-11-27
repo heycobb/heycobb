@@ -1,6 +1,6 @@
 import FileProvider
 import os
-import OwnholdKit
+import ArkenalKit
 import UniformTypeIdentifiers
 
 /// Shows a NAS in the Files app (and in Finder on a Mac), when the user turns
@@ -15,7 +15,7 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
     private let snapshots: SnapshotStore
     private let kept: KeptDownloads
 
-    /// iOS keeps a default "Ownhold" location whenever Ownhold has none of
+    /// iOS keeps a default "Arkenal" location whenever Arkenal has none of
     /// its own (Settings › Privacy › Show NAS in Files App is off), and apps
     /// can't remove it. It stays empty: no NAS names, no files, no network.
     /// The same applies whenever the app lock is on: the Files app and Finder
@@ -165,11 +165,11 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
         let reply = Reply1(completionHandler)
         let paths = itemIdentifiers.map(FileProviderItem.path(for:))
         let keep = actionIdentifier.rawValue == Self.keepAction
-        // Keep Downloaded is part of Ownhold Pro (Stop Keeping always works).
+        // Keep Downloaded is part of Arkenal Pro (Stop Keeping always works).
         if keep, !SharedContainer.isProUnlocked {
-            reply.handler(NSError(domain: "app.ownhold.Ownhold", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "Keep Downloaded is part of Ownhold Pro.",
-                NSLocalizedRecoverySuggestionErrorKey: "Open Ownhold to unlock it.",
+            reply.handler(NSError(domain: "com.snowlightlabs.Arkenal", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Keep Downloaded is part of Arkenal Pro.",
+                NSLocalizedRecoverySuggestionErrorKey: "Open Arkenal to unlock it.",
             ]))
             return Progress()
         }
@@ -201,14 +201,14 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
                 }
             }
             reply.handler(nil)
-            // Ownhold, if it's running, downloads them straight away.
+            // Arkenal, if it's running, downloads them straight away.
             if keep {
-                CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName("app.ownhold.keptDownloadsChanged" as CFString), nil, nil, true)
+                CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFNotificationName("com.snowlightlabs.arkenal.keptDownloadsChanged" as CFString), nil, nil, true)
             }
         }
     }
 
-    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "files-extension")
+    private static let log = Logger(subsystem: "com.snowlightlabs.Arkenal", category: "files-extension")
 
     /// Every file in (or among) the kept items, listing folders on the way
     /// so Finder learns about them too. Capped, so a huge folder can't run away.
@@ -230,7 +230,7 @@ final class FileProviderExtension: NSObject, NSFileProviderReplicatedExtension, 
         return Array(files.prefix(2000))
     }
 
-    static let keepAction = "app.ownhold.keepDownloaded"
+    static let keepAction = "com.snowlightlabs.arkenal.keepDownloaded"
 
     // MARK: Thumbnails
 

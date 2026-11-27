@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Privacy Policy · Ownhold</title>
-<meta name="description" content="Ownhold collects no data. Your files, passwords and photos go only between your devices and your own NAS.">
+<title>Privacy Policy · Arkenal</title>
+<meta name="description" content="Arkenal collects no data. Your files, passwords and photos go only between your devices and your own NAS.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main>
   <header>
     <svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.4" fill="#1D4B3C"/><path d="M31 80 V25 M31 51 a19 19 0 0 1 38 0 V80" fill="none" stroke="#F3F0E8" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="66" r="8.5" fill="#8FD3B0"/></svg>
-    <div><div class="app">Ownhold</div><div class="muted">Files and photos from your NAS</div></div>
+    <div><div class="app">Arkenal</div><div class="muted">Files and photos from your NAS</div></div>
   </header>
 
   <nav><a href="support.html">Support</a><a href="privacy.html" aria-current="page">Privacy</a></nav>
@@ -19,24 +19,24 @@
   <p class="muted">Effective 25 November 2026 · Updated 26 November 2026 (SMB and WebDAV, Photo Backup list, encrypted folders, Face ID for encrypted folders)</p>
 
   <div class="summary">
-    <p><strong>The short version: Ownhold collects no data.</strong></p>
-    <p>There are no accounts, no analytics, no advertising and no tracking. Ownhold has no servers of its own. Your files, photos and password travel only between your devices and the NAS you connect to, which you own.</p>
+    <p><strong>The short version: Arkenal collects no data.</strong></p>
+    <p>There are no accounts, no analytics, no advertising and no tracking. Arkenal has no servers of its own. Your files, photos and password travel only between your devices and the NAS you connect to, which you own.</p>
   </div>
 
   <h2>Who we are</h2>
-  <p>Ownhold is an app for iPhone, iPad and Mac, published by <span class="placeholder">[Your full name]</span> (“we”). If you have a question about privacy, write to <a href="mailto:privacy@ownhold.app">privacy@ownhold.app</a>.</p>
+  <p>Arkenal is an app for iPhone, iPad and Mac, published by <span class="placeholder">[Your full name]</span> (“we”). If you have a question about privacy, write to <a href="mailto:privacy@arkenal.app">privacy@arkenal.app</a>.</p>
 
   <h2>What we collect</h2>
   <p>Nothing. We do not collect, receive, store, sell or share any personal information. The app contains no third-party code for analytics, crash reporting or advertising, and it does not track you across apps or websites.</p>
   <p>If you've chosen to share analytics with app developers in your device's settings, Apple may give us anonymous crash reports and usage statistics. That sharing is controlled by Apple and by you, under Apple's privacy policy, and you can turn it off at any time in Settings › Privacy & Security › Analytics & Improvements.</p>
 
   <h2>What stays on your device</h2>
-  <p>To work, Ownhold keeps some information on your device. None of it is sent to us.</p>
+  <p>To work, Arkenal keeps some information on your device. None of it is sent to us.</p>
   <ul>
     <li><strong>Your NAS details:</strong> the name you give each NAS, its addresses, your QuickConnect ID if you use one, the addresses it last found, and your account name. These are stored with the app's data, so they're included in your normal device backups. Your password is not.</li>
-    <li><strong>Sign-in session:</strong> after you sign in, Ownhold keeps the session your NAS gives it (and, if you choose “Remember this device”, the NAS's device token) in the system Keychain. These items stay on this device only. They don't sync to iCloud Keychain. A NAS connected with SMB or WebDAV has no session to keep, so for those Ownhold keeps your password in the Keychain instead, under the same rules (see <a href="#password">Your password</a>).</li>
+    <li><strong>Sign-in session:</strong> after you sign in, Arkenal keeps the session your NAS gives it (and, if you choose “Remember this device”, the NAS's device token) in the system Keychain. These items stay on this device only. They don't sync to iCloud Keychain. A NAS connected with SMB or WebDAV has no session to keep, so for those Arkenal keeps your password in the Keychain instead, under the same rules (see <a href="#password">Your password</a>).</li>
     <li><strong>Encrypted folders:</strong> which folders on your NAS are encrypted, so they show a lock. A folder's key is kept only in memory while it's unlocked, unless you choose <strong>Use Face ID</strong> or <strong>Keep Unlocked</strong> for it. Then it's kept in the Keychain on this device only, not synced to iCloud; with Face ID, the system releases it only after Face ID, Touch ID or your device passcode. It's deleted when you change the setting, delete the folder or remove the NAS (see <a href="#encrypted">Encrypted folders</a>).</li>
-    <li><strong>Certificate fingerprints:</strong> when you trust your NAS's certificate, its fingerprint is stored in the Keychain, so Ownhold can warn you if the certificate ever changes.</li>
+    <li><strong>Certificate fingerprints:</strong> when you trust your NAS's certificate, its fingerprint is stored in the Keychain, so Arkenal can warn you if the certificate ever changes.</li>
     <li><strong>Files you keep offline:</strong> stored on your device, encrypted while your iPhone or iPad is locked, and excluded from backups.</li>
     <li><strong>Thumbnails and previews:</strong> kept in a cache your device can clear at any time. Files opened for a quick preview are deleted the next time the app starts.</li>
     <li><strong>Settings:</strong> your choices such as list or grid view, sort order and the Face ID lock.</li>
@@ -46,59 +46,59 @@
   </ul>
 
   <h2>Files you upload</h2>
-  <p>Files you upload go directly from your device to your NAS, over the same connection Ownhold uses to browse it. Ownhold keeps a temporary copy of photos only while they upload, then deletes it.</p>
+  <p>Files you upload go directly from your device to your NAS, over the same connection Arkenal uses to browse it. Arkenal keeps a temporary copy of photos only while they upload, then deletes it.</p>
 
   <h2 id="password">Your password</h2>
-  <p><strong>Synology:</strong> when you sign in, your password is sent once, over an encrypted HTTPS connection, directly to your NAS. Ownhold does not store it; it keeps the session your NAS returns.</p>
-  <p><strong>SMB and WebDAV</strong> (other NAS): these have no sessions, so Ownhold keeps your password in this device's Keychain, not synced to iCloud, and uses it each time it connects: over HTTPS for WebDAV, and with SMB's own sign-in for SMB. Signing out or removing the NAS deletes it.</p>
+  <p><strong>Synology:</strong> when you sign in, your password is sent once, over an encrypted HTTPS connection, directly to your NAS. Arkenal does not store it; it keeps the session your NAS returns.</p>
+  <p><strong>SMB and WebDAV</strong> (other NAS): these have no sessions, so Arkenal keeps your password in this device's Keychain, not synced to iCloud, and uses it each time it connects: over HTTPS for WebDAV, and with SMB's own sign-in for SMB. Signing out or removing the NAS deletes it.</p>
   <p>Your password never passes through any server of ours. Connections to a Synology or WebDAV NAS are always HTTPS. Most NAS don't encrypt SMB file transfers, so we recommend SMB only on your home network or over a VPN such as Tailscale.</p>
 
   <h2 id="encrypted">Encrypted folders</h2>
   <p>Files in an encrypted folder are encrypted on your device before they're uploaded, and decrypted on your device after they're downloaded. Your NAS, its other users and anyone who gets its drives see only scrambled names and contents. The NAS can still see how many items there are, their approximate sizes and dates.</p>
-  <p>Your encrypted folder's password and recovery key are never sent anywhere, including to your NAS and to us. The NAS stores only a settings file (ownhold-vault.json) with the folder's key locked by your password and by your recovery key. No one can open the files without one of them, and we can't recover them for you.</p>
+  <p>Your encrypted folder's password and recovery key are never sent anywhere, including to your NAS and to us. The NAS stores only a settings file (arkenal-vault.json) with the folder's key locked by your password and by your recovery key. No one can open the files without one of them, and we can't recover them for you.</p>
   <p>Thumbnails of encrypted files are kept in memory only. Files you keep offline or open are decrypted on your device, where your device's own encryption protects them.</p>
 
   <h2>Connections the app makes</h2>
-  <p>Ownhold connects to the NAS addresses you enter: on your home network, through a private network (VPN) such as Tailscale, or over the internet. In the built-in demo library, it makes no network connections at all.</p>
-  <p><strong>QuickConnect (optional):</strong> if you enter a Synology QuickConnect ID, Ownhold asks Synology's QuickConnect service (quickconnect.to) for your NAS's current addresses each time it connects. Only the QuickConnect ID is sent to Synology, under Synology's privacy policy, and Synology can see the network address your request comes from, as with any internet request. Your account name, password and files are never sent to Synology, and Ownhold never routes your connection through Synology's relay servers. If you don't enter a QuickConnect ID, Ownhold never contacts Synology.</p>
-  <p>If you use Tailscale or another VPN, that connection is provided by its own app, under its own privacy policy. Ownhold doesn't communicate with their servers.</p>
-  <p><strong>Finding your NAS (setup):</strong> while the setup screen looks for a NAS, Ownhold asks devices on your home network that share files whether they run Synology DSM; the others are listed as file-sharing (SMB) servers. No account details are sent.</p>
-  <p><strong>Photo Backup:</strong> to avoid uploading the same photo from two devices that use the same iCloud Photos library, Ownhold keeps a small list in your backup folder on the NAS (.ownhold-backup.json). It holds iCloud's identifiers for the backed-up items and their file names, nothing else, and stays on your NAS.</p>
-  <p><strong>Ownhold Pro:</strong> buying or restoring Ownhold Pro goes through Apple's App Store. Apple handles the payment; Ownhold only learns whether Pro is unlocked, and never sees your payment details or Apple Account.</p>
+  <p>Arkenal connects to the NAS addresses you enter: on your home network, through a private network (VPN) such as Tailscale, or over the internet. In the built-in demo library, it makes no network connections at all.</p>
+  <p><strong>QuickConnect (optional):</strong> if you enter a Synology QuickConnect ID, Arkenal asks Synology's QuickConnect service (quickconnect.to) for your NAS's current addresses each time it connects. Only the QuickConnect ID is sent to Synology, under Synology's privacy policy, and Synology can see the network address your request comes from, as with any internet request. Your account name, password and files are never sent to Synology, and Arkenal never routes your connection through Synology's relay servers. If you don't enter a QuickConnect ID, Arkenal never contacts Synology.</p>
+  <p>If you use Tailscale or another VPN, that connection is provided by its own app, under its own privacy policy. Arkenal doesn't communicate with their servers.</p>
+  <p><strong>Finding your NAS (setup):</strong> while the setup screen looks for a NAS, Arkenal asks devices on your home network that share files whether they run Synology DSM; the others are listed as file-sharing (SMB) servers. No account details are sent.</p>
+  <p><strong>Photo Backup:</strong> to avoid uploading the same photo from two devices that use the same iCloud Photos library, Arkenal keeps a small list in your backup folder on the NAS (.arkenal-backup.json). It holds iCloud's identifiers for the backed-up items and their file names, nothing else, and stays on your NAS.</p>
+  <p><strong>Arkenal Pro:</strong> buying or restoring Arkenal Pro goes through Apple's App Store. Apple handles the payment; Arkenal only learns whether Pro is unlocked, and never sees your payment details or Apple Account.</p>
 
   <h2>Share links</h2>
-  <p>When you choose <strong>Share Link…</strong>, your NAS creates the link and serves the file to whoever opens it. The link, and any password you set, are stored on your NAS, not by Ownhold or by us. <strong>Stop Sharing</strong> removes it.</p>
+  <p>When you choose <strong>Share Link…</strong>, your NAS creates the link and serves the file to whoever opens it. The link, and any password you set, are stored on your NAS, not by Arkenal or by us. <strong>Stop Sharing</strong> removes it.</p>
 
-  <h2>Save to Ownhold</h2>
-  <p>When you choose Ownhold in another app's share sheet, the items you shared are uploaded directly to the folder you pick on your NAS. Ownhold makes a temporary copy while uploading and deletes it afterwards. Nothing is sent anywhere else.</p>
+  <h2>Save to Arkenal</h2>
+  <p>When you choose Arkenal in another app's share sheet, the items you shared are uploaded directly to the folder you pick on your NAS. Arkenal makes a temporary copy while uploading and deletes it afterwards. Nothing is sent anywhere else.</p>
 
   <h2>Files app and Finder (optional)</h2>
-  <p><strong>Settings › Show NAS in Files App</strong> (<strong>Show NAS in Finder</strong> on a Mac) is off unless you turn it on, and it stays off while the app lock is on. When it's on, your NAS appears in the Files app or Finder, and files are downloaded only when you open them, directly from your NAS. When you turn it off, Ownhold removes the location and the system deletes every file it kept for it.</p>
-  <p>So that changes you make in Ownhold show up there straight away, Ownhold briefly notes which folders changed (their paths only) where the Files extension can read them. The note is deleted as soon as it has been read.</p>
-  <p>On iPhone and iPad, the Files app keeps an Ownhold entry even when this is off. Apps can't remove it, but it stays empty: Ownhold shows nothing there and doesn't connect to your NAS. You can hide it in the Files app by tapping ⋯, then Edit.</p>
+  <p><strong>Settings › Show NAS in Files App</strong> (<strong>Show NAS in Finder</strong> on a Mac) is off unless you turn it on, and it stays off while the app lock is on. When it's on, your NAS appears in the Files app or Finder, and files are downloaded only when you open them, directly from your NAS. When you turn it off, Arkenal removes the location and the system deletes every file it kept for it.</p>
+  <p>So that changes you make in Arkenal show up there straight away, Arkenal briefly notes which folders changed (their paths only) where the Files extension can read them. The note is deleted as soon as it has been read.</p>
+  <p>On iPhone and iPad, the Files app keeps an Arkenal entry even when this is off. Apps can't remove it, but it stays empty: Arkenal shows nothing there and doesn't connect to your NAS. You can hide it in the Files app by tapping ⋯, then Edit.</p>
 
   <h2>Permissions</h2>
   <ul>
     <li><strong>Local network:</strong> used to reach your NAS on your home network.</li>
-    <li><strong>Photos</strong> (when you upload): you choose photos and videos in Apple's own picker, and Ownhold receives only the ones you pick. It doesn't ask for access to your library, and it sends what you pick only to your NAS.</li>
-    <li><strong>Photo library</strong> (only if you turn on Photo Backup): Ownhold reads your photos and videos to copy them to the folder you choose on your NAS, directly over your connection. It sends them nowhere else. A list of what has been backed up is kept on this device so nothing is uploaded twice.</li>
+    <li><strong>Photos</strong> (when you upload): you choose photos and videos in Apple's own picker, and Arkenal receives only the ones you pick. It doesn't ask for access to your library, and it sends what you pick only to your NAS.</li>
+    <li><strong>Photo library</strong> (only if you turn on Photo Backup): Arkenal reads your photos and videos to copy them to the folder you choose on your NAS, directly over your connection. It sends them nowhere else. A list of what has been backed up is kept on this device so nothing is uploaded twice.</li>
     <li><strong>Camera</strong> (only when you scan a document): used by Apple's document scanner. Scans are uploaded to your NAS and not kept on the device.</li>
-    <li><strong>Face ID or Touch ID</strong> (optional): used only to unlock the app and, if you choose, encrypted folders. Your device handles this, and Ownhold never receives any biometric data.</li>
+    <li><strong>Face ID or Touch ID</strong> (optional): used only to unlock the app and, if you choose, encrypted folders. Your device handles this, and Arkenal never receives any biometric data.</li>
   </ul>
 
   <h2>Deleting your data</h2>
-  <p>To remove a NAS and everything Ownhold stored for it (offline files, thumbnails, sign-in session and certificate fingerprints), open Settings in Ownhold, swipe left on the NAS (on a Mac, right-click it) and choose Remove. Your files on the NAS itself are not affected.</p>
-  <p>Deleting the app removes its files from your device. Your device may keep Keychain items after an app is deleted, so remove your NAS in Ownhold's Settings first if you want them gone as well.</p>
+  <p>To remove a NAS and everything Arkenal stored for it (offline files, thumbnails, sign-in session and certificate fingerprints), open Settings in Arkenal, swipe left on the NAS (on a Mac, right-click it) and choose Remove. Your files on the NAS itself are not affected.</p>
+  <p>Deleting the app removes its files from your device. Your device may keep Keychain items after an app is deleted, so remove your NAS in Arkenal's Settings first if you want them gone as well.</p>
 
   <h2>Children</h2>
-  <p>Ownhold isn't directed at children, and since it collects no data from anyone, it collects none from children either.</p>
+  <p>Arkenal isn't directed at children, and since it collects no data from anyone, it collects none from children either.</p>
 
   <h2>Changes to this policy</h2>
   <p>If this policy changes, we'll update this page and its effective date. If we ever wanted to collect any data, we would ask you first, in the app.</p>
 
   <footer class="muted">
-    <p>Questions? <a href="mailto:privacy@ownhold.app">privacy@ownhold.app</a></p>
-    <p>Ownhold is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.</p>
+    <p>Questions? <a href="mailto:privacy@arkenal.app">privacy@arkenal.app</a></p>
+    <p>Arkenal is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.</p>
   </footer>
 </main>
 </body>

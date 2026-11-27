@@ -1,7 +1,7 @@
 import Foundation
 import Network
 import Observation
-import OwnholdKit
+import ArkenalKit
 
 /// Finds NAS on the local network, for the first-run setup.
 ///

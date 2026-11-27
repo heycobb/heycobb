@@ -1,5 +1,5 @@
 import LocalAuthentication
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 import UniformTypeIdentifiers
 #if os(iOS)
@@ -8,7 +8,7 @@ import UIKit
 import AppKit
 #endif
 
-/// Save to Ownhold: choose a NAS and folder, then upload what was shared.
+/// Save to Arkenal: choose a NAS and folder, then upload what was shared.
 /// Uploads go straight to the NAS over the app's pinned connection; nothing
 /// is sent anywhere else, and the copies made for uploading are deleted.
 struct SaveView: View {
@@ -35,7 +35,7 @@ struct SaveView: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle("Save to Ownhold")
+                .navigationTitle("Save to Arkenal")
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
@@ -78,7 +78,7 @@ struct SaveView: View {
             ProgressView()
         case .locked:
             ContentUnavailableView {
-                Label("Ownhold Is Locked", systemImage: "lock")
+                Label("Arkenal Is Locked", systemImage: "lock")
             } actions: {
                 Button("Unlock") { Task { await unlock() } }
                     .buttonStyle(.borderedProminent)
@@ -286,7 +286,7 @@ struct SaveView: View {
 
     private func unlock() async {
         let context = LAContext()
-        if (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Save to Ownhold")) == true {
+        if (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Save to Arkenal")) == true {
             await begin()
         }
     }
@@ -385,9 +385,9 @@ struct SaveView: View {
         if let error = error as? NASError {
             switch error {
             case .sessionExpired, .invalidCredentials, .twoFactorRequired, .passwordExpired:
-                return "Open Ownhold and sign in to your NAS, then try again."
+                return "Open Arkenal and sign in to your NAS, then try again."
             case .untrustedCertificate, .certificateChanged:
-                return "Open Ownhold to check your NAS's certificate, then try again."
+                return "Open Arkenal to check your NAS's certificate, then try again."
             default:
                 return error.errorDescription ?? "Something went wrong."
             }
@@ -443,9 +443,9 @@ private struct FolderList: View {
 enum SharedAccent {
     static var color: Color {
         let palette: [String: (UInt32, UInt32)] = [
+            "basalt": (0x2E3A41, 0xA9B8C1),
             "evergreen": (0x1D4B3C, 0x6FBF9A),
             "harbor": (0x1F4A6E, 0x7FB2DA),
-            "graphite": (0x3B3F45, 0xB9C0C8),
             "rosewood": (0x7A2F3B, 0xE3949F),
             "amber": (0x9A6312, 0xE3B261),
         ]
@@ -456,7 +456,7 @@ enum SharedAccent {
             return Color(nsColor: .controlAccentColor)
             #endif
         }
-        let pair = palette[SharedContainer.defaults.string(forKey: "accent") ?? ""] ?? palette["evergreen"]!
+        let pair = palette[SharedContainer.defaults.string(forKey: "accent") ?? ""] ?? palette["basalt"]!
         return dynamic(light: pair.0, dark: pair.1)
     }
 

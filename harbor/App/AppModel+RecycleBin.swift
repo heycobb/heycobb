@@ -1,11 +1,11 @@
 import Foundation
-import OwnholdKit
+import ArkenalKit
 
 /// Recently Deleted: DSM's Recycle Bin (see `RecycleBin`).
 import os
 
 extension AppModel {
-    fileprivate static let recycleLog = Logger(subsystem: "app.ownhold.Ownhold", category: "recycle-bin")
+    fileprivate static let recycleLog = Logger(subsystem: "com.snowlightlabs.Arkenal", category: "recycle-bin")
 
     /// A Recycle Bin to show: a shared folder's, or for "home" the
     /// account's part of the homes shared folder's (DSM keeps deleted home

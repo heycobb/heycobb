@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 struct SettingsView: View {
@@ -108,7 +108,7 @@ struct SettingsView: View {
                     Text(ProStore.shared.isUnlocked ? "Unlocked" : (ProStore.shared.product?.displayPrice ?? ""))
                         .foregroundStyle(.secondary)
                 } label: {
-                    Label("Ownhold Pro", systemImage: ProStore.shared.isUnlocked ? "checkmark.seal.fill" : "seal")
+                    Label("Arkenal Pro", systemImage: ProStore.shared.isUnlocked ? "checkmark.seal.fill" : "seal")
                 }
                 .contentShape(.rect)
             }
@@ -160,7 +160,7 @@ struct SettingsView: View {
             Toggle(Platform.isMac ? "Show NAS in Finder" : "Show NAS in Files App", isOn: $model.showInFilesApp)
                 .disabled(model.requireUnlock)
             if model.showInFilesApp, !model.requireUnlock {
-                // Part of Ownhold Pro.
+                // Part of Arkenal Pro.
                 Toggle(isOn: Binding(
                     get: { keepFilesAppUpdated && ProStore.shared.isUnlocked },
                     set: { on in if on, !ProStore.shared.isUnlocked { showingPro = true } else { keepFilesAppUpdated = on } }
@@ -181,8 +181,8 @@ struct SettingsView: View {
                     ? "Unavailable while the app lock is on: Finder can't ask for Touch ID."
                     : "Unavailable while the app lock is on: the Files app can't ask for Face ID.")
             } else if !Platform.isMac, !model.showInFilesApp {
-                // iOS keeps an empty Ownhold entry in Files that apps can't remove.
-                Text("Ownhold stays listed in Files, empty. To hide it, tap ⋯ › Edit there.")
+                // iOS keeps an empty Arkenal entry in Files that apps can't remove.
+                Text("Arkenal stays listed in Files, empty. To hide it, tap ⋯ › Edit there.")
             }
         }
     }
@@ -244,8 +244,8 @@ struct SettingsView: View {
                 #if os(macOS)
                 .buttonStyle(.link) // matches the links below
                 #endif
-            Link("Get Support", destination: URL(string: "https://ownhold.app/support")!)
-            Link("Privacy Policy", destination: URL(string: "https://ownhold.app/privacy")!)
+            Link("Get Support", destination: URL(string: "https://arkenal.app/support")!)
+            Link("Privacy Policy", destination: URL(string: "https://arkenal.app/privacy")!)
             Button("Acknowledgements") { showingAcknowledgements = true }
                 #if os(macOS)
                 .buttonStyle(.link)
@@ -255,7 +255,7 @@ struct SettingsView: View {
             // The Mac's tab already says About.
             if !Platform.isMac { Text("About") }
         } footer: {
-            Text("Ownhold is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.")
+            Text("Arkenal is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.")
         }
     }
 
@@ -269,9 +269,9 @@ struct SettingsView: View {
         } header: {
             Text("Startup")
         } footer: {
-            // Needed: the switch is on but macOS won't open Ownhold until it's allowed.
+            // Needed: the switch is on but macOS won't open Arkenal until it's allowed.
             if loginItem.needsApproval {
-                Text("Allow Ownhold in Login Items so macOS can open it.")
+                Text("Allow Arkenal in Login Items so macOS can open it.")
             }
         }
         .onAppear { loginItem.refresh() }
@@ -279,7 +279,7 @@ struct SettingsView: View {
 
     private var menuBarSection: some View {
         Section("Menu Bar") {
-            Toggle("Show Ownhold in Menu Bar", isOn: $showMenuBarItem)
+            Toggle("Show Arkenal in Menu Bar", isOn: $showMenuBarItem)
             if showMenuBarItem {
                 Toggle("Hide Dock Icon When Closed", isOn: $hideDockWhenClosed)
             }
@@ -291,7 +291,7 @@ struct SettingsView: View {
     private func addServer() {
         #if os(macOS)
         DockIcon.show()
-        openWindow(id: OwnholdApp.mainWindowID)
+        openWindow(id: ArkenalApp.mainWindowID)
         #else
         dismiss()
         #endif

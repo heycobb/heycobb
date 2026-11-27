@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 /// Dense list row: thumbnail or icon, name, and monospaced metadata.

@@ -30,7 +30,7 @@ final class LoginItem {
 
     func openSystemSettings() { SMAppService.openSystemSettingsLoginItems() }
 
-    /// True when macOS opened Ownhold as a login item, rather than the user.
+    /// True when macOS opened Arkenal as a login item, rather than the user.
     static func launchedAtLogin() -> Bool {
         guard let event = NSAppleEventManager.shared().currentAppleEvent,
               event.eventID == kAEOpenApplication else { return false }

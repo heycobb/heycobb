@@ -1,5 +1,5 @@
 import Foundation
-import OwnholdKit
+import ArkenalKit
 import os
 #if os(iOS)
 import ActivityKit
@@ -58,7 +58,7 @@ final class SyncIndicator {
     static let shared = SyncIndicator()
     static let liveActivityKey = "showLiveActivity"
 
-    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "sync-indicator")
+    private static let log = Logger(subsystem: "com.snowlightlabs.Arkenal", category: "sync-indicator")
     /// Jobs shorter than this never show the indicator, so it doesn't flash.
     private static let startDelay: Duration = .seconds(5)
     /// The system limits how often a Live Activity may change.
@@ -118,7 +118,7 @@ final class SyncIndicator {
 
     private func begin(_ progress: SyncProgress, serverName: String) {
         let enabled = UserDefaults.standard.object(forKey: Self.liveActivityKey) as? Bool ?? true
-        // A Live Activity can only be started while Ownhold is open.
+        // A Live Activity can only be started while Arkenal is open.
         guard enabled, ActivityAuthorizationInfo().areActivitiesEnabled,
               UIApplication.shared.applicationState == .active else { return }
         do {

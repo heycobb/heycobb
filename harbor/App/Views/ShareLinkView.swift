@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 /// Creates a link the NAS serves to anyone who has it (DSM's Sharing

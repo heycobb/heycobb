@@ -1,5 +1,5 @@
 import Foundation
-import OwnholdKit
+import ArkenalKit
 import Observation
 #if os(iOS)
 import UIKit
@@ -9,7 +9,7 @@ import UIKit
 struct PendingUpload {
     let url: URL
     let name: String
-    /// True for copies Ownhold made (from Photos); deleted when done.
+    /// True for copies Arkenal made (from Photos); deleted when done.
     let ownsFile: Bool
 
     var isFolder: Bool { (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
@@ -19,7 +19,7 @@ enum ConflictChoice { case replace, keepBoth, skip, cancel }
 
 /// Uploads, one at a time, in the order the user added them.
 ///
-/// There is no background sync: uploads run while Ownhold is open. On
+/// There is no background sync: uploads run while Arkenal is open. On
 /// iPhone and iPad the screen stays awake while they run, and iOS gives a
 /// little extra time to finish if the user switches apps.
 @MainActor
@@ -222,7 +222,7 @@ final class UploadQueue {
                 Task { @MainActor in self?.setProgress(fraction, for: id) }
             }
             #if os(iOS)
-            // Large files keep uploading after you leave Ownhold.
+            // Large files keep uploading after you leave Arkenal.
             try await service.uploadAllowingBackground(job.source, as: job.name, to: job.folder, replacing: job.replacing, progress: progress)
             #else
             try await service.upload(job.source, as: job.name, to: job.folder, replacing: job.replacing, progress: progress)

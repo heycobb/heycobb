@@ -1,9 +1,9 @@
-# Generates Ownhold.xcodeproj with XcodeGen (https://github.com/yonaskolb/XcodeGen).
+# Generates Arkenal.xcodeproj with XcodeGen (https://github.com/yonaskolb/XcodeGen).
 #   brew install xcodegen && xcodegen generate
 # The .xcodeproj is generated, so it isn't committed; edit this file instead.
-name: Ownhold
+name: Arkenal
 options:
-  bundleIdPrefix: app.ownhold
+  bundleIdPrefix: com.snowlightlabs
   deploymentTarget:
     iOS: "26.0"
     macOS: "26.0"
@@ -11,8 +11,8 @@ options:
   developmentLanguage: en
 
 packages:
-  OwnholdKit:
-    path: Packages/OwnholdKit
+  ArkenalKit:
+    path: Packages/ArkenalKit
 
 settings:
   base:
@@ -25,13 +25,13 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: complete
     # Shared with the Files app extension. Mac app groups use the team prefix.
-    OWNHOLD_APP_GROUP: group.app.ownhold.shared
-    "OWNHOLD_APP_GROUP[sdk=macosx*]": $(TeamIdentifierPrefix)app.ownhold.shared
-    # Set to "-local" (with OWNHOLD_APP_GROUP empty) for unsigned local Mac builds.
-    OWNHOLD_ENTITLEMENTS_SUFFIX: ""
+    ARKENAL_APP_GROUP: group.com.snowlightlabs.arkenal
+    "ARKENAL_APP_GROUP[sdk=macosx*]": $(TeamIdentifierPrefix)com.snowlightlabs.arkenal
+    # Set to "-local" (with ARKENAL_APP_GROUP empty) for unsigned local Mac builds.
+    ARKENAL_ENTITLEMENTS_SUFFIX: ""
 
 targets:
-  Ownhold:
+  Arkenal:
     type: application
     platform: auto
     # One native SwiftUI target for iPhone, iPad and Mac (not Mac Catalyst).
@@ -39,23 +39,23 @@ targets:
     sources:
       - path: App
     dependencies:
-      - package: OwnholdKit
-      - target: OwnholdFiles
+      - package: ArkenalKit
+      - target: ArkenalFiles
         embed: true
-      - target: OwnholdShare
+      - target: ArkenalShare
         embed: true
-      - target: OwnholdWidgets
+      - target: ArkenalWidgets
         embed: true
         destinationFilters: [iOS]
     settings:
       base:
-        PRODUCT_NAME: Ownhold
-        PRODUCT_BUNDLE_IDENTIFIER: app.ownhold.Ownhold
+        PRODUCT_NAME: Arkenal
+        PRODUCT_BUNDLE_IDENTIFIER: com.snowlightlabs.Arkenal
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: Config/Info.plist
-        INFOPLIST_KEY_CFBundleDisplayName: Ownhold
+        INFOPLIST_KEY_CFBundleDisplayName: Arkenal
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         # Progress of long backups and uploads on the Lock Screen (Settings can turn it off).
@@ -68,15 +68,15 @@ targets:
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         # On the Mac, selection highlights follow the accent color the user
-        # picked in System Settings (as in Finder and Mail); Ownhold's evergreen is
+        # picked in System Settings (as in Finder and Mail); Arkenal's accent is
         # applied explicitly through Theme.accent instead.
         "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME[sdk=macosx*]": ""
-        CODE_SIGN_ENTITLEMENTS: Config/Ownhold-iOS.entitlements
-        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Config/Ownhold-macOS$(OWNHOLD_ENTITLEMENTS_SUFFIX).entitlements
+        CODE_SIGN_ENTITLEMENTS: Config/Arkenal-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Config/Arkenal-macOS$(ARKENAL_ENTITLEMENTS_SUFFIX).entitlements
         ENABLE_HARDENED_RUNTIME: YES
 
   # Shows a NAS in the Files app and Finder, when turned on in Settings › Privacy.
-  OwnholdFiles:
+  ArkenalFiles:
     type: app-extension
     platform: auto
     supportedDestinations: [iOS, macOS]
@@ -84,11 +84,11 @@ targets:
       - path: FileProvider
         excludes: ["*.entitlements", "Info*.plist"]
     dependencies:
-      - package: OwnholdKit
+      - package: ArkenalKit
     settings:
       base:
-        PRODUCT_NAME: OwnholdFiles
-        PRODUCT_BUNDLE_IDENTIFIER: app.ownhold.Ownhold.Files
+        PRODUCT_NAME: ArkenalFiles
+        PRODUCT_BUNDLE_IDENTIFIER: com.snowlightlabs.Arkenal.Files
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
         INFOPLIST_FILE: FileProvider/Info.plist
@@ -96,12 +96,12 @@ targets:
         "INFOPLIST_FILE[sdk=macosx*]": FileProvider/Info-macOS.plist
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_ENTITLEMENTS: FileProvider/FileProvider-iOS.entitlements
-        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": FileProvider/FileProvider-macOS$(OWNHOLD_ENTITLEMENTS_SUFFIX).entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": FileProvider/FileProvider-macOS$(ARKENAL_ENTITLEMENTS_SUFFIX).entitlements
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
 
-  # "Save to Ownhold" in the share sheet.
-  OwnholdShare:
+  # "Save to Arkenal" in the share sheet.
+  ArkenalShare:
     type: app-extension
     platform: auto
     supportedDestinations: [iOS, macOS]
@@ -109,50 +109,50 @@ targets:
       - path: ShareExtension
         excludes: ["*.entitlements", "Info.plist"]
     dependencies:
-      - package: OwnholdKit
+      - package: ArkenalKit
     settings:
       base:
-        PRODUCT_NAME: OwnholdShare
-        PRODUCT_BUNDLE_IDENTIFIER: app.ownhold.Ownhold.Share
+        PRODUCT_NAME: ArkenalShare
+        PRODUCT_BUNDLE_IDENTIFIER: com.snowlightlabs.Arkenal.Share
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
         INFOPLIST_FILE: ShareExtension/Info.plist
         GENERATE_INFOPLIST_FILE: YES
-        OWNHOLD_SHARE_EXTENSION_POINT: com.apple.share-services
+        ARKENAL_SHARE_EXTENSION_POINT: com.apple.share-services
         CODE_SIGN_ENTITLEMENTS: ShareExtension/Share-iOS.entitlements
-        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": ShareExtension/Share-macOS$(OWNHOLD_ENTITLEMENTS_SUFFIX).entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": ShareExtension/Share-macOS$(ARKENAL_ENTITLEMENTS_SUFFIX).entitlements
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
 
   # The Live Activity for long backups and uploads (iPhone and iPad).
-  OwnholdWidgets:
+  ArkenalWidgets:
     type: app-extension
     platform: iOS
     sources:
       - path: Widgets
         excludes: ["Info.plist"]
     dependencies:
-      - package: OwnholdKit
+      - package: ArkenalKit
       - sdk: WidgetKit.framework
       - sdk: SwiftUI.framework
     settings:
       base:
-        PRODUCT_NAME: OwnholdWidgets
-        PRODUCT_BUNDLE_IDENTIFIER: app.ownhold.Ownhold.Widgets
+        PRODUCT_NAME: ArkenalWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.snowlightlabs.Arkenal.Widgets
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_FILE: Widgets/Info.plist
         GENERATE_INFOPLIST_FILE: YES
         SKIP_INSTALL: YES
 
 schemes:
-  Ownhold:
+  Arkenal:
     build:
       targets:
-        Ownhold: all
+        Arkenal: all
     run:
-      # Test purchases of Ownhold Pro when run from Xcode.
-      storeKitConfiguration: Config/Ownhold.storekit
+      # Test purchases of Arkenal Pro when run from Xcode.
+      storeKitConfiguration: Config/Arkenal.storekit
     test:
       targets:
-        - package: OwnholdKit/OwnholdKitTests
+        - package: ArkenalKit/ArkenalKitTests
 

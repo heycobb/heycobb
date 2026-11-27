@@ -1,8 +1,8 @@
-import OwnholdKit
+import ArkenalKit
 import StoreKit
 import SwiftUI
 
-/// What Ownhold Pro adds, and the one-time purchase. Shown from Settings,
+/// What Arkenal Pro adds, and the one-time purchase. Shown from Settings,
 /// and when a Pro feature is tapped; never on its own.
 struct ProView: View {
     @Environment(\.dismiss) private var dismiss
@@ -13,7 +13,7 @@ struct ProView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Spacing.l) {
                     VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-                        Text("Ownhold Pro")
+                        Text("Arkenal Pro")
                             .font(.largeTitle.weight(.semibold))
                         Text("One purchase for iPhone, iPad and Mac, shared with your family.")
                             .font(.title3)
@@ -34,7 +34,7 @@ struct ProView: View {
                         feature("Wake NAS and Recently Deleted", "power")
                     }
                     if store.isUnlocked {
-                        Label("You have Ownhold Pro.", systemImage: "checkmark.seal.fill")
+                        Label("You have Arkenal Pro.", systemImage: "checkmark.seal.fill")
                             .font(.headline)
                             .foregroundStyle(Theme.accent)
                     } else {
@@ -42,7 +42,7 @@ struct ProView: View {
                             Button {
                                 Task { await store.purchase() }
                             } label: {
-                                Text(store.product.map { "Unlock for \($0.displayPrice)" } ?? "Unlock Ownhold Pro")
+                                Text(store.product.map { "Unlock for \($0.displayPrice)" } ?? "Unlock Arkenal Pro")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.borderedProminent)
@@ -90,7 +90,7 @@ struct ProLockedView: View {
         ContentUnavailableView {
             Label(title, systemImage: "lock")
         } description: {
-            Text("Part of Ownhold Pro.")
+            Text("Part of Arkenal Pro.")
         } actions: {
             Button("Learn More") { model.showingPro = true }
                 .buttonStyle(.borderedProminent)

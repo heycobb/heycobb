@@ -1,9 +1,9 @@
 #if os(macOS)
 import AppKit
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
-/// The Ownhold menu bar item: connection status, uploads in progress, and
+/// The Arkenal menu bar item: connection status, uploads in progress, and
 /// quick ways into your NAS. Everything here also exists in the main
 /// window; this is a shortcut, not a second app.
 struct MenuBarMenu: View {
@@ -15,7 +15,7 @@ struct MenuBarMenu: View {
     var body: some View {
         if model.isLocked {
             // Locked: no names of files, folders or servers.
-            Text("Ownhold Is Locked")
+            Text("Arkenal Is Locked")
             Button("Unlock…") {
                 showMainWindow()
                 Task { await model.unlock() }
@@ -139,14 +139,14 @@ struct MenuBarMenu: View {
     }
 
     @ViewBuilder private var appItems: some View {
-        Button("Open Ownhold") { showMainWindow() }
+        Button("Open Arkenal") { showMainWindow() }
         Button("Settings…") {
             DockIcon.show()
             openSettings()
         }
         .keyboardShortcut(",")
         Divider()
-        Button("Quit Ownhold") { NSApp.terminate(nil) }
+        Button("Quit Arkenal") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }
 
@@ -154,7 +154,7 @@ struct MenuBarMenu: View {
 
     private func showMainWindow() {
         DockIcon.show()
-        openWindow(id: OwnholdApp.mainWindowID)
+        openWindow(id: ArkenalApp.mainWindowID)
     }
 
     private func show(_ target: SidebarItem) {

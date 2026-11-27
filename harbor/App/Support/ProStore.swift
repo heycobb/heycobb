@@ -1,8 +1,8 @@
 import Observation
-import OwnholdKit
+import ArkenalKit
 import StoreKit
 
-/// Ownhold Pro: one non-consumable purchase, shared across iPhone, iPad and
+/// Arkenal Pro: one non-consumable purchase, shared across iPhone, iPad and
 /// Mac (universal purchase) and with Family Sharing. The App Store's
 /// current entitlements are the source of truth; the result is also kept in
 /// the app group so the Finder extension and quick checks can read it.
@@ -10,7 +10,7 @@ import StoreKit
 @Observable
 final class ProStore {
     static let shared = ProStore()
-    static let productID = "app.ownhold.pro"
+    static let productID = "com.snowlightlabs.arkenal.pro"
 
     private(set) var isUnlocked = SharedContainer.isProUnlocked
     private(set) var product: Product?
@@ -71,7 +71,7 @@ final class ProStore {
             case .success(.unverified):
                 message = "The purchase couldn't be verified. Try Restore Purchases."
             case .pending:
-                message = "Waiting for approval. Ownhold Pro unlocks when it's approved."
+                message = "Waiting for approval. Arkenal Pro unlocks when it's approved."
             case .userCancelled:
                 break
             @unknown default:
@@ -85,7 +85,7 @@ final class ProStore {
     func restore() async {
         try? await AppStore.sync()
         await refresh()
-        if !isUnlocked { message = "No Ownhold Pro purchase was found for this Apple Account." }
+        if !isUnlocked { message = "No Arkenal Pro purchase was found for this Apple Account." }
     }
 
     private func set(_ owned: Bool) {

@@ -1,5 +1,5 @@
 import Observation
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 #if os(macOS)
 import AppKit
@@ -30,7 +30,7 @@ final class ThemeSettings: @unchecked Sendable {
 
     private init() {
         let defaults = UserDefaults.standard
-        accent = defaults.string(forKey: "accent").flatMap(AccentChoice.init(storedValue:)) ?? .evergreen
+        accent = defaults.string(forKey: "accent").flatMap(AccentChoice.init(storedValue:)) ?? .basalt
         sidebarStyle = defaults.string(forKey: "sidebarStyle").flatMap(SidebarStyle.init) ?? .tinted
         appIcon = defaults.string(forKey: "appIcon").flatMap(AppIconChoice.init) ?? .evergreen
         SharedContainer.defaults.set(accent.rawValue, forKey: "accent")
@@ -47,9 +47,9 @@ enum SidebarStyle: String, CaseIterable, Identifiable {
 /// tinted sidebar, text on that sidebar, and text on a solid accent fill.
 /// No purple or terracotta: both now read as generic, AI-made design.
 /// System follows the Mac's own accent color (blue on iPhone and iPad) and
-/// always uses the plain sidebar, so Ownhold looks like a standard Mac app.
+/// always uses the plain sidebar, so Arkenal looks like a standard Mac app.
 enum AccentChoice: String, CaseIterable, Identifiable {
-    case system, evergreen, harbor, graphite, rosewood, amber
+    case system, basalt, evergreen, harbor, rosewood, amber
     var id: String { rawValue }
 
     /// Reads a saved choice, mapping accents that were removed (they looked
@@ -58,7 +58,7 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         switch storedValue {
         case "forest": self = .evergreen
         case "midnight": self = .harbor
-        case "onyx": self = .graphite
+        case "onyx", "graphite": self = .basalt
         case "espresso": self = .amber
         default: self.init(rawValue: storedValue)
         }
@@ -69,7 +69,7 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         case .system: "System"
         case .evergreen: "Evergreen"
         case .harbor: "Harbor Blue"
-        case .graphite: "Graphite"
+        case .basalt: "Basalt"
         case .rosewood: "Rosewood"
         case .amber: "Amber"
         }
@@ -80,7 +80,7 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         case .system: Self.systemAccent
         case .evergreen: Color(light: 0x1D4B3C, dark: 0x6FBF9A)
         case .harbor: Color(light: 0x1F4A6E, dark: 0x7FB2DA)
-        case .graphite: Color(light: 0x3B3F45, dark: 0xB9C0C8)
+        case .basalt: Color(light: 0x2E3A41, dark: 0xA9B8C1)
         case .rosewood: Color(light: 0x7A2F3B, dark: 0xE3949F)
         case .amber: Color(light: 0x9A6312, dark: 0xE3B261)
         }
@@ -91,7 +91,7 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         switch self {
         case .evergreen, .system: Color(light: 0xE3ECE6, dark: 0x18241E)
         case .harbor: Color(light: 0xE3EAF1, dark: 0x172230)
-        case .graphite: Color(light: 0xECEDEF, dark: 0x1E2023)
+        case .basalt: Color(light: 0xE5E9EB, dark: 0x1A2024)
         case .rosewood: Color(light: 0xF2E6E8, dark: 0x2A1A1D)
         case .amber: Color(light: 0xF3ECDF, dark: 0x241D12)
         }
@@ -101,7 +101,7 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         switch self {
         case .evergreen, .system: Color(light: 0x1F2B25, dark: 0xDCE8E0)
         case .harbor: Color(light: 0x1C2733, dark: 0xDCE6F0)
-        case .graphite: Color(light: 0x25282C, dark: 0xE4E6E9)
+        case .basalt: Color(light: 0x222A2F, dark: 0xE1E6E9)
         case .rosewood: Color(light: 0x33201F, dark: 0xF0DEE1)
         case .amber: Color(light: 0x2E2416, dark: 0xF0E6D4)
         }
@@ -111,7 +111,7 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         switch self {
         case .evergreen, .system: Color(light: 0x5E7568, dark: 0x7E9A8B)
         case .harbor: Color(light: 0x5A6B7C, dark: 0x8296AA)
-        case .graphite: Color(light: 0x6A6E74, dark: 0x8C9198)
+        case .basalt: Color(light: 0x5E6A71, dark: 0x8B979E)
         case .rosewood: Color(light: 0x7A5E62, dark: 0xA88990)
         case .amber: Color(light: 0x7C6A50, dark: 0xA89478)
         }
@@ -122,7 +122,7 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         case .system: .white
         case .evergreen: Color(light: 0xF3F0E8, dark: 0x0E1F18)
         case .harbor: Color(light: 0xF2F5F8, dark: 0x0D1B28)
-        case .graphite: Color(light: 0xF4F4F5, dark: 0x16181B)
+        case .basalt: Color(light: 0xF3F5F6, dark: 0x12171A)
         case .rosewood: Color(light: 0xFAF2F2, dark: 0x22100F)
         case .amber: Color(light: 0xFCF7EE, dark: 0x22180A)
         }
@@ -174,7 +174,7 @@ enum AppIconChoice: String, CaseIterable, Identifiable {
     }
 
     /// Switches the Home Screen icon (iPhone, iPad) or the Dock icon (Mac,
-    /// while Ownhold runs; Finder keeps the standard icon).
+    /// while Arkenal runs; Finder keeps the standard icon).
     @MainActor func apply() {
         #if os(iOS)
         guard UIApplication.shared.supportsAlternateIcons,

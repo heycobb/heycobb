@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import UniformTypeIdentifiers
 import SwiftUI
 
@@ -35,7 +35,7 @@ struct NewEncryptedFolderView: View {
                     VStack(spacing: Theme.Spacing.m) {
                         ProgressView()
                         Text(progress).foregroundStyle(.secondary)
-                        Text("Keep Ownhold open until this finishes.")
+                        Text("Keep Arkenal open until this finishes.")
                             .font(.footnote)
                             .foregroundStyle(.tertiary)
                     }
@@ -178,7 +178,7 @@ struct RecoveryKeyView: View {
                     Pasteboard.copySecret(recoveryKey)
                     copied = true
                 }
-                ShareLink(item: "Ownhold recovery key for “\(folderName)”: \(recoveryKey)") {
+                ShareLink(item: "Arkenal recovery key for “\(folderName)”: \(recoveryKey)") {
                     Label("Save or Print…", systemImage: "square.and.arrow.up")
                 }
             }
@@ -213,7 +213,7 @@ extension VaultUnlockMode {
 
     /// What it means, for a footer.
     var explanation: String {
-        let away = "Locks when you quit Ownhold or after \(Int(AppModel.vaultLockDelay / 60)) minutes away."
+        let away = "Locks when you quit Arkenal or after \(Int(AppModel.vaultLockDelay / 60)) minutes away."
         switch self {
         case .password:
             return away

@@ -3,22 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Support · Ownhold</title>
-<meta name="description" content="Help with Ownhold: setup, Tailscale, uploading, offline files and fixes for common messages.">
+<title>Support · Arkenal</title>
+<meta name="description" content="Help with Arkenal: setup, Tailscale, uploading, offline files and fixes for common messages.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main>
   <header>
     <svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.4" fill="#1D4B3C"/><path d="M31 80 V25 M31 51 a19 19 0 0 1 38 0 V80" fill="none" stroke="#F3F0E8" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="66" r="8.5" fill="#8FD3B0"/></svg>
-    <div><div class="app">Ownhold</div><div class="muted">Files and photos from your NAS</div></div>
+    <div><div class="app">Arkenal</div><div class="muted">Files and photos from your NAS</div></div>
   </header>
   <nav><a href="support.html" aria-current="page">Support</a><a href="privacy.html">Privacy</a></nav>
 
   <h1>Support</h1>
 
   <div class="summary">
-    <p><strong>Need a hand?</strong> Email <a href="mailto:support@ownhold.app">support@ownhold.app</a>.</p>
+    <p><strong>Need a hand?</strong> Email <a href="mailto:support@arkenal.app">support@arkenal.app</a>.</p>
     <p>It helps to include your device and its software version, your NAS model and DSM version, how you're connecting (home Wi-Fi, Tailscale or the internet), and the exact message you see. Please never send your password.</p>
   </div>
 
@@ -33,16 +33,16 @@
   <p>Want to look around first? Tap <strong>Try the Demo Library</strong> on the welcome screen. It works without a NAS.</p>
 
   <h2>Getting started</h2>
-  <p>Ownhold has a step-by-step guide built in, written for people who've never connected to a NAS from their phone. Open it from the welcome screen, from the Add NAS screen, or from <strong>Settings › Setup Guide</strong>. In short:</p>
+  <p>Arkenal has a step-by-step guide built in, written for people who've never connected to a NAS from their phone. Open it from the welcome screen, from the Add NAS screen, or from <strong>Settings › Setup Guide</strong>. In short:</p>
   <ol>
     <li>Find your NAS's address on your home network, for example 192.168.1.20.</li>
     <li>Check HTTPS is on in DSM: <strong>Control Panel › Login Portal › DSM</strong>.</li>
-    <li>In Ownhold, tap <strong>Add a NAS</strong>, enter the address, your account and password.</li>
+    <li>In Arkenal, tap <strong>Add a NAS</strong>, enter the address, your account and password.</li>
     <li>The first time, you'll be asked to check the NAS's certificate. That's normal; see below.</li>
   </ol>
 
   <h3 id="other-nas">Other NAS</h3>
-  <p>Enter your NAS's name or address and your NAS account. Ownhold checks whether it's a Synology; if not, it connects with file sharing (SMB), which every NAS offers. NAS that announce file sharing on your network also appear in the setup screen.</p>
+  <p>Enter your NAS's name or address and your NAS account. Arkenal checks whether it's a Synology; if not, it connects with file sharing (SMB), which every NAS offers. NAS that announce file sharing on your network also appear in the setup screen.</p>
   <ul>
     <li><strong>SMB</strong> isn't encrypted on most NAS, so use it at home or over a VPN such as Tailscale, which encrypts everything.</li>
     <li><strong>WebDAV</strong> works over HTTPS from anywhere your NAS can be reached. Turn it on in your NAS's settings, then enter its address with the HTTPS port, for example <em>nas.local:5006</em>, or the full address if it has a path.</li>
@@ -50,41 +50,41 @@
   </ul>
 
   <h3>Where is Settings?</h3>
-  <p>On iPhone and iPad, tap the server button at the top of the list of shared folders, then <strong>Settings</strong>. On a Mac, choose <strong>Ownhold › Settings…</strong> (⌘,).</p>
+  <p>On iPhone and iPad, tap the server button at the top of the list of shared folders, then <strong>Settings</strong>. On a Mac, choose <strong>Arkenal › Settings…</strong> (⌘,).</p>
 
   <h2>Using it away from home</h2>
-  <p>Ownhold works with <strong>Tailscale</strong>, a free, private network between your own devices, with nothing opened on your router.</p>
+  <p>Arkenal works with <strong>Tailscale</strong>, a free, private network between your own devices, with nothing opened on your router.</p>
   <ol>
     <li>On the NAS: in DSM, open <strong>Package Center</strong>, install <strong>Tailscale</strong>, open it and sign in.</li>
     <li>On your iPhone, iPad or Mac: install the Tailscale app, sign in with the same account and switch it on.</li>
     <li>In the Tailscale app, find your NAS. Its name looks like <em>nas.tailnet-name.ts.net</em>, or use its address that starts with 100.</li>
-    <li>In Ownhold, open <strong>Settings</strong>, tap your NAS, and enter that name as the <strong>Private network (VPN)</strong> address.</li>
+    <li>In Arkenal, open <strong>Settings</strong>, tap your NAS, and enter that name as the <strong>Private network (VPN)</strong> address.</li>
   </ol>
-  <p>Keep Tailscale switched on when you're out. Ownhold uses your home address when you're home and Tailscale everywhere else, automatically.</p>
+  <p>Keep Tailscale switched on when you're out. Arkenal uses your home address when you're home and Tailscale everywhere else, automatically.</p>
 
   <h3>Other ways to connect</h3>
   <ul>
     <li><strong>Another VPN:</strong> ZeroTier, NetBird, WireGuard (DSM's VPN Server package), Headscale and similar all work while their app is running. Enter the NAS's address on that network as the <strong>Private network (VPN)</strong> address.</li>
     <li><strong>Synology DDNS</strong> (<em>yourname.synology.me</em>): set it up in DSM under <strong>Control Panel › External Access › DDNS</strong>, forward port 5001 on your router, add a free Let's Encrypt certificate (<strong>Control Panel › Security › Certificate</strong>), and enter the name as the <strong>Internet</strong> address. This makes DSM reachable from the internet, so turn on 2-factor sign-in and auto-block.</li>
-    <li><strong>QuickConnect ID:</strong> find it in DSM under <strong>Control Panel › External Access › QuickConnect</strong> and enter it when you add your NAS. Ownhold asks Synology for your NAS's current addresses, then connects directly. It never uses Synology's relay servers, so away from home it works only when your NAS can be reached directly (for example with port forwarding). Otherwise, use a VPN.</li>
+    <li><strong>QuickConnect ID:</strong> find it in DSM under <strong>Control Panel › External Access › QuickConnect</strong> and enter it when you add your NAS. Arkenal asks Synology for your NAS's current addresses, then connects directly. It never uses Synology's relay servers, so away from home it works only when your NAS can be reached directly (for example with port forwarding). Otherwise, use a VPN.</li>
   </ul>
 
   <h2>The “Check Certificate” screen</h2>
-  <p>Most home NAS boxes use their own certificate rather than one from a public authority, so the first time you connect, Ownhold shows its fingerprint and asks you to trust it. If you set up the NAS yourself and you're at home, tap <strong>Trust</strong>. Ownhold remembers the certificate for all of that NAS's addresses.</p>
+  <p>Most home NAS boxes use their own certificate rather than one from a public authority, so the first time you connect, Arkenal shows its fingerprint and asks you to trust it. If you set up the NAS yourself and you're at home, tap <strong>Trust</strong>. Arkenal remembers the certificate for all of that NAS's addresses.</p>
   <p>To double-check, open your NAS's address in Safari on a Mac at home (for example https://192.168.1.20:5001), choose <strong>Show Details › view the certificate</strong>, and compare the <strong>SHA-256</strong> fingerprint.</p>
-  <p>If Ownhold later says the certificate <em>changed</em> and you didn't replace it in DSM, don't continue. Something may be intercepting the connection.</p>
+  <p>If Arkenal later says the certificate <em>changed</em> and you didn't replace it in DSM, don't continue. Something may be intercepting the connection.</p>
 
   <h2>Uploading and organising</h2>
   <ul>
     <li><strong>Upload:</strong> open a folder, tap <strong>+</strong>, then <strong>Upload Photos and Videos</strong> or <strong>Upload Files…</strong>. Photos keep their original format (for example HEIC). On a Mac or iPad you can also drag files or folders onto the list.</li>
-    <li>If a file with the same name is already there, Ownhold asks whether to <strong>Keep Both</strong> (the new one gets a number), <strong>Replace</strong> it, or <strong>Skip</strong> it.</li>
-    <li>Uploads run while Ownhold is open. On iPhone and iPad the screen stays on until they finish. Tap <strong>Details</strong> on the upload bar to see each file, cancel, or retry ones that failed.</li>
+    <li>If a file with the same name is already there, Arkenal asks whether to <strong>Keep Both</strong> (the new one gets a number), <strong>Replace</strong> it, or <strong>Skip</strong> it.</li>
+    <li>Uploads run while Arkenal is open. On iPhone and iPad the screen stays on until they finish. Tap <strong>Details</strong> on the upload bar to see each file, cancel, or retry ones that failed.</li>
     <li><strong>New folder:</strong> tap <strong>+</strong>, then <strong>New Folder</strong>.</li>
     <li><strong>Rename, move or delete:</strong> touch and hold an item (right-click on a Mac). To work on several at once, open the view menu (the lines at the top right) and choose <strong>Select</strong>.</li>
     <li>Deleting removes the item from your NAS. If the <strong>Recycle Bin</strong> is turned on for that shared folder in DSM (<strong>Control Panel › Shared Folder › Edit</strong>), you can restore it from there.</li>
     <li>On a Mac (or an iPad with a keyboard), the menu bar has the same commands: <strong>File › New Folder</strong> (⇧⌘N) and <strong>Upload Files…</strong> (⇧⌘U), <strong>View › Select Items</strong>, then <strong>File › Rename…</strong> or <strong>Delete…</strong> (⌘⌫) for what you've selected.</li>
     <li>Shared folders themselves can only be created, renamed or removed in DSM.</li>
-    <li><strong>Compress and extract:</strong> choose <strong>Compress</strong> in an item's menu (or with several selected) to make a zip next to it. If your NAS doesn't let apps compress, Ownhold zips the items on your device and uploads the zip instead, which takes longer for big folders. <strong>Extract Here</strong> unpacks an archive on the NAS: a single folder lands next to the archive, anything else goes into a new folder named after it. Nothing already there is replaced. Password-protected archives have to be extracted in DSM.</li>
+    <li><strong>Compress and extract:</strong> choose <strong>Compress</strong> in an item's menu (or with several selected) to make a zip next to it. If your NAS doesn't let apps compress, Arkenal zips the items on your device and uploads the zip instead, which takes longer for big folders. <strong>Extract Here</strong> unpacks an archive on the NAS: a single folder lands next to the archive, anything else goes into a new folder named after it. Nothing already there is replaced. Password-protected archives have to be extracted in DSM.</li>
     <li><strong>Favorites:</strong> choose <strong>Add to Favorites</strong> in a folder's menu to pin it to the sidebar.</li>
     <li><strong>Recents:</strong> files you've opened are listed under <strong>Recents</strong> in the sidebar. Tap <strong>Clear</strong> to empty it, or turn off <strong>Settings › Show Recents</strong>.</li>
   </ul>
@@ -106,50 +106,50 @@
   <h2>Photo Backup</h2>
   <ul>
     <li>Open <strong>Photo Backup</strong> in the sidebar, allow access to Photos, and choose a folder on your NAS. Photos and videos are saved there as originals (HEIC stays HEIC), in Year and Month folders, dated when they were taken.</li>
-    <li>Tap <strong>Back Up Now</strong>. Ownhold remembers what it has backed up, and skips files already in the folder with the same name and size, so nothing is uploaded twice.</li>
-    <li><strong>Back Up Automatically</strong> (off unless you turn it on) also backs up when you open Ownhold, and in the background when iOS allows. By default only on Wi-Fi and while charging, and never in Low Power Mode.</li>
+    <li>Tap <strong>Back Up Now</strong>. Arkenal remembers what it has backed up, and skips files already in the folder with the same name and size, so nothing is uploaded twice.</li>
+    <li><strong>Back Up Automatically</strong> (off unless you turn it on) also backs up when you open Arkenal, and in the background when iOS allows. By default only on Wi-Fi and while charging, and never in Low Power Mode.</li>
     <li>Photos kept in iCloud are downloaded first, which uses data.</li>
-    <li>On a Mac, Back Up Automatically runs when new photos arrive in your library, while Ownhold is running.</li>
+    <li>On a Mac, Back Up Automatically runs when new photos arrive in your library, while Arkenal is running.</li>
     <li>Using iCloud Photos on more than one device? Back up from all of them to the same folder: a photo already backed up from your iPhone is skipped on your Mac, and the other way round.</li>
   </ul>
 
   <h2>Files app and Finder</h2>
   <ul>
-    <li>Turn on <strong>Settings › Show NAS in Files App</strong> (<strong>Show NAS in Finder</strong> on a Mac). Your NAS then appears under <strong>Browse › Locations</strong> in the Files app, and in Finder's sidebar on a Mac. The first time, the Files app may ask you to turn Ownhold on.</li>
-    <li>Files download only when you open them. New folders, uploads, renames, moves and deletes made there go straight to your NAS, and changes you make in Ownhold show up there within a few seconds.</li>
-    <li>While Ownhold is open, it checks every few minutes for changes made elsewhere (on another device or in DSM) in folders you opened recently there, so they show up without reopening the folder. To turn this off, turn off <strong>Settings › Keep Finder Up to Date</strong> (<strong>Keep Files App Up to Date</strong> on iPhone and iPad). It's skipped in Low Power Mode.</li>
-    <li>On a Mac, right-click a folder or file in Finder and choose <strong>Keep Downloaded</strong> to keep it on your Mac, so it opens instantly and works offline. New files on the NAS in that folder download automatically while Ownhold is open. Choose <strong>Stop Keeping Downloaded</strong> to undo it; Finder's <strong>Remove Download</strong> then frees the space.</li>
+    <li>Turn on <strong>Settings › Show NAS in Files App</strong> (<strong>Show NAS in Finder</strong> on a Mac). Your NAS then appears under <strong>Browse › Locations</strong> in the Files app, and in Finder's sidebar on a Mac. The first time, the Files app may ask you to turn Arkenal on.</li>
+    <li>Files download only when you open them. New folders, uploads, renames, moves and deletes made there go straight to your NAS, and changes you make in Arkenal show up there within a few seconds.</li>
+    <li>While Arkenal is open, it checks every few minutes for changes made elsewhere (on another device or in DSM) in folders you opened recently there, so they show up without reopening the folder. To turn this off, turn off <strong>Settings › Keep Finder Up to Date</strong> (<strong>Keep Files App Up to Date</strong> on iPhone and iPad). It's skipped in Low Power Mode.</li>
+    <li>On a Mac, right-click a folder or file in Finder and choose <strong>Keep Downloaded</strong> to keep it on your Mac, so it opens instantly and works offline. New files on the NAS in that folder download automatically while Arkenal is open. Choose <strong>Stop Keeping Downloaded</strong> to undo it; Finder's <strong>Remove Download</strong> then frees the space.</li>
     <li>It's off while the app lock is on, because the Files app and Finder can't ask for Face ID or Touch ID.</li>
-    <li>Turning it off removes the location and deletes the copies the system kept. On iPhone and iPad, an empty Ownhold entry stays in Files; tap <strong>⋯ › Edit</strong> in Files to hide it.</li>
+    <li>Turning it off removes the location and deletes the copies the system kept. On iPhone and iPad, an empty Arkenal entry stays in Files; tap <strong>⋯ › Edit</strong> in Files to hide it.</li>
   </ul>
 
   <h2>Folder Backup (Mac)</h2>
   <ul>
     <li>Open <strong>Folder Backup</strong> in the sidebar, add the Mac folders you want to keep safe (for example Documents or Desktop), and choose a folder on your NAS. Each Mac folder is copied into a folder of the same name there, with everything inside it.</li>
-    <li>Choose <strong>Back Up Now</strong>, or turn on <strong>Back Up When Files Change</strong> to copy new and changed files about a minute after they change, while Ownhold is running (the menu bar keeps it running with the window closed). It never runs in Low Power Mode.</li>
+    <li>Choose <strong>Back Up Now</strong>, or turn on <strong>Back Up When Files Change</strong> to copy new and changed files about a minute after they change, while Arkenal is running (the menu bar keeps it running with the window closed). It never runs in Low Power Mode.</li>
     <li>Files are only added or updated on your NAS, never deleted: deleting a file on your Mac leaves its backup on the NAS. Hidden files and temporary files are skipped.</li>
   </ul>
 
   <h2>Encrypted folders</h2>
   <ul>
-    <li>In any folder, tap <strong>+</strong> and choose <strong>New Encrypted Folder</strong> (Ownhold Pro). Choose a name and a password. Files you put in it are encrypted on your device before they're uploaded, so your NAS only ever stores scrambled data.</li>
+    <li>In any folder, tap <strong>+</strong> and choose <strong>New Encrypted Folder</strong> (Arkenal Pro). Choose a name and a password. Files you put in it are encrypted on your device before they're uploaded, so your NAS only ever stores scrambled data.</li>
     <li>You'll see a <strong>recovery key</strong> once. Keep it somewhere safe, such as your password manager. If you forget the password, it's the only way back in: no one else can open the files, including us.</li>
-    <li>To open an encrypted folder on another device, open it in Ownhold and enter the password. Under <strong>Next Time</strong>, choose how it opens on that device from then on:
+    <li>To open an encrypted folder on another device, open it in Arkenal and enter the password. Under <strong>Next Time</strong>, choose how it opens on that device from then on:
       <ul>
         <li><strong>Ask for Password</strong>: the password each time.</li>
         <li><strong>Use Face ID</strong> (or Touch ID): Face ID, with your device passcode if Face ID doesn't work. If a face or fingerprint is added on the device later, the password is needed once.</li>
         <li><strong>Keep Unlocked</strong>: no prompt. Only this option shows the folder in the Files app or Finder.</li>
       </ul>
     </li>
-    <li>Tap the open lock at the top to lock the folder, or touch and hold it to change <strong>Next Time</strong>. Folders that aren't kept unlocked lock when Ownhold quits or after 3 minutes away.</li>
-    <li>To encrypt files you already have, select them (or touch and hold one), then choose <strong>Encrypt into New Folder</strong> (under <strong>More</strong> when selecting). Ownhold makes the encrypted folder and moves them into it.</li>
+    <li>Tap the open lock at the top to lock the folder, or touch and hold it to change <strong>Next Time</strong>. Folders that aren't kept unlocked lock when Arkenal quits or after 3 minutes away.</li>
+    <li>To encrypt files you already have, select them (or touch and hold one), then choose <strong>Encrypt into New Folder</strong> (under <strong>More</strong> when selecting). Arkenal makes the encrypted folder and moves them into it.</li>
     <li>Moving files in or out of an encrypted folder encrypts or decrypts them. The original is deleted only once the copy is complete.</li>
-    <li>Your NAS can't read the files, so share links, extracting archives on the NAS and opening the files in other NAS apps (such as Synology Photos) don't work in an encrypted folder. Thumbnails and search work in Ownhold.</li>
+    <li>Your NAS can't read the files, so share links, extracting archives on the NAS and opening the files in other NAS apps (such as Synology Photos) don't work in an encrypted folder. Thumbnails and search work in Arkenal.</li>
     <li>Forgot the password? Open the folder, choose <strong>Forgot Password?</strong>, enter the recovery key and set a new password.</li>
   </ul>
 
-  <h2>Ownhold Pro</h2>
-  <p>Ownhold is free to download. <strong>Ownhold Pro</strong> is a one-time purchase of $9.99 (or the equivalent where you live) that unlocks it on iPhone, iPad and Mac, and is shared with your family through Family Sharing. There's no subscription, and nothing you can already do is taken away.</p>
+  <h2>Arkenal Pro</h2>
+  <p>Arkenal is free to download. <strong>Arkenal Pro</strong> is a one-time purchase of $9.99 (or the equivalent where you live) that unlocks it on iPhone, iPad and Mac, and is shared with your family through Family Sharing. There's no subscription, and nothing you can already do is taken away.</p>
 
   <h3>Free</h3>
   <ul>
@@ -159,7 +159,7 @@
     <li>Files kept offline, Favorites and Recents.</li>
     <li>Your NAS in the Files app and Finder.</li>
     <li>Photo Backup with <strong>Back Up Now</strong>.</li>
-    <li>Save to Ownhold from other apps' share sheets.</li>
+    <li>Save to Arkenal from other apps' share sheets.</li>
     <li>The app lock and every privacy and security setting.</li>
   </ul>
 
@@ -171,12 +171,12 @@
     <li><strong>Keep Downloaded</strong> and <strong>Keep Finder Up to Date</strong> (<strong>Keep Files App Up to Date</strong> on iPhone and iPad).</li>
     <li><strong>Shortcuts and Siri</strong> actions.</li>
     <li><strong>Scan to NAS</strong> on iPhone and iPad.</li>
-    <li>Large uploads that finish after you leave Ownhold (iPhone and iPad, Synology).</li>
+    <li>Large uploads that finish after you leave Arkenal (iPhone and iPad, Synology).</li>
     <li>More than one NAS.</li>
     <li><strong>Wake NAS</strong> and <strong>Recently Deleted</strong>.</li>
     <li><strong>Encrypted folders</strong>. Opening, unlocking and moving files out of an encrypted folder always work without Pro, so you can always get to your files.</li>
   </ul>
-  <p>To buy Pro, open <strong>Settings › Ownhold Pro</strong>, or tap any item with a lock. Bought it on another device, or reinstalled? Choose <strong>Restore Purchases</strong> there.</p>
+  <p>To buy Pro, open <strong>Settings › Arkenal Pro</strong>, or tap any item with a lock. Bought it on another device, or reinstalled? Choose <strong>Restore Purchases</strong> there.</p>
 
   <h2>Photos</h2>
   <ul>
@@ -194,8 +194,8 @@
 
   <h2>Wake NAS</h2>
   <ul>
-    <li>If your NAS is asleep, choose <strong>Wake NAS</strong> under <strong>Can't Reach NAS</strong>, in the NAS menu, or in the Mac menu bar. Ownhold wakes it and connects as soon as it answers.</li>
-    <li>It needs the NAS's MAC address. Ownhold reads it from DSM when you sign in with an administrator account at home; otherwise enter it in <strong>Settings › Edit NAS › Wake NAS</strong> (DSM: <strong>Control Panel › Network › Network Interface</strong>).</li>
+    <li>If your NAS is asleep, choose <strong>Wake NAS</strong> under <strong>Can't Reach NAS</strong>, in the NAS menu, or in the Mac menu bar. Arkenal wakes it and connects as soon as it answers.</li>
+    <li>It needs the NAS's MAC address. Arkenal reads it from DSM when you sign in with an administrator account at home; otherwise enter it in <strong>Settings › Edit NAS › Wake NAS</strong> (DSM: <strong>Control Panel › Network › Network Interface</strong>).</li>
     <li>Turn on Wake on LAN in DSM (<strong>Control Panel › Hardware &amp; Power</strong>). It works only on your home network.</li>
   </ul>
 
@@ -212,26 +212,26 @@
 
   <h2>Shortcuts and Siri</h2>
   <ul>
-    <li>In the Shortcuts app, Ownhold adds <strong>Upload Files to NAS</strong>, <strong>Get Share Link</strong>, <strong>Open in Ownhold</strong>, <strong>Wake NAS</strong> and <strong>Back Up Photos Now</strong> (<strong>Back Up Folders Now</strong> on a Mac).</li>
+    <li>In the Shortcuts app, Arkenal adds <strong>Upload Files to NAS</strong>, <strong>Get Share Link</strong>, <strong>Open in Arkenal</strong>, <strong>Wake NAS</strong> and <strong>Back Up Photos Now</strong> (<strong>Back Up Folders Now</strong> on a Mac).</li>
     <li>Folders and files to choose from are your shared folders, Favorites and Recents. Add a folder to Favorites to use it in a shortcut.</li>
-    <li>Ask Siri to "Wake my NAS with Ownhold" or "Back up now with Ownhold".</li>
+    <li>Ask Siri to "Wake my NAS with Arkenal" or "Back up now with Arkenal".</li>
     <li>On iPhone and iPad, <strong>Scan to NAS</strong> opens the folder you choose and starts the document scanner.</li>
   </ul>
 
-  <h2>Save to Ownhold</h2>
+  <h2>Save to Arkenal</h2>
   <ul>
-    <li>In Photos, Files, Safari downloads, Mail attachments and other apps, tap the share button and choose <strong>Ownhold</strong> (on a Mac, <strong>Share › Ownhold</strong>). Pick a shared folder and tap <strong>Save Here</strong>.</li>
-    <li>It uses the NAS you're signed in to in Ownhold. If your session has expired, open Ownhold and sign in first.</li>
+    <li>In Photos, Files, Safari downloads, Mail attachments and other apps, tap the share button and choose <strong>Arkenal</strong> (on a Mac, <strong>Share › Arkenal</strong>). Pick a shared folder and tap <strong>Save Here</strong>.</li>
+    <li>It uses the NAS you're signed in to in Arkenal. If your session has expired, open Arkenal and sign in first.</li>
     <li>If a file with the same name is already there, the new one gets a number. Nothing is overwritten.</li>
-    <li>With the app lock on, Ownhold asks for Face ID or Touch ID first.</li>
-    <li>Don't see Ownhold in the share sheet? Tap <strong>More</strong> at the end of the app row and turn it on.</li>
+    <li>With the app lock on, Arkenal asks for Face ID or Touch ID first.</li>
+    <li>Don't see Arkenal in the share sheet? Tap <strong>More</strong> at the end of the app row and turn it on.</li>
   </ul>
 
   <h2>Sharing and playing</h2>
   <ul>
-    <li><strong>Share several files:</strong> choose <strong>Select</strong>, pick the files, then tap <strong>Share</strong>. Ownhold downloads them, then opens the share sheet so you can send them by Mail or Messages, save them to Files or Photos, and so on. A folder is sent as a zip file. Tap <strong>Cancel</strong> on the bar to stop.</li>
+    <li><strong>Share several files:</strong> choose <strong>Select</strong>, pick the files, then tap <strong>Share</strong>. Arkenal downloads them, then opens the share sheet so you can send them by Mail or Messages, save them to Files or Photos, and so on. A folder is sent as a zip file. Tap <strong>Cancel</strong> on the bar to stop.</li>
     <li><strong>Videos and music</strong> (MP4, MOV, M4V, MP3, M4A, AAC, WAV, AIFF and FLAC) play straight from your NAS without downloading the whole file first. You can skip ahead, change the speed and use AirPlay.</li>
-    <li>Other video formats, such as MKV and AVI, can't be played by Apple's player. Ownhold downloads them so you can open them in another app.</li>
+    <li>Other video formats, such as MKV and AVI, can't be played by Apple's player. Arkenal downloads them so you can open them in another app.</li>
     <li>Streaming uses the same encrypted, certificate-checked connection as the rest of the app, and nothing is saved on your device.</li>
   </ul>
 
@@ -239,25 +239,25 @@
   <ul>
     <li>On iPhone and iPad, swipe left on a file or folder and tap <strong>Offline</strong>. Or touch and hold it (right-click on a Mac) and choose <strong>Keep Offline</strong>.</li>
     <li>Everything you've saved is under <strong>Offline</strong> in the sidebar, and works with no connection at all.</li>
-    <li>When Ownhold connects to your NAS, it updates saved files that changed there. It doesn't sync in the background.</li>
+    <li>When Arkenal connects to your NAS, it updates saved files that changed there. It doesn't sync in the background.</li>
     <li>Saved files are encrypted while your iPhone or iPad is locked, and aren't included in backups.</li>
   </ul>
 
   <h2>Appearance</h2>
   <p>In <strong>Settings › Appearance</strong> you can choose:</p>
   <ul>
-    <li><strong>System, Light or Dark</strong>, for Ownhold only.</li>
+    <li><strong>System, Light or Dark</strong>, for Arkenal only.</li>
     <li><strong>Accent Color:</strong> Evergreen, Forest, Harbor Blue, Midnight, Graphite, Onyx, Rosewood or Espresso, or System to match your Mac's accent color.</li>
     <li><strong>Sidebar:</strong> Tinted with the accent color, or Plain.</li>
-    <li><strong>App Icon:</strong> Evergreen, Paper, Graphite or Harbor Blue. On iPhone and iPad this changes the Home Screen icon. On a Mac it changes the Dock icon while Ownhold is open.</li>
+    <li><strong>App Icon:</strong> Evergreen, Paper, Graphite or Harbor Blue. On iPhone and iPad this changes the Home Screen icon. On a Mac it changes the Dock icon while Arkenal is open.</li>
   </ul>
 
   <h2>Locking the app</h2>
   <p>In <strong>Settings</strong>, turn on <strong>Lock with Face ID or Passcode</strong> (<strong>Lock with Touch ID or Password</strong> on a Mac). On iPhone and iPad, <strong>Hide Files in App Switcher</strong> covers your files when you switch apps.</p>
 
   <h3>The menu bar (Mac)</h3>
-  <p>Ownhold adds its monogram to the Mac menu bar. From there you can see how you're connected, follow or cancel uploads, upload files to a shared folder, open a shared folder, open recently saved offline files, and switch NAS. When the app is locked, the menu shows no file or folder names. To hide it, turn off <strong>Settings › Show Ownhold in Menu Bar</strong>. While it's showing, closing the window leaves Ownhold running, so uploads can finish, and Ownhold leaves the Dock until you open it again. To keep the Dock icon, turn off <strong>Settings › Hide Dock Icon When Closed</strong>.</p>
-  <p>To have Ownhold start when you log in, turn on <strong>Settings › Open at Login</strong>. With the menu bar item on, it starts quietly in the menu bar, without opening a window.</p>
+  <p>Arkenal adds its monogram to the Mac menu bar. From there you can see how you're connected, follow or cancel uploads, upload files to a shared folder, open a shared folder, open recently saved offline files, and switch NAS. When the app is locked, the menu shows no file or folder names. To hide it, turn off <strong>Settings › Show Arkenal in Menu Bar</strong>. While it's showing, closing the window leaves Arkenal running, so uploads can finish, and Arkenal leaves the Dock until you open it again. To keep the Dock icon, turn off <strong>Settings › Hide Dock Icon When Closed</strong>.</p>
+  <p>To have Arkenal start when you log in, turn on <strong>Settings › Open at Login</strong>. With the menu bar item on, it starts quietly in the menu bar, without opening a window.</p>
 
   <h2>Managing your NAS</h2>
   <ul>
@@ -276,13 +276,13 @@
       <li>At home: check this device is on your home Wi-Fi, and that the address in Settings is right.</li>
       <li>Away: make sure Tailscale (or your other VPN) is switched on and shows your NAS as connected.</li>
       <li>Using QuickConnect away from home? It only finds direct routes to your NAS. If your router doesn't forward a port to it, add a VPN address instead.</li>
-      <li>On iPhone and iPad, check <strong>Settings › Privacy & Security › Local Network</strong> allows Ownhold.</li>
+      <li>On iPhone and iPad, check <strong>Settings › Privacy & Security › Local Network</strong> allows Arkenal.</li>
       <li>Your saved offline files keep working in the meantime.</li>
     </ul>
   </details>
   <details>
-    <summary>Ownhold only connects over HTTPS</summary>
-    <p>Ownhold never uses plain HTTP, so your password is always encrypted. Remove “http://” from the address, turn on HTTPS in DSM (<strong>Control Panel › Login Portal</strong>), and use port 5001.</p>
+    <summary>Arkenal only connects over HTTPS</summary>
+    <p>Arkenal never uses plain HTTP, so your password is always encrypted. Remove “http://” from the address, turn on HTTPS in DSM (<strong>Control Panel › Login Portal</strong>), and use port 5001.</p>
   </details>
   <details>
     <summary>Incorrect account name or password</summary>
@@ -300,7 +300,7 @@
   </details>
   <details>
     <summary>Account disabled, or password expired</summary>
-    <p>Sign in to DSM in a browser as an administrator: <strong>Control Panel › User & Group</strong> lets you re-enable an account. If your password expired, change it in DSM, then sign in to Ownhold again.</p>
+    <p>Sign in to DSM in a browser as an administrator: <strong>Control Panel › User & Group</strong> lets you re-enable an account. If your password expired, change it in DSM, then sign in to Arkenal again.</p>
   </details>
   <details>
     <summary>You don't have permission to open this</summary>
@@ -316,7 +316,7 @@
   </details>
   <details>
     <summary>An item with that name already exists there</summary>
-    <p>Choose a different name, or move or rename the existing item first. When uploading, Ownhold offers Keep Both or Replace instead.</p>
+    <p>Choose a different name, or move or rename the existing item first. When uploading, Arkenal offers Keep Both or Replace instead.</p>
   </details>
   <details>
     <summary>The NAS is out of space</summary>
@@ -328,20 +328,20 @@
   </details>
   <details>
     <summary>This NAS can't stream that file</summary>
-    <p>Your NAS didn't accept a request for part of the file, which streaming needs. Ownhold downloads the whole file instead. If this happens with every video, check that DSM is up to date.</p>
+    <p>Your NAS didn't accept a request for part of the file, which streaming needs. Arkenal downloads the whole file instead. If this happens with every video, check that DSM is up to date.</p>
   </details>
   <details>
     <summary>That QuickConnect ID wasn't found</summary>
-    <p>Check the ID in DSM under <strong>Control Panel › External Access › QuickConnect</strong>, and that QuickConnect is turned on there. IDs use only letters, numbers and hyphens. If the lookup service is briefly unavailable, Ownhold uses your saved addresses instead.</p>
+    <p>Check the ID in DSM under <strong>Control Panel › External Access › QuickConnect</strong>, and that QuickConnect is turned on there. IDs use only letters, numbers and hyphens. If the lookup service is briefly unavailable, Arkenal uses your saved addresses instead.</p>
   </details>
   <details>
     <summary>Something else</summary>
-    <p>Email <a href="mailto:support@ownhold.app">support@ownhold.app</a> with the exact message and what you were doing. Ownhold doesn't collect logs or analytics, so your description is what helps.</p>
+    <p>Email <a href="mailto:support@arkenal.app">support@arkenal.app</a> with the exact message and what you were doing. Arkenal doesn't collect logs or analytics, so your description is what helps.</p>
   </details>
 
   <footer class="muted">
-    <p><a href="privacy.html">Privacy Policy</a> · <a href="mailto:support@ownhold.app">support@ownhold.app</a></p>
-    <p>Ownhold is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.</p>
+    <p><a href="privacy.html">Privacy Policy</a> · <a href="mailto:support@arkenal.app">support@arkenal.app</a></p>
+    <p>Arkenal is an independent app and isn't affiliated with or endorsed by Synology Inc. or Tailscale Inc.</p>
   </footer>
 </main>
 </body>

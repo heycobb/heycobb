@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import Photos
 import SwiftUI
 
@@ -49,7 +49,7 @@ struct BackupView: View {
             .disabled(backup.isRunning)
 
             Section {
-                // Automatic backup is part of Ownhold Pro; Back Up Now is free.
+                // Automatic backup is part of Arkenal Pro; Back Up Now is free.
                 Toggle(isOn: Binding(
                     get: { backup.settings.automatic && ProStore.shared.isUnlocked },
                     set: { on in
@@ -70,9 +70,9 @@ struct BackupView: View {
             } footer: {
                 if backup.settings.automatic {
                     #if os(iOS)
-                    Text("Runs when you open Ownhold and in the background, except in Low Power Mode.")
+                    Text("Runs when you open Arkenal and in the background, except in Low Power Mode.")
                     #else
-                    Text("Runs while Ownhold is open, as new photos arrive, except in Low Power Mode.")
+                    Text("Runs while Arkenal is open, as new photos arrive, except in Low Power Mode.")
                     #endif
                 }
             }

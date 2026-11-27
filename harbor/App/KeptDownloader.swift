@@ -2,20 +2,20 @@
 import FileProvider
 import Foundation
 import os
-import OwnholdKit
+import ArkenalKit
 
-/// Makes Finder's Keep Downloaded download right away while Ownhold runs.
+/// Makes Finder's Keep Downloaded download right away while Arkenal runs.
 ///
 /// Kept items get macOS's keep-downloaded policy, but macOS downloads them
 /// through a background scheduler that can wait a long time. Opening a
 /// file downloads it at once, so this opens each kept file that's still a
 /// placeholder: when the Finder extension says something was kept, and on
-/// each Keep Finder Up to Date check. Without Ownhold running, macOS's own
+/// each Keep Finder Up to Date check. Without Arkenal running, macOS's own
 /// scheduler still downloads them eventually.
 enum KeptDownloader {
     /// Posted by the Finder extension after Keep Downloaded.
-    static let keptNotification = "app.ownhold.keptDownloadsChanged"
-    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "kept-downloads")
+    static let keptNotification = "com.snowlightlabs.arkenal.keptDownloadsChanged"
+    private static let log = Logger(subsystem: "com.snowlightlabs.Arkenal", category: "kept-downloads")
     private static let limit = 2000
 
     /// Listens for the extension's notification for as long as the app runs.

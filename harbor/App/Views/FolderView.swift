@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import PhotosUI
 import QuickLook
 import SwiftUI
@@ -65,8 +65,8 @@ struct FolderView: View {
 
     private let pageSize = 300
 
-    /// Ownhold's own housekeeping files (Photo Backup's list) stay out of sight.
-    private var shown: [RemoteItem] { (searchResults ?? items).filter { $0.name != BackupManifest.fileName } }
+    /// Arkenal's own housekeeping files (Photo Backup's list) stay out of sight.
+    private var shown: [RemoteItem] { (searchResults ?? items).filter { !BackupManifest.isManifest($0.name) } }
 
     var body: some View {
         content

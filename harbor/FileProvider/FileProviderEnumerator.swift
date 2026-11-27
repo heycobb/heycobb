@@ -1,11 +1,11 @@
 import FileProvider
-import OwnholdKit
+import ArkenalKit
 
 /// Lists a NAS folder for the Files app.
 ///
 /// File Station has no change feed: when asked for changes, a folder is
 /// listed again and compared with its last listing.
-/// The working set reports changes made in the Ownhold app itself (recorded
+/// The working set reports changes made in the Arkenal app itself (recorded
 /// in `SharedChanges`), and, when the app asks every few minutes while it's
 /// open, changes made elsewhere in folders opened recently in Finder and in
 /// folders kept downloaded.
@@ -30,7 +30,7 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
         let offset = Self.offset(from: page)
         Task {
             do {
-                // The working set is everything the system tracks; Ownhold
+                // The working set is everything the system tracks; Arkenal
                 // reports folders as they're browsed instead.
                 guard container != .workingSet else {
                     box.observer.finishEnumerating(upTo: nil)
@@ -52,7 +52,7 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
     }
 
     /// Lists a folder. An encrypted folder that isn't set to stay unlocked
-    /// on this device shows as empty here: it's opened in Ownhold.
+    /// on this device shows as empty here: it's opened in Arkenal.
     static func list(_ service: any FileService, folder: String, offset: Int, limit: Int) async throws -> FolderPage {
         do {
             return try await service.list(folder: folder, offset: offset, limit: limit, sort: .name, ascending: true)
@@ -202,7 +202,7 @@ actor SnapshotStore {
         lastCheck = .distantPast
     }
 
-    /// The folders to check for changes made outside Ownhold: those opened
+    /// The folders to check for changes made outside Arkenal: those opened
     /// recently, and kept ones. Nothing if the last check was under a minute ago.
     func foldersToCheck(kept: [String]) -> (folders: [String], walkKept: Bool) {
         guard Date.now.timeIntervalSince(lastCheck) >= Self.checkInterval else { return ([], false) }

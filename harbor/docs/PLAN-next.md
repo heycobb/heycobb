@@ -98,7 +98,7 @@ Goal: QNAP, UniFi (UNAS), UGREEN, TrueNAS and others, without a separate app.
 
 ## Pricing (decided 2026-11-26)
 
-Free download, plus **Ownhold Pro: one-time $9.99**, a single universal
+Free download, plus **Arkenal Pro: one-time $9.99**, a single universal
 purchase covering iPhone, iPad and Mac, with Family Sharing on. No
 subscription. No free trial of Pro for now.
 
@@ -112,10 +112,10 @@ subscription. No free trial of Pro for now.
   background uploads, more than one NAS, Wake NAS, Recently Deleted, encrypted
   folders (creating; opening stays free); later NAS
   status and other NAS brands.
-- **Build:** StoreKit 2 non-consumable (`app.ownhold.pro`), `Entitlement`
+- **Build:** StoreKit 2 non-consumable (`com.snowlightlabs.arkenal.pro`), `Entitlement`
   check in Kit (transaction listener, `Transaction.currentEntitlements`),
   universal purchase across platforms (same bundle ID family), Family Sharing
-  enabled in App Store Connect. Settings: one **Ownhold Pro** row (buy,
+  enabled in App Store Connect. Settings: one **Arkenal Pro** row (buy,
   restore) and a small lock on Pro switches; no pop-ups or nagging. Restore
   Purchases always available. Test with a StoreKit configuration file.
 - Update `site/support.html` (what's free vs Pro) and the App Store text.
@@ -135,7 +135,7 @@ subscription. No free trial of Pro for now.
 - Photo Backup on the Mac: done (2026-11-26). Same screen as iPhone; with
   Back Up Automatically on, runs when new photos arrive. iPhone and Mac on
   one iCloud library skip each other's photos via iCloud identifiers in
-  `.ownhold-backup.json` in the backup folder, and by name + taken date.
+  `.arkenal-backup.json` in the backup folder (`.ownhold-backup.json` before the rename, still read), and by name + taken date.
   Untested with a real iCloud library and on a real Mac library (needs
   Photos access).
 - Other NAS brands, step 1-2 done (2026-11-26): SMB (SMBClient, MIT) and

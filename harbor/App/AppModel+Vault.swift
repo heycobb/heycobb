@@ -1,8 +1,8 @@
 import Foundation
-import OwnholdKit
+import ArkenalKit
 
 /// Encrypted folders: files encrypted on this device before they reach the
-/// NAS. The work happens in OwnholdKit's VaultFileService, which wraps the
+/// NAS. The work happens in ArkenalKit's VaultFileService, which wraps the
 /// NAS connection; this is what the screens call.
 extension AppModel {
     var vaultService: VaultFileService? { service as? VaultFileService }
@@ -122,11 +122,11 @@ extension AppModel {
         folderChanged(root)
     }
 
-    /// How long Ownhold can be in the background before folders that aren't
+    /// How long Arkenal can be in the background before folders that aren't
     /// kept unlocked lock again.
     nonisolated static let vaultLockDelay: TimeInterval = 180
 
-    /// Called when Ownhold comes back: locks folders after time away.
+    /// Called when Arkenal comes back: locks folders after time away.
     func lockEncryptedFoldersIfAway(since date: Date?) {
         guard let date, Date().timeIntervalSince(date) >= Self.vaultLockDelay else { return }
         lockEncryptedFolders()

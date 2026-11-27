@@ -3,19 +3,19 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>Ownhold</string>
-	<key>OwnholdAppGroup</key>
-	<string>$(OWNHOLD_APP_GROUP)</string>
-	<key>OwnholdKeychainGroup</key>
-	<string>$(AppIdentifierPrefix)app.ownhold.shared</string>
-	<!-- The Finder sidebar icon for the NAS location: the Ownhold mark as a
+	<string>Arkenal</string>
+	<key>ArkenalAppGroup</key>
+	<string>$(ARKENAL_APP_GROUP)</string>
+	<key>ArkenalKeychainGroup</key>
+	<string>$(AppIdentifierPrefix)com.snowlightlabs.arkenal</string>
+	<!-- The Finder sidebar icon for the NAS location: the Arkenal mark as a
 	     custom symbol (FileProvider/Assets.xcassets). -->
 	<key>CFBundleIcons</key>
 	<dict>
 		<key>CFBundlePrimaryIcon</key>
 		<dict>
 			<key>CFBundleSymbolName</key>
-			<string>OwnholdMark</string>
+			<string>ArkenalMark</string>
 		</dict>
 	</dict>
 	<key>NSExtension</key>
@@ -33,7 +33,7 @@
 		<array>
 			<dict>
 				<key>NSExtensionFileProviderActionIdentifier</key>
-				<string>app.ownhold.keepDownloaded</string>
+				<string>com.snowlightlabs.arkenal.keepDownloaded</string>
 				<key>NSExtensionFileProviderActionName</key>
 				<string>Keep Downloaded</string>
 				<key>NSExtensionFileProviderActionActivationRule</key>
@@ -41,7 +41,7 @@
 			</dict>
 			<dict>
 				<key>NSExtensionFileProviderActionIdentifier</key>
-				<string>app.ownhold.stopKeepingDownloaded</string>
+				<string>com.snowlightlabs.arkenal.stopKeepingDownloaded</string>
 				<key>NSExtensionFileProviderActionName</key>
 				<string>Stop Keeping Downloaded</string>
 				<key>NSExtensionFileProviderActionActivationRule</key>

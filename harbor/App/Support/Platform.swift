@@ -11,9 +11,9 @@ enum Platform {
     /// Shown in DSM under Personal > Security > Trusted devices.
     @MainActor static var deviceName: String {
         #if canImport(UIKit)
-        "Ownhold on \(UIDevice.current.model)"
+        "Arkenal on \(UIDevice.current.model)"
         #else
-        "Ownhold on Mac"
+        "Arkenal on Mac"
         #endif
     }
 

@@ -1,8 +1,8 @@
 import Foundation
 import OSLog
-import OwnholdKit
+import ArkenalKit
 
-private let libraryLog = Logger(subsystem: "app.ownhold.Ownhold", category: "changes")
+private let libraryLog = Logger(subsystem: "com.snowlightlabs.Arkenal", category: "changes")
 
 /// Favorites, recent files, archives and share links.
 extension AppModel {

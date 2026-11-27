@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 /// Rename a saved NAS or change its addresses, for example to add a
@@ -36,7 +36,7 @@ struct ServerEditView: View {
                     VStack(alignment: .leading, spacing: Theme.Spacing.s) {
                         if server.kind == .synology { AddressHints(endpoints: endpoints) }
                         if hasPlainHTTP {
-                            Text(server.kind == .synology ? "Ownhold only connects over HTTPS. Remove “http://” and use port 5001." : "Ownhold only connects over HTTPS. Remove “http://”.")
+                            Text(server.kind == .synology ? "Arkenal only connects over HTTPS. Remove “http://” and use port 5001." : "Arkenal only connects over HTTPS. Remove “http://”.")
                                 .foregroundStyle(.red)
                         }
                         Button("How do I find my VPN address?") { showingGuide = true }
@@ -149,7 +149,7 @@ struct AddressHints: View {
 
     var body: some View {
         if endpoints.contains(where: \.usesDSMHTTPPort) {
-            Label("Port 5000 is DSM's plain-HTTP port. Ownhold uses HTTPS, which is usually port 5001.", systemImage: "exclamationmark.triangle")
+            Label("Port 5000 is DSM's plain-HTTP port. Arkenal uses HTTPS, which is usually port 5001.", systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
         }
         if endpoints.contains(where: \.isSynologyDDNS) {

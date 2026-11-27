@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 #if os(iOS)
 import UIKit
@@ -196,7 +196,7 @@ struct OnboardingView: View {
                 .frame(width: 96, height: 96)
                 .accessibilityHidden(true)
             VStack(spacing: Theme.Spacing.s) {
-                Text("Ownhold")
+                Text("Arkenal")
                     .font(Onboard.hero)
                 Text("Open and save the files on your NAS.")
                     .font(Onboard.detail)
@@ -271,7 +271,7 @@ struct OnboardingView: View {
                             serverKind = discovery.kind(forAddress: new)
                         }
                     if address.lowercased().hasPrefix("http://") {
-                        Text("Ownhold only connects over HTTPS. Remove “http://”.")
+                        Text("Arkenal only connects over HTTPS. Remove “http://”.")
                             .font(Onboard.note)
                             .foregroundStyle(.red)
                     }
@@ -311,7 +311,7 @@ struct OnboardingView: View {
 
     private var away: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.l) {
-            title("Use it away from home", detail: "Optional. With Tailscale on your NAS and this \(Self.deviceName), Ownhold reaches your NAS from anywhere, without opening your router.")
+            title("Use it away from home", detail: "Optional. With Tailscale on your NAS and this \(Self.deviceName), Arkenal reaches your NAS from anywhere, without opening your router.")
             field("Tailscale or VPN address", text: $vpnAddress, prompt: "nas.tailnet.ts.net", focus: .vpn, monospaced: true)
             Link(destination: URL(string: "https://tailscale.com/download")!) {
                 Label("Get Tailscale", systemImage: "arrow.up.forward.square")

@@ -1,18 +1,18 @@
 #if os(iOS)
 import Foundation
 import os
-import OwnholdKit
+import ArkenalKit
 import UIKit
 
-/// Uploads that keep going after you leave Ownhold (iPhone and iPad).
+/// Uploads that keep going after you leave Arkenal (iPhone and iPad).
 ///
 /// Large files (`threshold` and up) are handed to a background URLSession:
-/// iOS sends them even while Ownhold is suspended, and relaunches it to
+/// iOS sends them even while Arkenal is suspended, and relaunches it to
 /// report the result. The NAS's certificate is checked exactly as for every
 /// other request (`CertificateTrust`). Small files go the quick direct way.
 final class BackgroundUploads: NSObject, URLSessionDataDelegate, @unchecked Sendable {
     static let shared = BackgroundUploads()
-    static let identifier = "app.ownhold.Ownhold.uploads"
+    static let identifier = "com.snowlightlabs.Arkenal.uploads"
     static let threshold: Int64 = 10_000_000
 
     /// Set at launch: the same certificate pins as the rest of the app.
@@ -21,7 +21,7 @@ final class BackgroundUploads: NSObject, URLSessionDataDelegate, @unchecked Send
     /// once iOS has delivered every finished upload.
     var finishEvents: (() -> Void)?
 
-    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "background-uploads")
+    private static let log = Logger(subsystem: "com.snowlightlabs.Arkenal", category: "background-uploads")
     private let lock = NSLock()
     private var running: [Int: Running] = [:]
 
@@ -43,7 +43,7 @@ final class BackgroundUploads: NSObject, URLSessionDataDelegate, @unchecked Send
     }()
 
     /// Recreates the session at launch so iOS can deliver results of uploads
-    /// that finished while Ownhold wasn't running.
+    /// that finished while Arkenal wasn't running.
     func reconnect() { _ = session }
 
     /// Uploads `file` to the NAS through the background session.
@@ -90,7 +90,7 @@ final class BackgroundUploads: NSObject, URLSessionDataDelegate, @unchecked Send
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         let finished = lock.withLock { running.removeValue(forKey: task.taskIdentifier) }
         guard let finished else {
-            // Finished after Ownhold was relaunched: nothing is waiting for it.
+            // Finished after Arkenal was relaunched: nothing is waiting for it.
             Self.log.notice("A background upload finished after a relaunch")
             return
         }
@@ -132,7 +132,7 @@ final class IOSAppDelegate: NSObject, UIApplicationDelegate {
 
 extension FileService {
     /// Uploads, through the background session for large files on iPhone
-    /// and iPad (so they finish after you leave Ownhold), directly otherwise.
+    /// and iPad (so they finish after you leave Arkenal), directly otherwise.
     func uploadAllowingBackground(_ file: URL, as name: String, to folder: String, replacing: Bool,
                                   progress: @escaping @Sendable (Double) -> Void) async throws {
         let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0

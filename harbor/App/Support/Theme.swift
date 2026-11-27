@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 #if os(macOS)
 import AppKit
@@ -10,9 +10,8 @@ import UIKit
 /// data. Everything else comes from the system so the app feels native on
 /// each platform. See docs/DESIGN.md for the reasoning.
 enum Theme {
-    /// Deep evergreen, defined in the asset catalog (light + dark variants).
+    /// The accent chosen in Settings › Appearance (Basalt by default).
     /// Named explicitly: on the Mac it isn't the app's global accent.
-    /// The accent chosen in Settings › Appearance (Evergreen by default).
     static var accent: Color { ThemeSettings.shared.accent.accent }
     /// Text and icons on a solid accent fill.
     static var onAccent: Color { ThemeSettings.shared.accent.onAccent }

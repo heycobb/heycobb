@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import QuickLook
 import SwiftUI
 

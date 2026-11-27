@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Licences of the open-source code Ownhold includes.
+/// Licences of the open-source code Arkenal includes.
 struct AcknowledgementsView: View {
     @Environment(\.dismiss) private var dismiss
 

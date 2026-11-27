@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 /// Recently Deleted: each shared folder's DSM Recycle Bin, browsable like a

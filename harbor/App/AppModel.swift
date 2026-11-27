@@ -1,6 +1,6 @@
 import FileProvider
 import Foundation
-import OwnholdKit
+import ArkenalKit
 import LocalAuthentication
 import Observation
 import os
@@ -65,7 +65,7 @@ final class AppModel {
     /// Set when the active server needs a password (first use or expired session).
     var signInRequest: ServerProfile?
     /// Shows the Add NAS sheet (from the welcome screen or the server menu).
-    /// A second NAS is part of Ownhold Pro: asking for one shows Pro instead.
+    /// A second NAS is part of Arkenal Pro: asking for one shows Pro instead.
     var isAddingServer = false {
         didSet {
             if isAddingServer, !ProStore.unlocked, servers.contains(where: { !$0.isDemo }) {
@@ -74,7 +74,7 @@ final class AppModel {
             }
         }
     }
-    /// The Ownhold Pro screen (from a locked feature).
+    /// The Arkenal Pro screen (from a locked feature).
     var showingPro = false
     /// Scan to NAS from Shortcuts: the folder (path) that should start a scan
     /// once it's open.
@@ -106,7 +106,7 @@ final class AppModel {
     }
 
     @ObservationIgnored private var started = false
-    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "files-app")
+    private static let log = Logger(subsystem: "com.snowlightlabs.Arkenal", category: "files-app")
     /// Shared with the Files app extension (see SharedContainer).
     private let keychain = SharedContainer.keychain
     let trust = CertificateTrust(keychain: SharedContainer.keychain)
@@ -528,7 +528,7 @@ final class AppModel {
         context.localizedFallbackTitle = "Use Passcode"
         do {
             // Falls back to the device passcode if Face ID / Touch ID fails.
-            if try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Unlock Ownhold") {
+            if try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Unlock Arkenal") {
                 isLocked = false
             }
         } catch {
@@ -608,7 +608,7 @@ final class AppModel {
     /// it's open) when the switch is on, and removes them when it's off.
     /// Removing one also makes the system delete every file it cached for it.
     /// Tells the Files app / Finder that sign-in works again, so uploads and
-    /// downloads it had put on hold (with "sign in in Ownhold") retry now.
+    /// downloads it had put on hold (with "sign in in Arkenal") retry now.
     private func filesAppSignedIn(_ profile: ServerProfile) async {
         guard showInFilesApp, !requireUnlock else { return }
         let domain = NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier(profile.id.uuidString), displayName: profile.name)
@@ -624,20 +624,20 @@ final class AppModel {
     static let filesAppChecksKey = "keepFilesAppUpdated"
     static let filesAppCheckInterval: Duration = .seconds(180)
 
-    /// While Ownhold is open, every few minutes, asks Finder or the Files
+    /// While Arkenal is open, every few minutes, asks Finder or the Files
     /// app to check for changes made elsewhere: the extension lists folders
     /// opened recently there and folders kept downloaded (see
     /// `SnapshotStore.foldersToCheck`). Skipped in Low Power Mode.
     private func startFilesAppChecks() {
         #if os(macOS)
         // Finder's Keep Downloaded: download now rather than when macOS gets to it.
-        KeptDownloader.observe {
+        KeptDownloader.observe { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self, showInFilesApp, !requireUnlock else { return }
                 await KeptDownloader.downloadKeptFiles()
             }
         }
-        // Catch up on anything kept while Ownhold wasn't running.
+        // Catch up on anything kept while Arkenal wasn't running.
         if showInFilesApp, !requireUnlock {
             Task { await KeptDownloader.downloadKeptFiles() }
         }
@@ -666,11 +666,11 @@ final class AppModel {
         if enabled {
             wanted = servers.map { NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier($0.id.uuidString), displayName: $0.name) }
             if activeServer?.isDemo == true {
-                wanted.append(NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier("demo"), displayName: "Ownhold Demo"))
+                wanted.append(NSFileProviderDomain(identifier: NSFileProviderDomainIdentifier("demo"), displayName: "Arkenal Demo"))
             }
         }
         guard enabled else {
-            // Off: remove every Ownhold location, including any the system
+            // Off: remove every Arkenal location, including any the system
             // made on its own, along with everything it cached.
             do { try await NSFileProviderManager.removeAllDomains() } catch { Self.log.error("Files app: remove all failed: \(error)") }
             return

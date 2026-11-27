@@ -1,4 +1,4 @@
-# Ownhold
+# Arkenal
 
 A private, native client for Synology NAS on iPhone, iPad and Mac.
 Your files and photos, owned, not rented. Formerly "Harbor" (working name).
@@ -9,7 +9,7 @@ Your files and photos, owned, not rented. Formerly "Harbor" (working name).
 - Upload photos (original format), files and folders; new folder, rename, move, delete, multi-select
 - Share several files at once (folders as zips); stream video and audio over the pinned connection
 - Mac menu bar item: connection status, upload progress, upload to a share, open shares and recent offline files
-- "Save to Ownhold" share extension (iPhone, iPad, Mac): uploads straight to a NAS folder, respects the app lock
+- "Save to Arkenal" share extension (iPhone, iPad, Mac): uploads straight to a NAS folder, respects the app lock
 - Keep files or whole folders offline (encrypted at rest, no background sync)
 - Picks the best address automatically: home network → private network (Tailscale, ZeroTier, WireGuard…) → internet
 - Optional QuickConnect ID lookup (finds the NAS's direct addresses; never uses Synology's relay)
@@ -28,28 +28,28 @@ Requirements: Xcode 26 or later, [XcodeGen](https://github.com/yonaskolb/XcodeGe
 brew install xcodegen
 cd harbor
 xcodegen generate
-open Ownhold.xcodeproj
+open Arkenal.xcodeproj
 ```
 
 In Xcode, pick your team under Signing & Capabilities, then run on "My Mac",
 an iPhone/iPad simulator, or a device. The project file is generated from
 `project.yml`, so make project changes there.
 
-The Files app / Finder extension (`OwnholdFiles`) shares the NAS list,
+The Files app / Finder extension (`ArkenalFiles`) shares the NAS list,
 sign-in and trusted certificates with the app through an app group and a
 keychain group, so it only runs in builds signed with a team. On a Mac,
 approve it once in System Settings › General › Login Items & Extensions ›
 File Providers. Unsigned local builds can pass
-`OWNHOLD_APP_GROUP= OWNHOLD_ENTITLEMENTS_SUFFIX=-local` to build without it.
+`ARKENAL_APP_GROUP= ARKENAL_ENTITLEMENTS_SUFFIX=-local` to build without it.
 
-Run the core tests with `swift test` in `Packages/OwnholdKit`, or with ⌘U in Xcode.
+Run the core tests with `swift test` in `Packages/ArkenalKit`, or with ⌘U in Xcode.
 
 ## NAS setup
 
 The app has the same steps, in plainer language, under **Settings › Setup Guide** (also linked from the welcome screen and Add NAS).
 
 1. DSM: **Control Panel → Login Portal → DSM**: make sure HTTPS is on (port 5001).
-   Ownhold doesn't use plain HTTP.
+   Arkenal doesn't use plain HTTP.
 2. The account needs File Station permission (Control Panel → Application Privileges).
 3. Tailscale: install the Tailscale package on the NAS and the Tailscale app
    on your devices. Enter the NAS's MagicDNS name (e.g. `nas.tailnet-name.ts.net`)
@@ -57,9 +57,9 @@ The app has the same steps, in plainer language, under **Settings › Setup Guid
    VPN (ZeroTier, NetBird, WireGuard, Headscale) works the same way.
    Alternatives: a Synology DDNS name (`name.synology.me`, port 5001 forwarded)
    as the Internet address, or a QuickConnect ID (lookup only).
-4. The first time you connect, Ownhold shows the certificate's SHA-256
+4. The first time you connect, Arkenal shows the certificate's SHA-256
    fingerprint (the same value Safari shows), then you tap Trust. Trust
-   covers all of that NAS's addresses. Ownhold refuses to connect if the
+   covers all of that NAS's addresses. Arkenal refuses to connect if the
    certificate later changes.
 
 ## Layout
@@ -73,7 +73,7 @@ harbor/
 │   ├── Views/                   screens
 │   ├── Support/                 design tokens, platform helpers
 │   └── PrivacyInfo.xcprivacy    privacy manifest (no tracking, no data collected)
-├── Packages/OwnholdKit/          UI-free core, unit tested
+├── Packages/ArkenalKit/          UI-free core, unit tested
 │   ├── FileStationClient.swift  Synology File Station Web API
 │   ├── CertificateTrust.swift   TLS pinning
 │   ├── ConnectionResolver.swift LAN / VPN / internet selection

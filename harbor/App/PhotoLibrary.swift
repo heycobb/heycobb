@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import OwnholdKit
+import ArkenalKit
 
 /// The Photos view's index: every photo and video in the folders you chose,
 /// found by walking them on the NAS. Kept on this device (Caches) so the

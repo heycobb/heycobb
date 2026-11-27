@@ -1,7 +1,7 @@
 import Network
 import Observation
 import os
-import OwnholdKit
+import ArkenalKit
 import Photos
 #if os(iOS)
 import BackgroundTasks
@@ -42,8 +42,8 @@ final class PhotoBackup {
         case failed(String)
     }
 
-    static let taskID = "app.ownhold.Ownhold.backup"
-    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "backup")
+    static let taskID = "com.snowlightlabs.Arkenal.backup"
+    private static let log = Logger(subsystem: "com.snowlightlabs.Arkenal", category: "backup")
 
     var settings = Settings() { didSet { if settings != oldValue { saveSettings() } } }
     private(set) var phase: Phase = .idle
@@ -286,14 +286,23 @@ final class PhotoBackup {
     /// Read at the start of each run. Missing (first backup, or a NAS
     /// backed up before this list existed) means empty.
     private static func loadManifest(_ destination: String, service: any FileService) async throws -> BackupManifest {
-        let item = RemoteItem(path: RemoteItem.join(destination, BackupManifest.fileName), name: BackupManifest.fileName, isDirectory: false)
-        do {
-            let file = try await service.download(item)
-            defer { try? FileManager.default.removeItem(at: file) }
-            return BackupManifest.decode(try Data(contentsOf: file))
-        } catch NASError.notFound {
-            return BackupManifest()
+        try await storedManifest(destination, service: service).manifest
+    }
+
+    /// The list and the name it's stored under: it may still have its name
+    /// from before the app was renamed, until it next changes.
+    private static func storedManifest(_ destination: String, service: any FileService) async throws -> (manifest: BackupManifest, name: String?) {
+        for name in [BackupManifest.fileName, BackupManifest.legacyFileName] {
+            let item = RemoteItem(path: RemoteItem.join(destination, name), name: name, isDirectory: false)
+            do {
+                let file = try await service.download(item)
+                defer { try? FileManager.default.removeItem(at: file) }
+                return (BackupManifest.decode(try Data(contentsOf: file)), name)
+            } catch NASError.notFound {
+                continue
+            }
         }
+        return (BackupManifest(), nil)
     }
 
     /// Adds keys to the list, re-reading it first so another device's
@@ -302,7 +311,8 @@ final class PhotoBackup {
     private static func addToManifest(_ keys: [String], _ destination: String, service: any FileService) async {
         guard !keys.isEmpty else { return }
         do {
-            var manifest = try await loadManifest(destination, service: service)
+            let stored = try await storedManifest(destination, service: service)
+            var manifest = stored.manifest
             let before = manifest.items.count
             manifest.items.formUnion(keys)
             guard manifest.items.count != before else { return }
@@ -312,6 +322,11 @@ final class PhotoBackup {
             let file = folder.appending(path: BackupManifest.fileName)
             try manifest.encoded().write(to: file)
             try await service.upload(file, as: BackupManifest.fileName, to: destination, replacing: true) { _ in }
+            if stored.name == BackupManifest.legacyFileName {
+                let name = BackupManifest.legacyFileName
+                let legacy = RemoteItem(path: RemoteItem.join(destination, name), name: name, isDirectory: false)
+                try? await service.delete([legacy])
+            }
         } catch {
             log.error("Couldn't update the backup list: \(String(describing: error), privacy: .public)")
         }

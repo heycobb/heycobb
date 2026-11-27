@@ -5,7 +5,7 @@ extension View {
     /// Quick Look preview of a local file, without editing tools.
     ///
     /// On iOS, SwiftUI's `quickLookPreview` shows a Markup button, but edits
-    /// would only change Ownhold's temporary copy, never the file on the NAS.
+    /// would only change Arkenal's temporary copy, never the file on the NAS.
     /// So iOS uses a `QLPreviewController` with editing turned off. The Mac's
     /// Quick Look panel has no such button, so it uses the standard modifier.
     func filePreview(_ url: Binding<URL?>) -> some View {

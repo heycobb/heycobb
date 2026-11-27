@@ -1,7 +1,7 @@
 import AVFoundation
 import CryptoKit
 import Foundation
-import OwnholdKit
+import ArkenalKit
 import OSLog
 
 /// Where playback stopped in each video or audio file, so it can continue
@@ -11,7 +11,7 @@ import OSLog
 /// size and date rather than their names, so the list says nothing about
 /// what was played. A changed file starts from the beginning.
 enum PlaybackPositions {
-    private static let log = Logger(subsystem: "app.ownhold.Ownhold", category: "playback")
+    private static let log = Logger(subsystem: "com.snowlightlabs.Arkenal", category: "playback")
     static let settingKey = "rememberPlaybackPosition"
     private static let storeKey = "playbackPositions"
     /// The most recent files kept; older ones are forgotten.

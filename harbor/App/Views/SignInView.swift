@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 /// Add a NAS, or sign back in to a saved one.
@@ -177,7 +177,7 @@ struct SignInView: View {
     private func submit() {
         guard canSubmit, !working else { return }
         if existing == nil, [homeAddress, vpnAddress, internetAddress].contains(where: { $0.lowercased().hasPrefix("http://") }) {
-            errorText = "Ownhold only connects over HTTPS. On a Synology, turn on HTTPS in DSM (Control Panel › Login Portal) and use port 5001."
+            errorText = "Arkenal only connects over HTTPS. On a Synology, turn on HTTPS in DSM (Control Panel › Login Portal) and use port 5001."
             return
         }
         working = true
@@ -245,7 +245,7 @@ struct CertificateReviewView: View {
                 } footer: {
                     Text(review.changed
                          ? "If you didn't renew or replace the certificate on your NAS, don't continue. Someone may be intercepting the connection."
-                         : "This is normal for a NAS using its own self-signed certificate. Ownhold will remember this certificate and refuse to connect if it ever changes unexpectedly.")
+                         : "This is normal for a NAS using its own self-signed certificate. Arkenal will remember this certificate and refuse to connect if it ever changes unexpectedly.")
                 }
                 Section {
                     LabeledContent("Server", value: review.info.host)

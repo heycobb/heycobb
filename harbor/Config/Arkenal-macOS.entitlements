@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The Mac App Store requires the App Sandbox. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Outgoing connections to the NAS. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- Saving files the user picks (e.g. "Save to…"). -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- Photo Backup: reads the Photos library (asked for when it's turned on). -->
+	<key>com.apple.security.personal-information.photos-library</key>
+	<true/>
+	<!-- Folder Backup: remembers the folders the user chose. -->
+	<key>com.apple.security.files.bookmarks.app-scope</key>
+	<true/>
+	<!-- Shared with the Files app (Finder) extension. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(ARKENAL_APP_GROUP)</string>
+	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.snowlightlabs.arkenal</string>
+	</array>
+</dict>
+</plist>

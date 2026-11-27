@@ -1,4 +1,4 @@
-import OwnholdKit
+import ArkenalKit
 import SwiftUI
 
 /// First screen. On iPhone the actions sit at the bottom, within thumb
@@ -32,7 +32,7 @@ struct WelcomeView: View {
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
-            Text("Ownhold")
+            Text("Arkenal")
                 .font(.system(.largeTitle, weight: .semibold))
             Text("The files and photos on your NAS, at home and away.")
                 .font(.title3)

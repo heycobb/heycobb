@@ -1,25 +1,25 @@
 # Encrypted folders: file format
 
-Ownhold encrypts files on the device before they reach the NAS and decrypts
+Arkenal encrypts files on the device before they reach the NAS and decrypts
 them after they're downloaded. This document describes what's stored, so the
 format isn't a black box and could be read by other software. The code is in
-`Packages/OwnholdKit/Sources/OwnholdKit/Vault.swift` (format) and
+`Packages/ArkenalKit/Sources/ArkenalKit/Vault.swift` (format) and
 `VaultFileService.swift` (how it's used).
 
 Only Apple's built-in cryptography is used: CryptoKit (AES-256-GCM, HKDF,
 HMAC-SHA256) and CommonCrypto (PBKDF2). No crypto code is bundled. This
-keeps Ownhold in the "encryption within Apple's operating system" case
+keeps Arkenal in the "encryption within Apple's operating system" case
 for export compliance (see the end of this document).
 
 ## Layout on the NAS
 
-An encrypted folder is a normal folder holding `ownhold-vault.json` plus
+An encrypted folder is a normal folder holding `arkenal-vault.json` plus
 the encrypted items, in the same tree as the plain folders and files
 (so renaming or moving a folder is one change on the NAS):
 
 ```
 Private/                      ← the encrypted folder (its own name isn't encrypted)
-  ownhold-vault.json          ← settings: how to unlock
+  arkenal-vault.json          ← settings: how to unlock
   m5k2…q7a/                   ← an encrypted folder name
     t3p9…x2c                  ← an encrypted file
   _4fz…k1b                    ← a name too long to store: kept under a hash
@@ -54,13 +54,20 @@ The master key is sealed twice with AES-256-GCM, each copy stored as
 `<id>` is the folder's UUID in uppercase, as stored.
 
 Changing the password re-seals the master key with a new salt and
-re-writes `ownhold-vault.json`. Files don't change.
+re-writes `arkenal-vault.json`. Files don't change.
 
-## ownhold-vault.json
+## arkenal-vault.json
+
+Folders made before the app was renamed (from Ownhold) hold
+`ownhold-vault.json` with `"format": "ownhold-vault"` instead. Both are
+read; changing the password rewrites the settings under the new name and
+removes the old file. The labels used in key derivation and sealing
+(`ownhold-vault-v1 …`) and the file header magic `OHV1` are part of
+format version 1 and keep the earlier name.
 
 ```json
 {
-  "format": "ownhold-vault",
+  "format": "arkenal-vault",
   "version": 1,
   "id": "UUID",
   "kdf": { "name": "PBKDF2-HMAC-SHA256", "iterations": 600000, "salt": "base64" },
@@ -123,12 +130,12 @@ on this device:
   `WhenPasscodeSetThisDeviceOnly`, not shared with the extensions) with the
   access control `biometryCurrentSet OR devicePasscode`. The system releases
   it only after Face ID, Touch ID or Optic ID, or the device passcode.
-  Enrolling a new face or finger invalidates the biometric path; Ownhold
+  Enrolling a new face or finger invalidates the biometric path; Arkenal
   then asks for the password and stores the key again.
 - **Keep Unlocked**: the master key goes in the shared Keychain group without
   a prompt, so the Files app and Finder extensions can open the folder.
 
-Folders not kept unlocked lock when Ownhold quits, after 3 minutes in the
+Folders not kept unlocked lock when Arkenal quits, after 3 minutes in the
 background, and when the app lock engages. Locking with the Lock button
 keeps Face ID on; it stops Keep Unlocked.
 Thumbnails of encrypted files are kept in memory only, never in the
