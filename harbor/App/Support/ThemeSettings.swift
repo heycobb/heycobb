@@ -30,7 +30,7 @@ final class ThemeSettings: @unchecked Sendable {
 
     private init() {
         let defaults = UserDefaults.standard
-        accent = defaults.string(forKey: "accent").flatMap(AccentChoice.init) ?? .evergreen
+        accent = defaults.string(forKey: "accent").flatMap(AccentChoice.init(storedValue:)) ?? .evergreen
         sidebarStyle = defaults.string(forKey: "sidebarStyle").flatMap(SidebarStyle.init) ?? .tinted
         appIcon = defaults.string(forKey: "appIcon").flatMap(AppIconChoice.init) ?? .evergreen
         SharedContainer.defaults.set(accent.rawValue, forKey: "accent")
@@ -49,18 +49,26 @@ enum SidebarStyle: String, CaseIterable, Identifiable {
 /// System follows the Mac's own accent color (blue on iPhone and iPad) and
 /// always uses the plain sidebar, so Ownhold looks like a standard Mac app.
 enum AccentChoice: String, CaseIterable, Identifiable {
-    case system, evergreen, forest, harbor, midnight, graphite, onyx, rosewood, espresso
+    case system, evergreen, harbor, graphite, rosewood, espresso
     var id: String { rawValue }
+
+    /// Reads a saved choice, mapping accents that were removed (they looked
+    /// too alike) to the closest one left.
+    init?(storedValue: String) {
+        switch storedValue {
+        case "forest": self = .evergreen
+        case "midnight": self = .harbor
+        case "onyx": self = .graphite
+        default: self.init(rawValue: storedValue)
+        }
+    }
 
     var title: String {
         switch self {
         case .system: "System"
         case .evergreen: "Evergreen"
-        case .forest: "Forest"
         case .harbor: "Harbor Blue"
-        case .midnight: "Midnight"
         case .graphite: "Graphite"
-        case .onyx: "Onyx"
         case .rosewood: "Rosewood"
         case .espresso: "Espresso"
         }
@@ -70,11 +78,8 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         switch self {
         case .system: Self.systemAccent
         case .evergreen: Color(light: 0x1D4B3C, dark: 0x6FBF9A)
-        case .forest: Color(light: 0x0F2E24, dark: 0x4E9C78)
         case .harbor: Color(light: 0x1F4A6E, dark: 0x7FB2DA)
-        case .midnight: Color(light: 0x14213A, dark: 0x6F8FC4)
         case .graphite: Color(light: 0x3B3F45, dark: 0xB9C0C8)
-        case .onyx: Color(light: 0x16171A, dark: 0xE6E7E9)
         case .rosewood: Color(light: 0x7A2F3B, dark: 0xE3949F)
         case .espresso: Color(light: 0x3F2A1E, dark: 0xC9A27E)
         }
@@ -84,11 +89,8 @@ enum AccentChoice: String, CaseIterable, Identifiable {
     var sidebarTint: Color {
         switch self {
         case .evergreen, .system: Color(light: 0xE3ECE6, dark: 0x18241E)
-        case .forest: Color(light: 0xDCE6E0, dark: 0x111C17)
         case .harbor: Color(light: 0xE3EAF1, dark: 0x172230)
-        case .midnight: Color(light: 0xDFE4EE, dark: 0x111827)
         case .graphite: Color(light: 0xECEDEF, dark: 0x1E2023)
-        case .onyx: Color(light: 0xE6E6E8, dark: 0x141517)
         case .rosewood: Color(light: 0xF2E6E8, dark: 0x2A1A1D)
         case .espresso: Color(light: 0xEDE6E0, dark: 0x1F1814)
         }
@@ -97,11 +99,8 @@ enum AccentChoice: String, CaseIterable, Identifiable {
     var sidebarText: Color {
         switch self {
         case .evergreen, .system: Color(light: 0x1F2B25, dark: 0xDCE8E0)
-        case .forest: Color(light: 0x16231D, dark: 0xD6E4DB)
         case .harbor: Color(light: 0x1C2733, dark: 0xDCE6F0)
-        case .midnight: Color(light: 0x161E2D, dark: 0xDCE3F0)
         case .graphite: Color(light: 0x25282C, dark: 0xE4E6E9)
-        case .onyx: Color(light: 0x1A1B1D, dark: 0xE8E8EA)
         case .rosewood: Color(light: 0x33201F, dark: 0xF0DEE1)
         case .espresso: Color(light: 0x2C211A, dark: 0xEDE2D8)
         }
@@ -110,11 +109,8 @@ enum AccentChoice: String, CaseIterable, Identifiable {
     var sidebarSecondary: Color {
         switch self {
         case .evergreen, .system: Color(light: 0x5E7568, dark: 0x7E9A8B)
-        case .forest: Color(light: 0x56695E, dark: 0x75907F)
         case .harbor: Color(light: 0x5A6B7C, dark: 0x8296AA)
-        case .midnight: Color(light: 0x56627A, dark: 0x8090AC)
         case .graphite: Color(light: 0x6A6E74, dark: 0x8C9198)
-        case .onyx: Color(light: 0x66686C, dark: 0x8A8C90)
         case .rosewood: Color(light: 0x7A5E62, dark: 0xA88990)
         case .espresso: Color(light: 0x76655A, dark: 0xA39080)
         }
@@ -124,11 +120,8 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         switch self {
         case .system: .white
         case .evergreen: Color(light: 0xF3F0E8, dark: 0x0E1F18)
-        case .forest: Color(light: 0xF1EFE8, dark: 0x0A1712)
         case .harbor: Color(light: 0xF2F5F8, dark: 0x0D1B28)
-        case .midnight: Color(light: 0xF1F4F9, dark: 0x0B1220)
         case .graphite: Color(light: 0xF4F4F5, dark: 0x16181B)
-        case .onyx: Color(light: 0xF5F5F6, dark: 0x111214)
         case .rosewood: Color(light: 0xFAF2F2, dark: 0x22100F)
         case .espresso: Color(light: 0xF7F1EA, dark: 0x1E140D)
         }

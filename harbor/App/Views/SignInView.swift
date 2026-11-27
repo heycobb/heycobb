@@ -30,7 +30,7 @@ struct SignInView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            OwnForm {
                 if existing == nil {
                     Section {
                         Button {
@@ -232,7 +232,7 @@ struct CertificateReviewView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            OwnForm {
                 Section {
                     Label {
                         Text(review.changed

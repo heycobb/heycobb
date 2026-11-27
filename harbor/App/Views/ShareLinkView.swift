@@ -41,7 +41,7 @@ struct ShareLinkView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            OwnForm {
                 Section {
                     HStack(spacing: Theme.Spacing.m) {
                         ThumbnailView(item: item, size: .small, side: 40)

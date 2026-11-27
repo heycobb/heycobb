@@ -10,7 +10,7 @@ struct RecentsView: View {
     @State private var opening: String?
 
     var body: some View {
-        List {
+        OwnList {
             ForEach(model.recents) { item in
                 Button { open(item) } label: {
                     ItemRow(item: item, saved: model.savedPaths.contains(item.path), busy: opening == item.path)

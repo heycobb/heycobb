@@ -18,7 +18,7 @@ struct ServerEditView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            OwnForm {
                 Section {
                     TextField("Name", text: $name, prompt: Text("Home NAS"))
                     LabeledContent("Account", value: server.account)

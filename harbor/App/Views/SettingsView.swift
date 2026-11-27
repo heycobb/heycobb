@@ -50,7 +50,7 @@ struct SettingsView: View {
         #if os(macOS)
         TabView {
             Tab("General", systemImage: "gearshape") {
-                Form {
+                OwnForm {
                     proSection
                     startupSection
                     menuBarSection
@@ -60,10 +60,10 @@ struct SettingsView: View {
                 .formStyle(.grouped)
             }
             Tab("Appearance", systemImage: "paintpalette") {
-                Form { AppearanceSection() }.formStyle(.grouped)
+                OwnForm { AppearanceSection() }.formStyle(.grouped)
             }
             Tab("NAS", systemImage: "externaldrive") {
-                Form {
+                OwnForm {
                     serversSection
                     filesAppSection
                     cellularSection
@@ -72,11 +72,11 @@ struct SettingsView: View {
                 .formStyle(.grouped)
             }
             Tab("About", systemImage: "info.circle") {
-                Form { aboutSection }.formStyle(.grouped)
+                OwnForm { aboutSection }.formStyle(.grouped)
             }
         }
         #else
-        Form {
+        OwnForm {
             proSection
             serversSection
             AppearanceSection()

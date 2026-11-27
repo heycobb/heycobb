@@ -73,7 +73,7 @@ struct NewEncryptedFolderView: View {
     }
 
     private var form: some View {
-        Form {
+        OwnForm {
             Section {
                 TextField("Name", text: $name)
                     #if os(iOS)
@@ -152,7 +152,7 @@ struct RecoveryKeyView: View {
     @State private var copied = false
 
     var body: some View {
-        Form {
+        OwnForm {
             if let note {
                 Section {
                     Label(note, systemImage: "exclamationmark.triangle")
@@ -256,7 +256,7 @@ struct UnlockFolderView: View {
     private var usesBiometrics: Bool { model.unlockMode(of: root) == .biometric && VaultBiometrics.isAvailable }
 
     var body: some View {
-        Form {
+        OwnForm {
             if usesBiometrics {
                 Section {
                     Button {
@@ -377,7 +377,7 @@ struct RecoverFolderView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            OwnForm {
                 Section {
                     TextField("XXXX-XXXX-…", text: $recoveryKey, axis: .vertical)
                         .font(.system(.body, design: .monospaced))
@@ -454,7 +454,7 @@ struct ChangeFolderPasswordView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            OwnForm {
                 Section {
                     SecureField("New Password", text: $password)
                         .textContentType(.newPassword)

@@ -44,13 +44,15 @@ private struct FolderPickerLevel: View {
     @State private var loading = true
 
     var body: some View {
-        List(folders) { child in
-            NavigationLink(value: child) {
-                Label(child.name, systemImage: child.isShare ? "externaldrive" : model.isEncryptedFolder(child.path) ? "lock.rectangle.stack" : "folder")
-                    .labelStyle(PickerLabelStyle())
+        OwnList {
+            ForEach(folders) { child in
+                NavigationLink(value: child) {
+                    Label(child.name, systemImage: child.isShare ? "externaldrive" : model.isEncryptedFolder(child.path) ? "lock.rectangle.stack" : "folder")
+                        .labelStyle(PickerLabelStyle())
+                }
+                // A folder can't be moved into itself.
+                .disabled(items.contains { $0.path == child.path })
             }
-            // A folder can't be moved into itself.
-            .disabled(items.contains { $0.path == child.path })
         }
         .overlay {
             if loading {

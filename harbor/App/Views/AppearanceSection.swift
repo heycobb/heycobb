@@ -19,7 +19,7 @@ struct AppearanceSection: View {
                     Spacer()
                     Text(theme.accent.title).foregroundStyle(.secondary)
                 }
-                // One row, spread evenly: nine swatches fit on the narrowest iPhone.
+                // One row, spread evenly.
                 HStack(spacing: 0) {
                     ForEach(AccentChoice.allCases) { choice in
                         Button { theme.accent = choice } label: {

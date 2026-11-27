@@ -52,7 +52,7 @@ enum Theme {
 
 /// The user's choice in Settings › Appearance.
 enum AppearanceChoice: String, CaseIterable, Identifiable {
-    case system, light, dark
+    case system, light, dark, blackout
 
     var id: String { rawValue }
 
@@ -61,6 +61,7 @@ enum AppearanceChoice: String, CaseIterable, Identifiable {
         case .system: "System"
         case .light: "Light"
         case .dark: "Dark"
+        case .blackout: "Blackout"
         }
     }
 
@@ -68,7 +69,7 @@ enum AppearanceChoice: String, CaseIterable, Identifiable {
         switch self {
         case .system: nil
         case .light: .light
-        case .dark: .dark
+        case .dark, .blackout: .dark
         }
     }
 
@@ -78,7 +79,7 @@ enum AppearanceChoice: String, CaseIterable, Identifiable {
         switch self {
         case .system: nil
         case .light: NSAppearance(named: .aqua)
-        case .dark: NSAppearance(named: .darkAqua)
+        case .dark, .blackout: NSAppearance(named: .darkAqua)
         }
     }
     #endif
@@ -96,7 +97,7 @@ extension View {
             let style: UIUserInterfaceStyle = switch choice {
             case .system: .unspecified
             case .light: .light
-            case .dark: .dark
+            case .dark, .blackout: .dark
             }
             for scene in UIApplication.shared.connectedScenes {
                 for window in (scene as? UIWindowScene)?.windows ?? [] {
@@ -105,6 +106,64 @@ extension View {
             }
         }
         #endif
+    }
+}
+
+/// Blackout: dark mode taken further for dark rooms and OLED screens. True
+/// black behind everything (sheets too, which dark mode lifts to grey) and
+/// rows only just lifted off it. Text keeps the system's light label colors,
+/// so tinted buttons and links keep the accent.
+enum Blackout {
+    static let background = Color.black
+    static let row = Color(red: 0.07, green: 0.07, blue: 0.075)
+
+    static var isOn: Bool { UserDefaults.standard.string(forKey: "appearance") == AppearanceChoice.blackout.rawValue }
+}
+
+/// Puts a list or form on Blackout's colors when it's chosen.
+struct BlackoutSurface: ViewModifier {
+    @AppStorage("appearance") private var appearance: AppearanceChoice = .system
+
+    func body(content: Content) -> some View {
+        if appearance == .blackout {
+            content
+                .scrollContentBackground(.hidden)
+                .background(Blackout.background)
+                .presentationBackground(Blackout.background)
+        } else {
+            content
+        }
+    }
+}
+
+/// Row backgrounds for Blackout. Applied to each section (a Group hands a
+/// modifier to every child), since a row color set on the whole form
+/// doesn't reach its rows.
+struct BlackoutRows: ViewModifier {
+    @AppStorage("appearance") private var appearance: AppearanceChoice = .system
+
+    func body(content: Content) -> some View {
+        if appearance == .blackout {
+            content.listRowBackground(Blackout.row)
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    func blackoutSurface() -> some View { modifier(BlackoutSurface()) }
+}
+
+/// A Form that follows Blackout: black behind, near-black rows.
+struct OwnForm<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        Form {
+            Group { content }.modifier(BlackoutRows())
+        }
+        .blackoutSurface()
     }
 }
 
@@ -167,5 +226,17 @@ enum Format {
     static func date(_ value: Date?) -> String {
         guard let value else { return "—" }
         return value.formatted(.dateTime.year().month(.abbreviated).day())
+    }
+}
+
+/// A List that follows Blackout, like OwnForm.
+struct OwnList<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        List {
+            Group { content }.modifier(BlackoutRows())
+        }
+        .blackoutSurface()
     }
 }

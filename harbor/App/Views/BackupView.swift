@@ -13,7 +13,7 @@ struct BackupView: View {
 
     var body: some View {
         @Bindable var backup = model.backup
-        Form {
+        OwnForm {
             statusSection
 
             Section("Back Up To") {

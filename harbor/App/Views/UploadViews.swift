@@ -84,17 +84,19 @@ struct UploadsView: View {
     var body: some View {
         let uploads = model.uploads
         NavigationStack {
-            List(uploads.jobs) { job in
-                HStack(spacing: Theme.Spacing.m) {
-                    Image(systemName: FileKind(extension: (job.name as NSString).pathExtension.lowercased()).symbol)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 24)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(job.name).lineLimit(1).truncationMode(.middle)
-                        detail(job)
+            OwnList {
+                ForEach(uploads.jobs) { job in
+                    HStack(spacing: Theme.Spacing.m) {
+                        Image(systemName: FileKind(extension: (job.name as NSString).pathExtension.lowercased()).symbol)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 24)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(job.name).lineLimit(1).truncationMode(.middle)
+                            detail(job)
+                        }
+                        Spacer(minLength: Theme.Spacing.s)
+                        trailing(job)
                     }
-                    Spacer(minLength: Theme.Spacing.s)
-                    trailing(job)
                 }
             }
             .overlay {

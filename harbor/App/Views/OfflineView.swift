@@ -10,7 +10,7 @@ struct OfflineView: View {
     @State private var previewURL: URL?
 
     var body: some View {
-        List {
+        OwnList {
             if !entries.isEmpty {
                 Section {
                     ForEach(entries) { entry in

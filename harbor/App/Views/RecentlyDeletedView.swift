@@ -7,7 +7,7 @@ struct RecentlyDeletedView: View {
     let bins: [AppModel.RecycleBinFolder]
 
     var body: some View {
-        List {
+        OwnList {
             ForEach(bins) { bin in
                 NavigationLink {
                     RecycleFolderView(path: bin.path, title: bin.title)
@@ -35,7 +35,7 @@ private struct RecycleFolderView: View {
     @State private var confirmDelete: RemoteItem?
 
     var body: some View {
-        List {
+        OwnList {
             ForEach(items ?? []) { item in
                 row(item)
                     .contextMenu { actions(item) }

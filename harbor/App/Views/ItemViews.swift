@@ -179,7 +179,7 @@ struct ItemInfoView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            OwnForm {
                 Section {
                     HStack {
                         Spacer()

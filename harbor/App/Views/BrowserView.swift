@@ -352,7 +352,8 @@ struct BrowserView: View {
                 .fill(Theme.accent)
                 .padding(.horizontal, 10))
         }
-        return Theme.Sidebar.isTinted ? AnyView(Color.clear) : nil
+        if Theme.Sidebar.isTinted { return AnyView(Color.clear) }
+        return Blackout.isOn ? AnyView(Blackout.row) : nil
     }
     #endif
 
