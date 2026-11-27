@@ -535,7 +535,7 @@ enum DemoVideo {
         return render(to: url) ? url : nil
     }()
 
-    private static func render(to url: URL) -> Bool {
+    static func render(to url: URL) -> Bool {
         let width = 960, height = 540, fps: Int32 = 24, frames = 24 * 6
         try? FileManager.default.removeItem(at: url)
         guard let writer = try? AVAssetWriter(outputURL: url, fileType: .mov) else { return false }
@@ -545,27 +545,31 @@ enum DemoVideo {
             AVVideoHeightKey: height,
             AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 1_500_000],
         ])
-        input.expectsMediaDataInRealTime = false
-        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32ARGB,
-            kCVPixelBufferWidthKey as String: width,
-            kCVPixelBufferHeightKey as String: height,
-        ])
-        guard writer.canAdd(input) else { return false }
-        writer.add(input)
-        guard writer.startWriting() else { return false }
-        writer.startSession(atSourceTime: .zero)
-
-        for frame in 0 ..< frames {
-            while !input.isReadyForMoreMediaData { usleep(500) }
-            guard let pool = adaptor.pixelBufferPool else { return false }
-            var buffer: CVPixelBuffer?
-            CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buffer)
-            guard let buffer else { return false }
-            draw(into: buffer, t: Double(frame) / Double(frames - 1), width: width, height: height)
-            adaptor.append(buffer, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: fps))
+        let attributes = CVPixelBufferCreationAttributes(
+            pixelFormatType: CVPixelFormatType(rawValue: kCVPixelFormatType_32ARGB),
+            size: CVImageSize(width: width, height: height)
+        )
+        let receiver = writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: attributes)
+        do {
+            try writer.start()
+            writer.startSession(atSourceTime: .zero)
+            for frame in 0 ..< frames {
+                let buffer: CVMutablePixelBuffer
+                if let pool = receiver.pixelBufferPool {
+                    buffer = try pool.makeMutablePixelBuffer()
+                } else {
+                    buffer = try CVMutablePixelBuffer(attributes)
+                }
+                buffer.withUnsafeBuffer { draw(into: $0, t: Double(frame) / Double(frames - 1), width: width, height: height) }
+                let ready = CVReadOnlyPixelBuffer(buffer)
+                let time = CMTime(value: CMTimeValue(frame), timescale: fps)
+                // Not ready yet: the encoder is still busy with earlier frames.
+                while try !receiver.appendImmediately(ready, with: time) { usleep(500) }
+            }
+        } catch {
+            return false
         }
-        input.markAsFinished()
+        receiver.finish()
         let done = DispatchSemaphore(value: 0)
         writer.finishWriting { done.signal() }
         done.wait()

@@ -50,8 +50,7 @@ final class FileProviderItem: NSObject, NSFileProviderItem {
         keptItself ? .downloadEagerlyAndKeepDownloaded : .inherited
     }
 
-    /// macOS 27 also lists a kept folder's subfolders ahead of time.
-    @available(macOS 27, *)
+    /// Lists a kept folder's subfolders ahead of time too.
     var namespacePolicy: NSFileProviderNamespacePolicy {
         keptItself && remote.isDirectory ? .materializeEagerly : .inherited
     }

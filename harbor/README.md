@@ -22,7 +22,7 @@ Your files and photos, owned, not rented. Formerly "Harbor" (working name).
 
 ## Build
 
-Requirements: Xcode 26 or later, [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+Requirements: Xcode 27 or later, [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
 brew install xcodegen

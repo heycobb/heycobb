@@ -5,8 +5,8 @@ name: Arkenal
 options:
   bundleIdPrefix: com.snowlightlabs
   deploymentTarget:
-    iOS: "26.0"
-    macOS: "26.0"
+    iOS: "27.0"
+    macOS: "27.0"
   createIntermediateGroups: true
   developmentLanguage: en
 

@@ -372,7 +372,7 @@ final class PhotoBackup {
         for start in stride(from: 0, to: localIDs.count, by: 500) {
             let batch = Array(localIDs[start..<min(start + 500, localIDs.count)])
             for (local, result) in PHPhotoLibrary.shared().cloudIdentifierMappings(forLocalIdentifiers: batch) {
-                if case let .success(cloud) = result { cloudIDs[local] = cloud.stringValue }
+                if case let .success(cloud) = result { cloudIDs[local] = cloud.archivalStringValue }
             }
         }
         fetched.enumerateObjects { asset, _, _ in
@@ -381,7 +381,7 @@ final class PhotoBackup {
                 : [.photo, .video, .alternatePhoto]
             let resources = PHAssetResource.assetResources(for: asset)
                 .filter { wanted.contains($0.type) }
-                .map { BackupPlanner.Resource(name: $0.originalFilename, size: nil) }
+                .compactMap { $0.filename.map { BackupPlanner.Resource(name: $0, size: nil) } }
             guard !resources.isEmpty else { return }
             assets.append(.init(id: asset.localIdentifier, cloudID: cloudIDs[asset.localIdentifier], created: asset.creationDate, resources: resources))
         }
@@ -392,7 +392,7 @@ final class PhotoBackup {
     /// iCloud first if the device keeps only a smaller copy).
     private static func export(_ job: BackupPlanner.Job) async throws -> URL {
         guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [job.assetID], options: nil).firstObject,
-              let resource = PHAssetResource.assetResources(for: asset).first(where: { $0.originalFilename == job.resource.name })
+              let resource = PHAssetResource.assetResources(for: asset).first(where: { $0.filename == job.resource.name })
         else { throw NASError.notFound }
         let folder = FileManager.default.temporaryDirectory.appending(path: "Backup-" + UUID().uuidString, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -448,10 +448,11 @@ final class PhotoBackup {
         request.requiresNetworkConnectivity = true
         request.requiresExternalPower = settings.chargingOnly
         request.earliestBeginDate = Date(timeIntervalSinceNow: 30 * 60)
-        do {
-            try BGTaskScheduler.shared.submit(request)
-        } catch {
-            log.error("Couldn't schedule backup: \(String(describing: error), privacy: .public)")
+        let log = log
+        BGTaskScheduler.shared.submitTaskRequest(request) { error in
+            if let error {
+                log.error("Couldn't schedule backup: \(String(describing: error), privacy: .public)")
+            }
         }
     }
 

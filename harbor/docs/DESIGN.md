@@ -8,7 +8,7 @@ every element has a job.
 ## Principles
 
 1. **Native first.** Use system navigation, lists, sheets, menus and SF
-   Symbols. On iOS 26 these get Liquid Glass automatically. Following
+   Symbols. On iOS 27 and macOS 27 these get Liquid Glass automatically. Following
    platform conventions closely is what makes an app feel finished.
 2. **Glass is for navigation only.** Toolbars, tab bars and transient banners.
    Never on content and never on list rows. This is Apple's own guidance.
