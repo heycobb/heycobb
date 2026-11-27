@@ -125,15 +125,13 @@ enum Blackout {
 struct BlackoutSurface: ViewModifier {
     @AppStorage("appearance") private var appearance: AppearanceChoice = .system
 
+    // No if/else here: swapping views would close open sheets and reset
+    // scroll positions whenever the appearance changes.
     func body(content: Content) -> some View {
-        if appearance == .blackout {
-            content
-                .scrollContentBackground(.hidden)
-                .background(Blackout.background)
-                .presentationBackground(Blackout.background)
-        } else {
-            content
-        }
+        let on = appearance == .blackout
+        content
+            .scrollContentBackground(on ? .hidden : .automatic)
+            .background(on ? Blackout.background : .clear)
     }
 }
 
@@ -144,11 +142,7 @@ struct BlackoutRows: ViewModifier {
     @AppStorage("appearance") private var appearance: AppearanceChoice = .system
 
     func body(content: Content) -> some View {
-        if appearance == .blackout {
-            content.listRowBackground(Blackout.row)
-        } else {
-            content
-        }
+        content.listRowBackground(appearance == .blackout ? Blackout.row : nil)
     }
 }
 
@@ -168,15 +162,11 @@ struct BlackoutWindow: ViewModifier {
     let on: Bool
 
     func body(content: Content) -> some View {
-        if on {
-            #if os(macOS)
-            content.containerBackground(Blackout.background, for: .window)
-            #else
-            content.background(Blackout.background)
-            #endif
-        } else {
-            content
-        }
+        #if os(macOS)
+        content.containerBackground(on ? Blackout.background : Color(nsColor: .windowBackgroundColor), for: .window)
+        #else
+        content.background(on ? Blackout.background : .clear)
+        #endif
     }
 }
 

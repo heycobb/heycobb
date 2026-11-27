@@ -354,7 +354,10 @@ struct BrowserView: View {
                 .padding(.horizontal, 10))
         }
         if Theme.Sidebar.isTinted { return AnyView(Color.clear) }
-        return Blackout.isOn ? AnyView(Blackout.row) : nil
+        // Blackout: cards on iPhone's list; on the iPad sidebar the rows
+        // aren't rounded, so it stays plain black like the Mac's.
+        if Blackout.isOn { return AnyView(showsTwoColumns ? Color.clear : Blackout.row) }
+        return nil
     }
     #endif
 
