@@ -35,8 +35,9 @@ struct AppearanceSection: View {
             }
             .padding(.vertical, Theme.Spacing.xs)
 
-            // System always uses the plain sidebar, like other Mac apps.
-            if theme.accent != .system {
+            // System always uses the plain sidebar, like other Mac apps, and
+            // Blackout's sidebar is black like the rest of the window.
+            if theme.accent != .system, appearance != .blackout {
                 // Labeled explicitly: a segmented picker hides its own label.
                 LabeledContent("Sidebar") {
                     Picker("Sidebar", selection: $theme.sidebarStyle) {

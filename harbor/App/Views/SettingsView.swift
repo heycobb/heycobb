@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var showingPro = false
     @State private var showingAcknowledgements = false
     @AppStorage(PlaybackPositions.settingKey) private var rememberPosition = true
+    @AppStorage("appearance") private var appearance: AppearanceChoice = .system
     @AppStorage(SyncIndicator.liveActivityKey) private var showLiveActivity = true
     @AppStorage(AppModel.filesAppChecksKey) private var keepFilesAppUpdated = true
     @AppStorage(NetworkPolicy.Use.backups.key) private var cellularBackups = NetworkPolicy.Use.backups.allowedByDefault
@@ -26,6 +27,8 @@ struct SettingsView: View {
 
     var body: some View {
         content
+            // The Mac's Settings window is its own window: black in Blackout too.
+            .modifier(BlackoutWindow(on: appearance == .blackout))
             .task { await measure() }
             .sheet(item: $editing) { server in ServerEditView(server: server) }
             .sheet(isPresented: $showingGuide) { SetupGuideView() }

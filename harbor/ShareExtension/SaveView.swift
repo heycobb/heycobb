@@ -447,7 +447,7 @@ enum SharedAccent {
             "harbor": (0x1F4A6E, 0x7FB2DA),
             "graphite": (0x3B3F45, 0xB9C0C8),
             "rosewood": (0x7A2F3B, 0xE3949F),
-            "espresso": (0x3F2A1E, 0xC9A27E),
+            "amber": (0x9A6312, 0xE3B261),
         ]
         if SharedContainer.defaults.string(forKey: "accent") == "system" {
             #if os(iOS)
