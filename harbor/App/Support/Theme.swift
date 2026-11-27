@@ -165,7 +165,9 @@ extension View {
 struct WindowGlass: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
-        view.material = .underWindowBackground
+        // Apple's Sidebar material: the most see-through one meant for a
+        // window background (compared against stronger custom versions).
+        view.material = .sidebar
         view.blendingMode = .behindWindow
         view.state = .followsWindowActiveState
         #if DEBUG
