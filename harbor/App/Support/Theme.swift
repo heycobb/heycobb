@@ -10,7 +10,7 @@ import UIKit
 /// data. Everything else comes from the system so the app feels native on
 /// each platform. See docs/DESIGN.md for the reasoning.
 enum Theme {
-    /// The accent chosen in Settings › Appearance (Basalt by default).
+    /// The accent chosen in Settings › Appearance (Granite by default).
     /// Named explicitly: on the Mac it isn't the app's global accent.
     static var accent: Color { ThemeSettings.shared.accent.accent }
     /// Text and icons on a solid accent fill.

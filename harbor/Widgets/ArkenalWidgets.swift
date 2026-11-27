@@ -14,7 +14,7 @@ struct ArkenalWidgets: WidgetBundle {
 /// Dynamic Island. Arkenal starts it only for jobs that run a while and
 /// ends it when the job finishes.
 struct SyncLiveActivity: Widget {
-    private static let accent = Color(red: 0.435, green: 0.749, blue: 0.604) // Evergreen, as in dark mode
+    private static let accent = Color(red: 0.663, green: 0.722, blue: 0.757) // Granite, as in dark mode
 
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: SyncActivityAttributes.self) { context in

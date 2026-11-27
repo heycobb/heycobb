@@ -12,18 +12,18 @@ every element has a job.
    platform conventions closely is what makes an app feel finished.
 2. **Glass is for navigation only.** Toolbars, tab bars and transient banners.
    Never on content and never on list rows. This is Apple's own guidance.
-3. **One accent color, used rarely.** Deep evergreen (`AccentColor` in the
-   asset catalog: #1D4B3C light, #6FBF9A dark), matching the app icon. It
-   marks folders, the offline badge and primary buttons. The sidebar is
-   the one place it's used as a surface: a light evergreen tint
-   (`SidebarBackground`, #E3ECE6 / #18241E) with green-toned text and a
-   solid evergreen selection (cream text, `OnAccent`). The file list stays
-   neutral, so photo thumbnails carry the color. ("Tinted glass", chosen
-   from four mockups in 2026-11; earlier: burnt orange, then teal.)
-   Settings › Appearance offers more accents (Forest, Harbor Blue, Midnight,
-   Graphite, Onyx, Rosewood, Espresso, and System, which follows the Mac's
-   own accent with the plain sidebar), a Plain sidebar, and matching alternate app icons
-   (`ThemeSettings.swift`, `App/AppIcon-*.icon`). Evergreen stays the default.
+3. **One accent color, used rarely.** Granite, a blue-charcoal
+   (`AccentColor` in the asset catalog: #2E3A41 light, #A9B8C1 dark),
+   matching the app icon (snow on granite). It marks folders, the offline
+   badge and primary buttons. The sidebar is the one place it's used as a
+   surface: a light granite tint (#E5E9EB / #1A2024) with a solid accent
+   selection (`OnAccent` text). The file list stays neutral, so photo
+   thumbnails carry the color.
+   Settings › Appearance offers more accents, all named for the north:
+   Spruce, Fjord, Rowan and Amber, plus System (the Mac's own accent with
+   the plain sidebar), a Plain sidebar, and matching alternate app icons
+   (Snow, Spruce, Fjord) in `ThemeSettings.swift` and `App/AppIcon-*.icon`.
+   Granite is the default.
 
 4. **Type does the work.** San Francisco at system sizes, with full Dynamic
    Type. Sizes, dates and paths use monospaced digits or SF Mono, which
@@ -66,8 +66,8 @@ every element has a job.
 - App icon: done. `App/AppIcon.icon` (Icon Composer format), generated with
   the alternates, menu bar icon and Finder symbol by
   `Design/AppIcon/make_icons.py`. The peak: an A, a snowy summit and a roof,
-  its snow-filled tip sheltering the core. Snow on basalt by default; Snow,
-  Evergreen and Harbor Blue colorways.
+  its snow-filled tip sheltering the core. Snow on granite by default; Snow,
+  Spruce and Fjord colorways.
 - Decide whether the grid should switch to a justified "Photos" layout for
   image-heavy folders
 - Empty-state illustrations: likely none, keep SF Symbols

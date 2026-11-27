@@ -30,9 +30,9 @@ final class ThemeSettings: @unchecked Sendable {
 
     private init() {
         let defaults = UserDefaults.standard
-        accent = defaults.string(forKey: "accent").flatMap(AccentChoice.init(storedValue:)) ?? .basalt
+        accent = defaults.string(forKey: "accent").flatMap(AccentChoice.init(storedValue:)) ?? .granite
         sidebarStyle = defaults.string(forKey: "sidebarStyle").flatMap(SidebarStyle.init) ?? .tinted
-        appIcon = defaults.string(forKey: "appIcon").flatMap(AppIconChoice.init(storedValue:)) ?? .basalt
+        appIcon = defaults.string(forKey: "appIcon").flatMap(AppIconChoice.init(storedValue:)) ?? .granite
         SharedContainer.defaults.set(accent.rawValue, forKey: "accent")
     }
 }
@@ -49,16 +49,17 @@ enum SidebarStyle: String, CaseIterable, Identifiable {
 /// System follows the Mac's own accent color (blue on iPhone and iPad) and
 /// always uses the plain sidebar, so Arkenal looks like a standard Mac app.
 enum AccentChoice: String, CaseIterable, Identifiable {
-    case system, basalt, evergreen, harbor, rosewood, amber
+    case system, granite, spruce, fjord, rowan, amber
     var id: String { rawValue }
 
-    /// Reads a saved choice, mapping accents that were removed (they looked
-    /// too alike) to the closest one left.
+    /// Reads a saved choice, mapping accents that were renamed or removed
+    /// (they looked too alike) to the closest one now.
     init?(storedValue: String) {
         switch storedValue {
-        case "forest": self = .evergreen
-        case "midnight": self = .harbor
-        case "onyx", "graphite": self = .basalt
+        case "forest", "evergreen": self = .spruce
+        case "midnight", "harbor": self = .fjord
+        case "onyx", "graphite", "basalt": self = .granite
+        case "rosewood": self = .rowan
         case "espresso": self = .amber
         default: self.init(rawValue: storedValue)
         }
@@ -67,10 +68,10 @@ enum AccentChoice: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .system: "System"
-        case .evergreen: "Evergreen"
-        case .harbor: "Harbor Blue"
-        case .basalt: "Basalt"
-        case .rosewood: "Rosewood"
+        case .spruce: "Spruce"
+        case .fjord: "Fjord"
+        case .granite: "Granite"
+        case .rowan: "Rowan"
         case .amber: "Amber"
         }
     }
@@ -78,10 +79,10 @@ enum AccentChoice: String, CaseIterable, Identifiable {
     var accent: Color {
         switch self {
         case .system: Self.systemAccent
-        case .evergreen: Color(light: 0x1D4B3C, dark: 0x6FBF9A)
-        case .harbor: Color(light: 0x1F4A6E, dark: 0x7FB2DA)
-        case .basalt: Color(light: 0x2E3A41, dark: 0xA9B8C1)
-        case .rosewood: Color(light: 0x7A2F3B, dark: 0xE3949F)
+        case .spruce: Color(light: 0x1D4B3C, dark: 0x6FBF9A)
+        case .fjord: Color(light: 0x1F4A6E, dark: 0x7FB2DA)
+        case .granite: Color(light: 0x2E3A41, dark: 0xA9B8C1)
+        case .rowan: Color(light: 0x7A2F3B, dark: 0xE3949F)
         case .amber: Color(light: 0x9A6312, dark: 0xE3B261)
         }
     }
@@ -89,30 +90,30 @@ enum AccentChoice: String, CaseIterable, Identifiable {
     /// Unused for System, which always has the plain sidebar.
     var sidebarTint: Color {
         switch self {
-        case .evergreen, .system: Color(light: 0xE3ECE6, dark: 0x18241E)
-        case .harbor: Color(light: 0xE3EAF1, dark: 0x172230)
-        case .basalt: Color(light: 0xE5E9EB, dark: 0x1A2024)
-        case .rosewood: Color(light: 0xF2E6E8, dark: 0x2A1A1D)
+        case .spruce, .system: Color(light: 0xE3ECE6, dark: 0x18241E)
+        case .fjord: Color(light: 0xE3EAF1, dark: 0x172230)
+        case .granite: Color(light: 0xE5E9EB, dark: 0x1A2024)
+        case .rowan: Color(light: 0xF2E6E8, dark: 0x2A1A1D)
         case .amber: Color(light: 0xF3ECDF, dark: 0x241D12)
         }
     }
 
     var sidebarText: Color {
         switch self {
-        case .evergreen, .system: Color(light: 0x1F2B25, dark: 0xDCE8E0)
-        case .harbor: Color(light: 0x1C2733, dark: 0xDCE6F0)
-        case .basalt: Color(light: 0x222A2F, dark: 0xE1E6E9)
-        case .rosewood: Color(light: 0x33201F, dark: 0xF0DEE1)
+        case .spruce, .system: Color(light: 0x1F2B25, dark: 0xDCE8E0)
+        case .fjord: Color(light: 0x1C2733, dark: 0xDCE6F0)
+        case .granite: Color(light: 0x222A2F, dark: 0xE1E6E9)
+        case .rowan: Color(light: 0x33201F, dark: 0xF0DEE1)
         case .amber: Color(light: 0x2E2416, dark: 0xF0E6D4)
         }
     }
 
     var sidebarSecondary: Color {
         switch self {
-        case .evergreen, .system: Color(light: 0x5E7568, dark: 0x7E9A8B)
-        case .harbor: Color(light: 0x5A6B7C, dark: 0x8296AA)
-        case .basalt: Color(light: 0x5E6A71, dark: 0x8B979E)
-        case .rosewood: Color(light: 0x7A5E62, dark: 0xA88990)
+        case .spruce, .system: Color(light: 0x5E7568, dark: 0x7E9A8B)
+        case .fjord: Color(light: 0x5A6B7C, dark: 0x8296AA)
+        case .granite: Color(light: 0x5E6A71, dark: 0x8B979E)
+        case .rowan: Color(light: 0x7A5E62, dark: 0xA88990)
         case .amber: Color(light: 0x7C6A50, dark: 0xA89478)
         }
     }
@@ -120,10 +121,10 @@ enum AccentChoice: String, CaseIterable, Identifiable {
     var onAccent: Color {
         switch self {
         case .system: .white
-        case .evergreen: Color(light: 0xF3F0E8, dark: 0x0E1F18)
-        case .harbor: Color(light: 0xF2F5F8, dark: 0x0D1B28)
-        case .basalt: Color(light: 0xF3F5F6, dark: 0x12171A)
-        case .rosewood: Color(light: 0xFAF2F2, dark: 0x22100F)
+        case .spruce: Color(light: 0xF3F0E8, dark: 0x0E1F18)
+        case .fjord: Color(light: 0xF2F5F8, dark: 0x0D1B28)
+        case .granite: Color(light: 0xF3F5F6, dark: 0x12171A)
+        case .rowan: Color(light: 0xFAF2F2, dark: 0x22100F)
         case .amber: Color(light: 0xFCF7EE, dark: 0x22180A)
         }
     }
@@ -141,34 +142,36 @@ enum AccentChoice: String, CaseIterable, Identifiable {
 
 /// The app icon: the Arkenal peak in four colorways.
 enum AppIconChoice: String, CaseIterable, Identifiable {
-    case basalt, snow, evergreen, harbor
+    case granite, snow, spruce, fjord
     var id: String { rawValue }
 
-    /// Reads a saved choice, mapping icons from before the rename.
+    /// Reads a saved choice, mapping icons that were renamed.
     init?(storedValue: String) {
         switch storedValue {
-        case "graphite": self = .basalt
+        case "graphite", "basalt": self = .granite
         case "paper": self = .snow
+        case "evergreen": self = .spruce
+        case "harbor": self = .fjord
         default: self.init(rawValue: storedValue)
         }
     }
 
     var title: String {
         switch self {
-        case .basalt: "Basalt"
+        case .granite: "Granite"
         case .snow: "Snow"
-        case .evergreen: "Evergreen"
-        case .harbor: "Harbor Blue"
+        case .spruce: "Spruce"
+        case .fjord: "Fjord"
         }
     }
 
     /// The alternate icon's name in the asset catalog; nil is the main icon.
     var assetName: String? {
         switch self {
-        case .basalt: nil
+        case .granite: nil
         case .snow: "AppIcon-Snow"
-        case .evergreen: "AppIcon-Evergreen"
-        case .harbor: "AppIcon-Harbor"
+        case .spruce: "AppIcon-Spruce"
+        case .fjord: "AppIcon-Fjord"
         }
     }
 
@@ -176,10 +179,10 @@ enum AppIconChoice: String, CaseIterable, Identifiable {
     /// (match Design/AppIcon/make_icons.py).
     var colors: (background: Color, glyph: Color, dot: Color) {
         switch self {
-        case .basalt: (Color(hex: 0x232B30), Color(hex: 0xEEF1F2), Color(hex: 0xA9B8C1))
+        case .granite: (Color(hex: 0x232B30), Color(hex: 0xEEF1F2), Color(hex: 0xA9B8C1))
         case .snow: (Color(hex: 0xEEF1F2), Color(hex: 0x2E3A41), Color(hex: 0x6F7E86))
-        case .evergreen: (Color(hex: 0x1D4B3C), Color(hex: 0xF3F0E8), Color(hex: 0x8FD3B0))
-        case .harbor: (Color(hex: 0x1F4A6E), Color(hex: 0xF2F5F8), Color(hex: 0x7FB2DA))
+        case .spruce: (Color(hex: 0x1D4B3C), Color(hex: 0xF3F0E8), Color(hex: 0x8FD3B0))
+        case .fjord: (Color(hex: 0x1F4A6E), Color(hex: 0xF2F5F8), Color(hex: 0x7FB2DA))
         }
     }
 

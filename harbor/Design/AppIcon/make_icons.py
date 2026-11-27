@@ -18,10 +18,10 @@ ICON_SHIFT = 3
 
 VARIANTS = {
     # folder: (background, mark, core)
-    "AppIcon": ("232B30", "EEF1F2", "A9B8C1"),          # Basalt (main icon)
+    "AppIcon": ("232B30", "EEF1F2", "A9B8C1"),          # Granite (main icon)
     "AppIcon-Snow": ("EEF1F2", "2E3A41", "6F7E86"),
-    "AppIcon-Evergreen": ("1D4B3C", "F3F0E8", "8FD3B0"),
-    "AppIcon-Harbor": ("1F4A6E", "F2F5F8", "7FB2DA"),
+    "AppIcon-Spruce": ("1D4B3C", "F3F0E8", "8FD3B0"),
+    "AppIcon-Fjord": ("1F4A6E", "F2F5F8", "7FB2DA"),
 }
 
 ROOT = Path(__file__).resolve().parents[2]

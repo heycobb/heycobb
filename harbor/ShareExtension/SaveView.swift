@@ -443,10 +443,10 @@ private struct FolderList: View {
 enum SharedAccent {
     static var color: Color {
         let palette: [String: (UInt32, UInt32)] = [
-            "basalt": (0x2E3A41, 0xA9B8C1),
-            "evergreen": (0x1D4B3C, 0x6FBF9A),
-            "harbor": (0x1F4A6E, 0x7FB2DA),
-            "rosewood": (0x7A2F3B, 0xE3949F),
+            "granite": (0x2E3A41, 0xA9B8C1),
+            "spruce": (0x1D4B3C, 0x6FBF9A),
+            "fjord": (0x1F4A6E, 0x7FB2DA),
+            "rowan": (0x7A2F3B, 0xE3949F),
             "amber": (0x9A6312, 0xE3B261),
         ]
         if SharedContainer.defaults.string(forKey: "accent") == "system" {
@@ -456,7 +456,7 @@ enum SharedAccent {
             return Color(nsColor: .controlAccentColor)
             #endif
         }
-        let pair = palette[SharedContainer.defaults.string(forKey: "accent") ?? ""] ?? palette["basalt"]!
+        let pair = palette[SharedContainer.defaults.string(forKey: "accent") ?? ""] ?? palette["granite"]!
         return dynamic(light: pair.0, dark: pair.1)
     }
 
