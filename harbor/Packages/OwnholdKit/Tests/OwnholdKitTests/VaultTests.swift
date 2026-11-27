@@ -354,14 +354,23 @@ struct VaultServiceTests {
         #expect(try await names(service, "/share/V/Plain/Sub") == ["deep.txt"])
         #expect(!nas.storedNames(under: "/share/V").contains("deep.txt"))
 
+        // A move that stopped part way can be run again: it carries on into
+        // the folder the first attempt made.
+        try FileManager.default.createDirectory(at: nas.url("/share/V2/Sub"), withIntermediateDirectories: true)
+        try Data("again".utf8).write(to: nas.url("/share/V2/Sub/again.txt"))
+        _ = try await service.createFolder(named: "V2", in: "/share/V")
+        try await service.move([nas.item("/share/V2")], to: "/share/V")
+        #expect(try await names(service, "/share/V/V2/Sub") == ["again.txt"])
+
         // A whole encrypted folder can be renamed, but not put in another.
         let renamedVault = try await service.rename(nas.item("/share/V"), to: "W")
         #expect(service.state.knownRoots == ["/share/W"])
-        #expect(try await names(service, renamedVault.path) == ["A", "B", "Plain"])
+        #expect(try await names(service, renamedVault.path) == ["A", "B", "Plain", "V2"])
         _ = try await service.createVault(named: "Other", in: "/share", password: "pw")
         await #expect(throws: VaultError.nested) { try await service.move([nas.item("/share/Other")], to: "/share/W") }
 
-        try await service.delete([RemoteItem(path: "/share/W/Plain", name: "Plain", isDirectory: true)])
+        try await service.delete([RemoteItem(path: "/share/W/Plain", name: "Plain", isDirectory: true),
+                                  RemoteItem(path: "/share/W/V2", name: "V2", isDirectory: true)])
         #expect(try await names(service, "/share/W") == ["A", "B"])
         try await service.delete([nas.item("/share/W")])
         #expect(service.state.knownRoots == ["/share/Other"])

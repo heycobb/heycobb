@@ -55,6 +55,20 @@ struct WireFormatTests {
         #expect(NASError.from(code: try #require(envelope.error).code, api: "SYNO.API.Auth") == .twoFactorRequired)
     }
 
+    @Test func namesThatLookLikeNumbersAreSentAsText() {
+        #expect(FileStationClient.jsonList("2009") == #"["2009"]"#)
+        #expect(FileStationClient.jsonList("/home/TEST FOLDER") == #"["/home/TEST FOLDER"]"#)
+        #expect(FileStationClient.jsonList(#"Say "hi""#) == #"["Say \"hi\""]"#)
+    }
+
+    @Test func readsTheSpecificReasonInsideAGeneralError() throws {
+        let json = #"{"success":false,"error":{"code":1100,"errors":[{"code":414,"path":"/home/a"}]}}"#
+        let envelope = try JSONDecoder().decode(Envelope<Empty>.self, from: Data(json.utf8))
+        #expect(NASError.from(code: envelope.error!.effectiveCode, api: "SYNO.FileStation.CreateFolder") == .alreadyExists)
+        let plain = try JSONDecoder().decode(Envelope<Empty>.self, from: Data(#"{"success":false,"error":{"code":408}}"#.utf8))
+        #expect(plain.error?.effectiveCode == 408)
+    }
+
     @Test func errorCodesDependOnAPI() {
         #expect(NASError.from(code: 408, api: "SYNO.FileStation.List") == .notFound)
         #expect(NASError.from(code: 408, api: "SYNO.API.Auth") == .passwordExpired)

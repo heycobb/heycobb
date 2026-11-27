@@ -424,9 +424,16 @@ public final class VaultFileService: FileService {
     private func transfer(_ item: RemoteItem, to folder: String) async throws {
         try Task.checkCancellation()
         if item.isDirectory {
-            let created = try await createFolder(named: item.name, in: folder)
+            // Build the path here: a NAS may answer with another form of it.
+            let target = RemoteItem.join(folder, item.name)
+            do {
+                _ = try await createFolder(named: item.name, in: folder)
+            } catch NASError.alreadyExists {
+                // Left by an earlier attempt that stopped part way: carry on
+                // into it. Files that are already there still aren't replaced.
+            }
             for child in try await allItems(in: item.path, using: self) {
-                try await transfer(child, to: created.path)
+                try await transfer(child, to: target)
             }
         } else {
             let file = try await download(item)

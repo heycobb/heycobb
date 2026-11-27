@@ -8,9 +8,13 @@ private let minimumPasswordLength = 8
 
 // MARK: - New encrypted folder
 
-/// Makes an encrypted folder, then shows its recovery key once.
+/// Makes an encrypted folder, optionally moves chosen items into it
+/// (encrypting them), then shows its recovery key once.
 struct NewEncryptedFolderView: View {
     let parent: String
+    /// Items to encrypt into the new folder.
+    var moving: [RemoteItem] = []
+    var suggestedName = ""
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
@@ -19,27 +23,48 @@ struct NewEncryptedFolderView: View {
     @State private var working = false
     @State private var error: String?
     @State private var created: (name: String, recoveryKey: String)?
+    @State private var progress: String?
+    @State private var moveNote: String?
 
     var body: some View {
         NavigationStack {
             Group {
                 if let created {
-                    RecoveryKeyView(folderName: created.name, recoveryKey: created.recoveryKey) { dismiss() }
+                    RecoveryKeyView(folderName: created.name, recoveryKey: created.recoveryKey, note: moveNote) { dismiss() }
+                } else if let progress {
+                    VStack(spacing: Theme.Spacing.m) {
+                        ProgressView()
+                        Text(progress).foregroundStyle(.secondary)
+                        Text("Keep Ownhold open until this finishes.")
+                            .font(.footnote)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 240)
+                    .padding()
                 } else {
                     form
                 }
             }
-            .navigationTitle(created == nil ? "New Encrypted Folder" : "Recovery Key")
+            .navigationTitle(created != nil ? "Recovery Key" : title)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
         }
         .tint(Theme.accent)
         .interactiveDismissDisabled(created != nil || working)
+        .onAppear { if name.isEmpty { name = suggestedName } }
         #if os(macOS)
         .frame(width: 460)
         .fixedSize(horizontal: false, vertical: true)
         #endif
+    }
+
+    private var title: String {
+        switch moving.count {
+        case 0: "New Encrypted Folder"
+        case 1: "Encrypt “\(moving[0].name)”"
+        default: "Encrypt \(moving.count) Items"
+        }
     }
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
@@ -62,6 +87,15 @@ struct NewEncryptedFolderView: View {
                     .textContentType(.newPassword)
             } footer: {
                 Text(passwordFooter)
+            }
+            if !moving.isEmpty {
+                Section {
+                    Label(moving.count == 1
+                          ? "“\(moving[0].name)” is encrypted and moved into the new folder. The original is deleted once it's safely copied."
+                          : "The \(moving.count) items are encrypted and moved into the new folder. Each original is deleted once it's safely copied.",
+                          systemImage: "arrow.down.doc")
+                }
+                .font(.callout)
             }
             Section {
                 Label("Files are encrypted on this device before they're uploaded. Your NAS, and anyone who gets its drives, sees only scrambled data.", systemImage: "lock")
@@ -104,6 +138,14 @@ struct NewEncryptedFolderView: View {
             let result = try await model.createEncryptedFolder(named: trimmedName, in: parent, password: password)
             password = ""
             confirm = ""
+            if !moving.isEmpty {
+                progress = moving.count == 1 ? "Encrypting “\(moving[0].name)”…" : "Encrypting \(moving.count) items…"
+                let moved = await model.move(moving, to: result.folder.path)
+                progress = nil
+                if !moved {
+                    moveNote = "Some items couldn't be moved in. They're still where they were; you can move them into “\(result.folder.name)” later."
+                }
+            }
             created = (result.folder.name, result.recoveryKey)
         } catch {
             self.error = error.localizedDescription
@@ -118,12 +160,19 @@ struct NewEncryptedFolderView: View {
 struct RecoveryKeyView: View {
     let folderName: String
     let recoveryKey: String
+    var note: String?
     let onDone: () -> Void
     @State private var saved = false
     @State private var copied = false
 
     var body: some View {
         Form {
+            if let note {
+                Section {
+                    Label(note, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.orange)
+                }
+            }
             Section {
                 Text(recoveryKey)
                     .font(.system(.title3, design: .monospaced).weight(.medium))

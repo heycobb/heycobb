@@ -53,6 +53,8 @@ struct FolderView: View {
     @State private var playing: MediaPlayback?
     @State private var linkItem: RemoteItem?
     @State private var creatingVault = false
+    /// Items to encrypt into the new encrypted folder (empty: an empty folder).
+    @State private var vaultItems: [RemoteItem] = []
     @State private var changingVaultPassword: String?
 
     typealias MoveRequest = FolderViewMoveRequest
@@ -88,8 +90,8 @@ struct FolderView: View {
             .sheet(item: $linkItem) { item in
                 ShareLinkView(item: item)
             }
-            .sheet(isPresented: $creatingVault) {
-                NewEncryptedFolderView(parent: folder.path)
+            .sheet(isPresented: $creatingVault, onDismiss: { vaultItems = [] }) {
+                NewEncryptedFolderView(parent: folder.path, moving: vaultItems, suggestedName: suggestedVaultName)
             }
             .sheet(item: Binding(get: { changingVaultPassword.map(IdentifiedPath.init) }, set: { changingVaultPassword = $0?.path })) { request in
                 ChangeFolderPasswordView(root: request.path)
@@ -167,6 +169,30 @@ struct FolderView: View {
     private var encrypted: Bool { model.isEncrypted(folder.path) }
     private var canShareLinks: Bool { model.service != nil && serverKind.hasShareLinks && !encrypted }
     private var canExtractOnNAS: Bool { serverKind.hasArchives && !encrypted }
+
+    /// Whether chosen items can be encrypted into a new encrypted folder here.
+    private func canEncrypt(_ chosen: [RemoteItem]) -> Bool {
+        canChange && !encrypted && !chosen.isEmpty && !chosen.contains { model.isEncryptedFolder($0.path) }
+    }
+
+    /// Opens New Encrypted Folder, moving `items` into it. Making one is Pro;
+    /// opening existing ones never is, so no one is locked out of their files.
+    private func encrypt(_ items: [RemoteItem]) {
+        guard ProStore.shared.isUnlocked else {
+            model.showingPro = true
+            return
+        }
+        vaultItems = items
+        creatingVault = true
+    }
+
+    private var suggestedVaultName: String {
+        guard !vaultItems.isEmpty else { return "" }
+        let base = vaultItems.count == 1
+            ? (vaultItems[0].isDirectory ? vaultItems[0].name : (vaultItems[0].name as NSString).deletingPathExtension) + " (Encrypted)"
+            : "Encrypted Files"
+        return RemoteItem.uniqueName(for: base, avoiding: Set(items.map(\.name)))
+    }
 
     /// The encrypted folder this is in, while it's locked.
     private var lockedRoot: String? {
@@ -583,6 +609,9 @@ struct FolderView: View {
             if !model.isEncryptedFolder(item.path) {
                 Button("Compress", systemImage: "archivebox") { Task { await compress([item]) } }
             }
+            if canEncrypt([item]) {
+                Button("Encrypt into New Folder…", systemImage: "lock.rectangle.stack") { encrypt([item]) }
+            }
             if item.isArchive, canExtractOnNAS {
                 Button("Extract Here", systemImage: "archivebox.circle") { Task { await extract(item) } }
             }
@@ -614,7 +643,7 @@ struct FolderView: View {
                         Button("New Encrypted Folder…", systemImage: "lock.rectangle.stack") {
                             // Making one is Pro; opening existing ones never is,
                             // so no one is ever locked out of their own files.
-                            if ProStore.shared.isUnlocked { creatingVault = true } else { model.showingPro = true }
+                            encrypt([])
                         }
                     }
                 } label: {
@@ -677,18 +706,29 @@ struct FolderView: View {
         #if os(iOS)
         Spacer()
         #endif
-        Button("Compress", systemImage: "archivebox") { Task { await compress(chosen) } }
-            .disabled(chosen.isEmpty || !canChange || working != nil)
-        #if os(iOS)
-        Spacer()
-        #endif
-        Button("Keep Offline", systemImage: "arrow.down.circle") {
-            Task {
-                for item in chosen where !model.savedPaths.contains(item.path) { await model.toggleOffline(item) }
-                endSelecting()
+        Menu {
+            Button("Keep Offline", systemImage: "arrow.down.circle") {
+                Task {
+                    for item in chosen where !model.savedPaths.contains(item.path) { await model.toggleOffline(item) }
+                    endSelecting()
+                }
             }
+            .disabled(model.service == nil)
+            Button("Compress", systemImage: "archivebox") { Task { await compress(chosen) } }
+                .disabled(!canChange || working != nil || chosen.contains { model.isEncryptedFolder($0.path) })
+            if !encrypted {
+                Button("Encrypt into New Folder…", systemImage: "lock.rectangle.stack") {
+                    let items = chosen
+                    endSelecting()
+                    encrypt(items)
+                }
+                .disabled(!canEncrypt(chosen))
+            }
+        } label: {
+            Label("More", systemImage: "ellipsis.circle")
         }
-        .disabled(chosen.isEmpty || model.service == nil)
+        .menuIndicator(.hidden)
+        .disabled(chosen.isEmpty)
         #if os(iOS)
         Spacer()
         #endif
@@ -844,7 +884,6 @@ private struct ChangeDialogs: ViewModifier {
             // leave Create stuck off (or on).
             .alert("New Folder", isPresented: $creatingFolder) {
                 TextField("Name", text: $newName)
-                    .onSubmit { create() }
                 Button("Create") { create() }
                 Button("Cancel", role: .cancel) {}
             } message: {
@@ -852,7 +891,6 @@ private struct ChangeDialogs: ViewModifier {
             }
             .alert("Rename", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } }), presenting: renaming) { item in
                 TextField("Name", text: $newName)
-                    .onSubmit { rename(item) }
                 Button("Rename") { rename(item) }
                 Button("Cancel", role: .cancel) {}
             } message: { item in

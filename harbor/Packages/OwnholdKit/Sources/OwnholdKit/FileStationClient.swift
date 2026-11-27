@@ -160,7 +160,7 @@ public actor FileStationClient: FileService {
            let envelope = try? JSONDecoder().decode(Envelope<Empty>.self, from: body),
            !envelope.success {
             try? FileManager.default.removeItem(at: url)
-            throw NASError.from(code: envelope.error?.code ?? 100, api: "SYNO.FileStation.Download")
+            throw NASError.from(code: envelope.error?.effectiveCode ?? 100, api: "SYNO.FileStation.Download")
         }
         if let http = response as? HTTPURLResponse, !(200 ..< 300).contains(http.statusCode) {
             try? FileManager.default.removeItem(at: url)
@@ -205,11 +205,19 @@ public actor FileStationClient: FileService {
 
     // MARK: Changes
 
+    /// A value as a one-item JSON list (["2009"]). DSM reads a bare value
+    /// that looks like a number ("2009") as a number and rejects it, so names
+    /// go in this form.
+    static func jsonList(_ value: String) -> String {
+        let data = (try? JSONSerialization.data(withJSONObject: [value], options: [.withoutEscapingSlashes])) ?? Data()
+        return String(decoding: data, as: UTF8.self)
+    }
+
     public func createFolder(named name: String, in parent: String) async throws -> RemoteItem {
         guard RemoteItem.isValidName(name) else { throw NASError.invalidName }
         let data: FolderList = try await call("SYNO.FileStation.CreateFolder", method: "create", preferredVersion: 2, params: [
-            "folder_path": parent,
-            "name": name,
+            "folder_path": Self.jsonList(parent),
+            "name": Self.jsonList(name),
             "force_parent": "false",
         ])
         guard let folder = data.folders.first else { throw NASError.malformedResponse }
@@ -221,7 +229,7 @@ public actor FileStationClient: FileService {
         // The reply is {"files": [...]} without the paging fields of a listing.
         let data: RenamedFiles = try await call("SYNO.FileStation.Rename", method: "rename", preferredVersion: 2, params: [
             "path": item.path,
-            "name": name,
+            "name": Self.jsonList(name),
             "additional": #"["size","time"]"#,
         ])
         return data.files.first?.item ?? item.with(path: RemoteItem.join(item.parentPath, name), name: name)
@@ -320,7 +328,7 @@ public actor FileStationClient: FileService {
         }
         let envelope = try decode(Envelope<Empty>.self, from: data)
         guard envelope.success else {
-            throw NASError.from(code: envelope.error?.code ?? 100, api: api)
+            throw NASError.from(code: envelope.error?.effectiveCode ?? 100, api: api)
         }
     }
 
@@ -475,8 +483,8 @@ public actor FileStationClient: FileService {
             if let empty = Empty() as? T { return empty }
             throw NASError.malformedResponse
         }
-        let error = NASError.from(code: envelope.error?.code ?? 100, api: api)
-        Self.log.debug("\(api, privacy: .public).\(method, privacy: .public) failed with code \(envelope.error?.code ?? -1)")
+        let error = NASError.from(code: envelope.error?.effectiveCode ?? 100, api: api)
+        Self.log.error("\(api, privacy: .public).\(method, privacy: .public) failed with code \(envelope.error?.code ?? -1) (\(envelope.error?.effectiveCode ?? -1))")
         if error == .sessionExpired { sid = nil }
         throw error
     }
@@ -515,7 +523,7 @@ public actor FileStationClient: FileService {
         guard let http = response as? HTTPURLResponse else { throw NASError.malformedResponse }
         if http.mimeType == "application/json" || http.mimeType == "text/plain",
            let envelope = try? JSONDecoder().decode(Envelope<Empty>.self, from: body), !envelope.success {
-            throw NASError.from(code: envelope.error?.code ?? 100, api: api)
+            throw NASError.from(code: envelope.error?.effectiveCode ?? 100, api: api)
         }
         guard (200 ..< 300).contains(http.statusCode) else {
             throw http.statusCode == 404 ? NASError.notFound : NASError.server(code: http.statusCode, api: api)
@@ -536,7 +544,16 @@ struct Envelope<T: Decodable>: Decodable {
     let error: APIErrorBody?
 }
 
-struct APIErrorBody: Decodable { let code: Int }
+struct APIErrorBody: Decodable {
+    struct Detail: Decodable { let code: Int }
+    let code: Int
+    /// Some calls (CreateFolder, Delete) fail with a general code such as 1100
+    /// and give the real reason per item here, e.g. 414 "already exists".
+    let errors: [Detail]?
+
+    /// The most specific code: the first item's reason when there is one.
+    var effectiveCode: Int { errors?.first?.code ?? code }
+}
 
 struct Empty: Decodable, Sendable { init() {} }
 
