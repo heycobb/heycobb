@@ -185,7 +185,7 @@ struct QuickConnectSection: View {
                     Text("QuickConnect IDs use only letters, numbers and hyphens.")
                         .foregroundStyle(.red)
                 }
-                Text("Ownhold asks Synology's QuickConnect service for your NAS's current addresses, then connects to it directly. Only the ID is sent to Synology. Your files and password never go through Synology's servers.")
+                Text("Used only to look up your NAS's address. Files and passwords don't go through Synology.")
                 Button("Where do I find it?", action: showGuide)
                     .buttonStyle(.borderless)
             }

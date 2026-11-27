@@ -216,7 +216,7 @@ struct BrowserView: View {
                     macRow(.recents, title: "Recents", symbol: "clock")
                 }
                 macRow(.offline, title: "Offline", symbol: "arrow.down.circle", badge: model.savedPaths.count)
-                macRow(.photoBackup, title: "Photo Backup", symbol: "photo.on.rectangle")
+                macRow(.photoBackup, title: "Photo Backup", symbol: "arrow.triangle.2.circlepath")
                 macRow(.backup, title: "Folder Backup", symbol: "clock.arrow.circlepath")
                 if !recycleBins.isEmpty {
                     macRow(.recentlyDeleted, title: "Recently Deleted", symbol: "trash")
@@ -300,7 +300,7 @@ struct BrowserView: View {
                 }
                 .listRowBackground(rowBackground(.offline))
                 NavigationLink(value: SidebarItem.backup) {
-                    sidebarLabel("Photo Backup", symbol: "photo.on.rectangle", item: .backup)
+                    sidebarLabel("Photo Backup", symbol: "arrow.triangle.2.circlepath", item: .backup)
                 }
                 .listRowBackground(rowBackground(.backup))
                 if !recycleBins.isEmpty {

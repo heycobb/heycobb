@@ -52,7 +52,7 @@ struct SignInView: View {
                     } footer: {
                         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
                             AddressHints(endpoints: endpoints)
-                            Text("Ownhold tries them all at once and uses the highest one on this list that answers, so your home network wins when you're home. It works out whether your NAS is a Synology or uses file sharing (SMB). For WebDAV, enter its HTTPS address and port.")
+                            Text("The first address in this list that answers is used. For WebDAV, enter its HTTPS address.")
                         }
                     }
                     QuickConnectSection(id: $quickConnectID) { showingGuide = true }
@@ -90,7 +90,7 @@ struct SignInView: View {
                     }
                 } footer: {
                     if needsCode {
-                        Text("Your NAS uses 2-factor sign-in. If you remember this device, you won't be asked for a code here again.")
+                        Text("A remembered device isn't asked for a code again.")
                     }
                 }
 

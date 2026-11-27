@@ -88,21 +88,6 @@ struct NewEncryptedFolderView: View {
             } footer: {
                 Text(passwordFooter)
             }
-            if !moving.isEmpty {
-                Section {
-                    Label(moving.count == 1
-                          ? "“\(moving[0].name)” is encrypted and moved into the new folder. The original is deleted once it's safely copied."
-                          : "The \(moving.count) items are encrypted and moved into the new folder. Each original is deleted once it's safely copied.",
-                          systemImage: "arrow.down.doc")
-                }
-                .font(.callout)
-            }
-            Section {
-                Label("Files are encrypted on this device before they're uploaded. Your NAS, and anyone who gets its drives, sees only scrambled data.", systemImage: "lock")
-                Label("If you forget the password and lose the recovery key, no one can open these files, including Ownhold.", systemImage: "exclamationmark.triangle")
-            }
-            .font(.callout)
-            .foregroundStyle(.secondary)
             if let error {
                 Section { Text(error).foregroundStyle(.red) }
             }
@@ -127,7 +112,8 @@ struct NewEncryptedFolderView: View {
     private var passwordFooter: String {
         if !confirm.isEmpty, password != confirm { return "The passwords don't match." }
         if !password.isEmpty, password.count < minimumPasswordLength { return "Use at least \(minimumPasswordLength) characters." }
-        return "A few unrelated words make a strong password that's easy to remember."
+        let moved = moving.isEmpty ? "" : " The originals are deleted once they're copied in."
+        return "If you forget the password and lose the recovery key, the files can't be recovered.\(moved)"
     }
 
     private func create() async {
@@ -185,7 +171,7 @@ struct RecoveryKeyView: View {
             } header: {
                 Text("“\(folderName)”")
             } footer: {
-                Text("If you forget the password, this key is the only way to open the folder. Write it down or keep it in your password manager. It isn't stored anywhere else, and Ownhold won't show it again.")
+                Text("The only way in if you forget the password. It won't be shown again.")
             }
             Section {
                 Button(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc") {
@@ -227,15 +213,15 @@ extension VaultUnlockMode {
 
     /// What it means, for a footer.
     var explanation: String {
-        let away = "after \(Int(AppModel.vaultLockDelay / 60)) minutes away"
+        let away = "Locks when you quit Ownhold or after \(Int(AppModel.vaultLockDelay / 60)) minutes away."
         switch self {
         case .password:
-            return "It locks when Ownhold quits or \(away), and asks for the password again."
+            return away
         case .biometric:
-            let name = VaultBiometrics.biometryName ?? "the device passcode"
-            return "It locks when Ownhold quits or \(away), and opens with \(name)\(VaultBiometrics.biometryName == nil ? "" : " or the device passcode"). Ownhold never sees your face or fingerprint."
+            let name = VaultBiometrics.biometryName.map { "\($0) or your passcode" } ?? "your passcode"
+            return "\(away) Opens with \(name)."
         case .keepUnlocked:
-            return "It opens without asking, also in \(Platform.isMac ? "Finder" : "the Files app"). The folder's key stays in this device's Keychain until you lock the folder. Anyone who can use this device unlocked can open it."
+            return "Opens without asking, also in \(Platform.isMac ? "Finder" : "the Files app"). Anyone using this device can open it."
         }
     }
 
@@ -271,18 +257,6 @@ struct UnlockFolderView: View {
 
     var body: some View {
         Form {
-            Section {
-                VStack(spacing: Theme.Spacing.s) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 34))
-                        .foregroundStyle(Theme.accent)
-                    Text("“\(name)” is encrypted")
-                        .font(.headline)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Theme.Spacing.s)
-            }
             if usesBiometrics {
                 Section {
                     Button {
@@ -291,6 +265,8 @@ struct UnlockFolderView: View {
                         Label("Unlock with \(VaultBiometrics.biometryName ?? "Passcode")", systemImage: VaultUnlockMode.biometric.symbol)
                     }
                     .disabled(working)
+                } header: {
+                    Label("Encrypted Folder", systemImage: "lock.fill")
                 }
             }
             Section {
@@ -303,6 +279,8 @@ struct UnlockFolderView: View {
                         Text(mode.title).tag(mode)
                     }
                 }
+            } header: {
+                if !usesBiometrics { Label("Encrypted Folder", systemImage: "lock.fill") }
             } footer: {
                 Text(nextTime.explanation)
             }
@@ -410,7 +388,7 @@ struct RecoverFolderView: View {
                 } header: {
                     Text("Recovery Key")
                 } footer: {
-                    Text("The key shown when the folder was made.")
+                    Text("The key shown when the folder was created.")
                 }
                 Section {
                     SecureField("New Password", text: $password)
@@ -421,7 +399,7 @@ struct RecoverFolderView: View {
                     if !confirm.isEmpty, password != confirm {
                         Text("The passwords don't match.")
                     } else {
-                        Text("Use at least \(minimumPasswordLength) characters. The recovery key keeps working.")
+                        Text("Use at least \(minimumPasswordLength) characters.")
                     }
                 }
                 if let error {
@@ -486,7 +464,7 @@ struct ChangeFolderPasswordView: View {
                     if !confirm.isEmpty, password != confirm {
                         Text("The passwords don't match.")
                     } else {
-                        Text("Files aren't re-encrypted, so this is instant. Other devices need the new password next time they unlock. The recovery key doesn't change.")
+                        Text("Other devices will need the new password. The recovery key stays the same.")
                     }
                 }
                 if let error {

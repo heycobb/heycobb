@@ -34,7 +34,7 @@ struct WelcomeView: View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
             Text("Ownhold")
                 .font(.system(.largeTitle, weight: .semibold))
-            Text("Browse, open and save the files and photos on your NAS, at home or through your VPN when you're out.")
+            Text("The files and photos on your NAS, at home and away.")
                 .font(.title3)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

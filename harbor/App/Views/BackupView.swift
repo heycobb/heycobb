@@ -70,9 +70,9 @@ struct BackupView: View {
             } footer: {
                 if backup.settings.automatic {
                     #if os(iOS)
-                    Text("Backs up when you open Ownhold, and in the background when iOS allows. Never in Low Power Mode. Cellular use is in Settings.")
+                    Text("Runs when you open Ownhold and in the background, except in Low Power Mode.")
                     #else
-                    Text("Backs up while Ownhold is open, when new photos arrive. Never in Low Power Mode.")
+                    Text("Runs while Ownhold is open, as new photos arrive, except in Low Power Mode.")
                     #endif
                 }
             }
@@ -109,10 +109,10 @@ struct BackupView: View {
             }
         } footer: {
             if backup.access == .limited {
-                Text("Ownhold can see only the photos you selected. To back up everything, allow full access in Settings.")
+                Text("Only the photos you selected are backed up. Allow full access in Settings to include everything.")
             } else if Platform.isMac {
                 // Needed: on a Mac this is the question people ask first.
-                Text("Photos already backed up from an iPhone using the same iCloud library are skipped.")
+                Text("Photos already backed up from an iPhone on the same iCloud library are skipped.")
             }
         }
     }

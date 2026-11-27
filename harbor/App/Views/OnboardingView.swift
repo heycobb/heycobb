@@ -325,7 +325,7 @@ struct OnboardingView: View {
     private var options: some View {
         @Bindable var model = model
         return VStack(alignment: .leading, spacing: Theme.Spacing.l) {
-            title("You're connected", detail: "A few options to start with. All of them are in Settings.")
+            title("You're connected", detail: "You can change these later in Settings.")
             VStack(spacing: 0) {
                 optionRow(Platform.isMac ? "Show NAS in Finder" : "Show NAS in Files App",
                           symbol: Platform.isMac ? "finder" : "folder",
