@@ -10,6 +10,7 @@ struct FolderView: View {
     let folder: RemoteItem
 
     @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
     @Environment(\.horizontalSizeClass) private var sizeClass
     @AppStorage("layout") private var layout: BrowseLayout = .list
     @AppStorage("sortField") private var sort: SortField = .name
@@ -596,6 +597,11 @@ struct FolderView: View {
             UnlockModePicker(root: item.path)
             Button("Change Password…", systemImage: "key") { changingVaultPassword = item.path }
         }
+        #if os(macOS)
+        if item.isDirectory {
+            Button("Open in New Tab", systemImage: "plus.square.on.square") { WindowTabs.openTab(item, with: openWindow) }
+        }
+        #endif
         if item.isDirectory {
             Button(model.isFavorite(item) ? "Remove from Favorites" : "Add to Favorites",
                    systemImage: model.isFavorite(item) ? "star.slash" : "star") { model.toggleFavorite(item) }

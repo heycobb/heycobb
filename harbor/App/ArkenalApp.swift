@@ -32,15 +32,23 @@ struct ArkenalApp: App {
 
     var body: some Scene {
         #if os(macOS)
-        // One main window on the Mac, so the menu bar's "Open Arkenal"
-        // brings it back instead of opening another.
-        Window("Arkenal", id: Self.mainWindowID) {
+        // Windows and tabs. The main window has a fixed value, so the menu
+        // bar's "Open Arkenal" brings it back instead of opening another;
+        // File › New Tab and Open in New Tab add tabs (see WindowTabs).
+        WindowGroup("Arkenal", id: Self.mainWindowID, for: WindowTarget.self) { $target in
             RootView()
                 .environment(model)
+                .environment(\.initialFolder, target.folder)
+                .background(WindowReader { WindowTabs.attach($0) })
                 .task { await model.start() }
+        } defaultValue: {
+            .main
         }
         .defaultSize(width: 1100, height: 720)
-        .commands { FolderMenuCommands() }
+        .commands {
+            WindowCommands()
+            FolderMenuCommands()
+        }
         // Open the window at every launch, even if it was closed (to the
         // menu bar) when Arkenal last quit.
         .defaultLaunchBehavior(.presented)

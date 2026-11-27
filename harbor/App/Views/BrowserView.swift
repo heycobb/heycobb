@@ -13,6 +13,11 @@ enum SidebarItem: Hashable {
     case photos
 }
 
+extension EnvironmentValues {
+    /// A folder a new Mac window or tab opens with (Open in New Tab).
+    @Entry var initialFolder: RemoteItem? = nil
+}
+
 /// Sidebar of shares + a folder stack. On iPhone this collapses into a single
 /// navigation stack; on iPad and Mac it's a two-column layout.
 struct BrowserView: View {
@@ -29,6 +34,13 @@ struct BrowserView: View {
     // Both columns from the start wherever they fit; one column on iPhone either way.
     @State private var visibility: NavigationSplitViewVisibility = .all
     @Environment(\.isBlackout) private var isBlackout
+    @Environment(\.initialFolder) private var initialFolder
+    @State private var openedInitialFolder = false
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    /// Whether this window is the front one: menu bar requests go there.
+    @Environment(\.appearsActive) private var appearsActive
+    #endif
 
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
@@ -69,23 +81,51 @@ struct BrowserView: View {
                 visibility = .all
             }
         }
-        .onChange(of: model.navigationRequest, initial: true) {
-            // From the Mac menu bar: show a share or the Offline list.
-            guard let request = model.navigationRequest else { return }
-            #if os(iOS)
-            // Tabs on iPhone and iPad (MainTabs handles these).
-            if [.photos, .recents, .offline].contains(request) { return }
-            #endif
-            selection = request
-            path = []
-            model.navigationRequest = nil
-        }
+        #if os(macOS)
+        .onChange(of: appearsActive) { handleNavigationRequest() }
+        #endif
+        .onChange(of: model.navigationRequest, initial: true) { handleNavigationRequest() }
         #if os(iOS)
         .sheet(isPresented: $showingSettings) {
             NavigationStack { SettingsView() }
         }
         #endif
     }
+
+    /// From the Mac menu bar (or onboarding): show a share or a list. With
+    /// several Mac windows or tabs, only the front one acts on it.
+    private func handleNavigationRequest() {
+        #if os(macOS)
+        guard appearsActive else { return }
+        #endif
+        guard let request = model.navigationRequest else { return }
+        #if os(iOS)
+        // Tabs on iPhone and iPad (MainTabs handles these).
+        if [.photos, .recents, .offline].contains(request) { return }
+        #endif
+        selection = request
+        path = []
+        model.navigationRequest = nil
+    }
+
+    /// A new Mac window or tab opened on a folder: its shared folder in the
+    /// sidebar, the folder itself on top.
+    private func openInitialFolder() {
+        guard !openedInitialFolder, let folder = initialFolder,
+              let share = shares.first(where: { $0.path == "/" + (folder.path.split(separator: "/").first.map(String.init) ?? "") })
+        else { return }
+        openedInitialFolder = true
+        selection = .share(share)
+        guard folder.path != share.path else { return }
+        // After the selection change, which clears the folder stack.
+        Task { @MainActor in path = [folder] }
+    }
+
+    #if os(macOS)
+    private func openInNewTabButton(_ folder: RemoteItem) -> some View {
+        Button("Open in New Tab", systemImage: "plus.square.on.square") { WindowTabs.openTab(folder, with: openWindow) }
+    }
+    #endif
 
     @ViewBuilder private var detailRoot: some View {
         switch selection {
@@ -204,6 +244,7 @@ struct BrowserView: View {
                 sharesPlaceholder
                 ForEach(shares) { share in
                     macRow(.share(share), title: share.name, symbol: "externaldrive")
+                        .contextMenu { openInNewTabButton(share) }
                 }
             } header: {
                 sectionHeader("Shared Folders")
@@ -212,7 +253,10 @@ struct BrowserView: View {
                 Section {
                     ForEach(model.favorites) { folder in
                         macRow(.favorite(folder), title: folder.name, symbol: "star")
-                            .contextMenu { unfavoriteButton(folder) }
+                            .contextMenu {
+                                openInNewTabButton(folder)
+                                unfavoriteButton(folder)
+                            }
                     }
                 } header: {
                     sectionHeader("Favorites")
@@ -455,6 +499,7 @@ struct BrowserView: View {
         }
         do {
             shares = try await service.listShares()
+            openInitialFolder()
             if showsTwoColumns { selectInitialShare() }
             recycleBins = model.activeServer?.kind.hasRecycleBin == false ? [] : await model.recycleBins(in: shares)
         } catch {
