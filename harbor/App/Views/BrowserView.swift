@@ -43,6 +43,9 @@ struct BrowserView: View {
                         FolderView(folder: folder)
                     }
             }
+            #if os(macOS)
+            .modifier(GlassCard(on: Theme.Sidebar.isGlass && !isBlackout))
+            #endif
         }
         #if os(iOS)
         // Side by side whenever there's room (iPad, an unfolded iPhone Duo),
@@ -110,7 +113,7 @@ struct BrowserView: View {
     private var sidebar: some View {
         sidebarList
             // Tinted: the accent's light tint. Plain: the system's sidebar.
-            .scrollContentBackground(Theme.Sidebar.isTinted || isBlackout ? .hidden : .automatic)
+            .scrollContentBackground(Theme.Sidebar.isTinted || Theme.Sidebar.isGlass || isBlackout ? .hidden : .automatic)
             .background(Theme.Sidebar.isTinted ? Theme.Sidebar.background : isBlackout ? Blackout.background : .clear)
         .navigationTitle(model.activeServer?.name ?? "Arkenal")
         #if os(iOS)

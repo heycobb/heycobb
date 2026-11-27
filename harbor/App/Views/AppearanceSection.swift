@@ -35,13 +35,13 @@ struct AppearanceSection: View {
             }
             .padding(.vertical, Theme.Spacing.xs)
 
-            // System always uses the plain sidebar, like other Mac apps, and
-            // Blackout's sidebar is black like the rest of the window.
-            if theme.accent != .system, appearance != .blackout {
+            // Blackout's sidebar is black like the rest of the window. System
+            // has no tint of its own: Plain (or Glass on the Mac) only.
+            if SidebarStyle.available(accent: theme.accent).count > 1, appearance != .blackout {
                 // Labeled explicitly: a segmented picker hides its own label.
                 LabeledContent("Sidebar") {
                     Picker("Sidebar", selection: $theme.sidebarStyle) {
-                        ForEach(SidebarStyle.allCases) { Text($0.title).tag($0) }
+                        ForEach(SidebarStyle.available(accent: theme.accent)) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()

@@ -20,6 +20,15 @@ enum Theme {
     enum Sidebar {
         /// Blackout turns the tint off: the sidebar is black like the rest.
         static var isTinted: Bool { ThemeSettings.shared.sidebarStyle == .tinted && ThemeSettings.shared.accent != .system && !Blackout.isOn }
+        /// Glass (Mac): the window is frosted and the content sits on a card.
+        /// Blackout stays solid black.
+        static var isGlass: Bool {
+            #if os(macOS)
+            ThemeSettings.shared.sidebarStyle == .glass && !Blackout.isOn
+            #else
+            false
+            #endif
+        }
         static var background: Color { ThemeSettings.shared.accent.sidebarTint }
         static var text: Color { isTinted ? ThemeSettings.shared.accent.sidebarText : .primary }
         static var secondary: Color { isTinted ? ThemeSettings.shared.accent.sidebarSecondary : .secondary }
@@ -149,6 +158,45 @@ extension View {
     func blackoutSurface() -> some View { modifier(BlackoutSurface()) }
 }
 
+#if os(macOS)
+/// The desktop behind the window, frosted (like Finder's sidebar). Goes
+/// solid while the window is in the background, as macOS does, and with
+/// Reduce Transparency.
+struct WindowGlass: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .underWindowBackground
+        view.blendingMode = .behindWindow
+        view.state = .followsWindowActiveState
+        #if DEBUG
+        // For checking the look with the window in the background.
+        if CommandLine.arguments.contains("-glassActive") { view.state = .active }
+        #endif
+        return view
+    }
+
+    func updateNSView(_ view: NSVisualEffectView, context: Context) {}
+}
+
+/// Glass: the content area as a rounded card, inset from the frosted window
+/// on every side. No if/else (it would reset scroll positions on a switch).
+struct GlassCard: ViewModifier {
+    let on: Bool
+    static let radius: CGFloat = 10
+    static let inset: CGFloat = 8
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: on ? Self.radius : 0, style: .continuous)
+        content
+            .background { shape.fill(Color(nsColor: .controlBackgroundColor)) }
+            .clipShape(shape)
+            .overlay { shape.strokeBorder(.primary.opacity(on ? 0.08 : 0), lineWidth: 0.5) }
+            .padding([.horizontal, .bottom], on ? Self.inset : 0)
+            .toolbarBackgroundVisibility(on ? .hidden : .automatic, for: .windowToolbar)
+    }
+}
+#endif
+
 extension EnvironmentValues {
     /// Settings › Appearance › Blackout, for views that draw their own
     /// backgrounds (the Mac sidebar).
@@ -159,10 +207,21 @@ extension EnvironmentValues {
 /// window background shows through the sidebar, folders and empty screens.
 struct BlackoutWindow: ViewModifier {
     let on: Bool
+    /// The main window follows the Glass sidebar style; Settings stays solid.
+    var followsGlass = false
 
     func body(content: Content) -> some View {
         #if os(macOS)
-        content.containerBackground(on ? Blackout.background : Color(nsColor: .windowBackgroundColor), for: .window)
+        // Glass: the desktop shows through, frosted. Reduce Transparency in
+        // System Settings makes the material solid on its own.
+        let glass = followsGlass && !on && ThemeSettings.shared.sidebarStyle == .glass
+        content.containerBackground(for: .window) {
+            ZStack {
+                Color(nsColor: .windowBackgroundColor).opacity(on || glass ? 0 : 1)
+                Blackout.background.opacity(on ? 1 : 0)
+                if glass { WindowGlass() }
+            }
+        }
         #else
         content.background(on ? Blackout.background : .clear)
         #endif

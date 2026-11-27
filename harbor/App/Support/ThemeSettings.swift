@@ -39,8 +39,27 @@ final class ThemeSettings: @unchecked Sendable {
 
 enum SidebarStyle: String, CaseIterable, Identifiable {
     case tinted, plain
+    /// Mac only: the whole window frosted, the content on a rounded card.
+    case glass
     var id: String { rawValue }
-    var title: String { self == .tinted ? "Tinted" : "Plain" }
+
+    var title: String {
+        switch self {
+        case .tinted: "Tinted"
+        case .plain: "Plain"
+        case .glass: "Glass"
+        }
+    }
+
+    /// The styles offered here: Glass is Mac only, and Tinted needs an
+    /// accent color (System has none of its own).
+    static func available(accent: AccentChoice) -> [SidebarStyle] {
+        #if os(macOS)
+        accent == .system ? [.plain, .glass] : [.tinted, .plain, .glass]
+        #else
+        [.tinted, .plain]
+        #endif
+    }
 }
 
 /// Each accent sets four colors, for light and dark: the accent itself, the

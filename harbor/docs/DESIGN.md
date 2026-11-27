@@ -23,7 +23,10 @@ every element has a job.
    Spruce, Fjord, Rowan and Amber, plus System (the Mac's own accent with
    the plain sidebar), a Plain sidebar, and matching alternate app icons
    (Snow, Spruce, Fjord) in `ThemeSettings.swift` and `App/AppIcon-*.icon`.
-   Granite is the default.
+   Granite is the default. On the Mac, the Glass sidebar style frosts the
+   whole window (the desktop shows through, solid when the window is in the
+   background or with Reduce Transparency) and puts the content on a rounded
+   card inset 8 pt on every side; Blackout stays solid.
 
 4. **Type does the work.** San Francisco at system sizes, with full Dynamic
    Type. Sizes, dates and paths use monospaced digits or SF Mono, which
