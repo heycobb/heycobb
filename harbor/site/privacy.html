@@ -16,7 +16,7 @@
 
   <nav><a href="support.html">Support</a><a href="privacy.html" aria-current="page">Privacy</a></nav>
   <h1>Privacy Policy</h1>
-  <p class="muted">Effective 25 November 2026 · Updated 25 November 2026 (QuickConnect)</p>
+  <p class="muted">Effective 25 November 2026 · Updated 26 November 2026 (SMB and WebDAV, Photo Backup list)</p>
 
   <div class="summary">
     <p><strong>The short version: Ownhold collects no data.</strong></p>
@@ -34,7 +34,7 @@
   <p>To work, Ownhold keeps some information on your device. None of it is sent to us.</p>
   <ul>
     <li><strong>Your NAS details:</strong> the name you give each NAS, its addresses, your QuickConnect ID if you use one, the addresses it last found, and your account name. These are stored with the app's data, so they're included in your normal device backups. Your password is not.</li>
-    <li><strong>Sign-in session:</strong> after you sign in, Ownhold keeps the session your NAS gives it (and, if you choose “Remember this device”, the NAS's device token) in the system Keychain. These items stay on this device only. They don't sync to iCloud Keychain.</li>
+    <li><strong>Sign-in session:</strong> after you sign in, Ownhold keeps the session your NAS gives it (and, if you choose “Remember this device”, the NAS's device token) in the system Keychain. These items stay on this device only. They don't sync to iCloud Keychain. A NAS connected with SMB or WebDAV has no session to keep, so for those Ownhold keeps your password in the Keychain instead, under the same rules (see <a href="#password">Your password</a>).</li>
     <li><strong>Certificate fingerprints:</strong> when you trust your NAS's certificate, its fingerprint is stored in the Keychain, so Ownhold can warn you if the certificate ever changes.</li>
     <li><strong>Files you keep offline:</strong> stored on your device, encrypted while your iPhone or iPad is locked, and excluded from backups.</li>
     <li><strong>Thumbnails and previews:</strong> kept in a cache your device can clear at any time. Files opened for a quick preview are deleted the next time the app starts.</li>
@@ -45,16 +45,19 @@
   </ul>
 
   <h2>Files you upload</h2>
-  <p>Files you upload go directly from your device to your NAS, over the same encrypted connection. Ownhold keeps a temporary copy of photos only while they upload, then deletes it.</p>
+  <p>Files you upload go directly from your device to your NAS, over the same connection Ownhold uses to browse it. Ownhold keeps a temporary copy of photos only while they upload, then deletes it.</p>
 
-  <h2>Your password</h2>
-  <p>When you sign in, your password is sent once, over an encrypted HTTPS connection, directly to your NAS. Ownhold does not store it, and it never passes through any server of ours. Ownhold only ever connects over HTTPS.</p>
+  <h2 id="password">Your password</h2>
+  <p><strong>Synology:</strong> when you sign in, your password is sent once, over an encrypted HTTPS connection, directly to your NAS. Ownhold does not store it; it keeps the session your NAS returns.</p>
+  <p><strong>SMB and WebDAV</strong> (other NAS): these have no sessions, so Ownhold keeps your password in this device's Keychain, not synced to iCloud, and uses it each time it connects: over HTTPS for WebDAV, and with SMB's own sign-in for SMB. Signing out or removing the NAS deletes it.</p>
+  <p>Your password never passes through any server of ours. Connections to a Synology or WebDAV NAS are always HTTPS. Most NAS don't encrypt SMB file transfers, so we recommend SMB only on your home network or over a VPN such as Tailscale.</p>
 
   <h2>Connections the app makes</h2>
   <p>Ownhold connects to the NAS addresses you enter: on your home network, through a private network (VPN) such as Tailscale, or over the internet. In the built-in demo library, it makes no network connections at all.</p>
   <p><strong>QuickConnect (optional):</strong> if you enter a Synology QuickConnect ID, Ownhold asks Synology's QuickConnect service (quickconnect.to) for your NAS's current addresses each time it connects. Only the QuickConnect ID is sent to Synology, under Synology's privacy policy, and Synology can see the network address your request comes from, as with any internet request. Your account name, password and files are never sent to Synology, and Ownhold never routes your connection through Synology's relay servers. If you don't enter a QuickConnect ID, Ownhold never contacts Synology.</p>
   <p>If you use Tailscale or another VPN, that connection is provided by its own app, under its own privacy policy. Ownhold doesn't communicate with their servers.</p>
-  <p><strong>Finding your NAS (setup):</strong> while the setup screen looks for a NAS, Ownhold asks devices on your home network that share files whether they run Synology DSM. No account details are sent.</p>
+  <p><strong>Finding your NAS (setup):</strong> while the setup screen looks for a NAS, Ownhold asks devices on your home network that share files whether they run Synology DSM; the others are listed as file-sharing (SMB) servers. No account details are sent.</p>
+  <p><strong>Photo Backup:</strong> to avoid uploading the same photo from two devices that use the same iCloud Photos library, Ownhold keeps a small list in your backup folder on the NAS (.ownhold-backup.json). It holds iCloud's identifiers for the backed-up items and their file names, nothing else, and stays on your NAS.</p>
   <p><strong>Ownhold Pro:</strong> buying or restoring Ownhold Pro goes through Apple's App Store. Apple handles the payment; Ownhold only learns whether Pro is unlocked, and never sees your payment details or Apple Account.</p>
 
   <h2>Share links</h2>

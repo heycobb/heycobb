@@ -140,8 +140,7 @@ subscription. No free trial of Pro for now.
 - Other NAS brands, step 1-2 done (2026-11-26): SMB (SMBClient, MIT) and
   WebDAV, detected from the address. WebDAV tested against Apache mod_dav
   here; SMB not yet tested against a real server. No brand adapters yet.
-- Privacy policy: needs a line saying SMB/WebDAV passwords are kept in the
-  Keychain (not done: waiting for approval).
+- Privacy policy: updated for SMB/WebDAV passwords and the backup list (2026-11-26).
 - NAS status at a glance (item 6), share with NAS users, file versions.
 
 ## Feedback (2026-11-26), done
