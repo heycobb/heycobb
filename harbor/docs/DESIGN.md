@@ -63,9 +63,11 @@ every element has a job.
 
 ## Open design work
 
-- App icon: done. `App/AppIcon.icon` (Icon Composer format); flat sources in
-  `Design/AppIcon/`. The "oh" monogram: the h of *hold* sheltering the o of
-  *own*, cream on deep evergreen with a mint dot.
+- App icon: done. `App/AppIcon.icon` (Icon Composer format), generated with
+  the alternates, menu bar icon and Finder symbol by
+  `Design/AppIcon/make_icons.py`. The peak: an A, a snowy summit and a roof,
+  its snow-filled tip sheltering the core. Snow on basalt by default; Snow,
+  Evergreen and Harbor Blue colorways.
 - Decide whether the grid should switch to a justified "Photos" layout for
   image-heavy folders
 - Empty-state illustrations: likely none, keep SF Symbols

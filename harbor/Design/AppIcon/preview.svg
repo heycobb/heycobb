@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <!-- Flat preview of the full icon (Icon Composer adds the glass, light and dark). -->
-  <rect width="1024" height="1024" rx="229" fill="#1D4B3C"/>
-  <path d="M317.4 819.2 V256 M317.4 522.2 A194.6 194.6 0 0 1 706.6 522.2 V819.2"
-        fill="none" stroke="#F3F0E8" stroke-width="97.3" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="512" cy="675.8" r="87" fill="#8FD3B0"/>
+  <rect width="1024" height="1024" rx="229" fill="#232B30"/>
+  <polygon points="200.3,829.4 512.0,182.1 823.7,829.4 732.8,829.4 557.8,465.9 466.2,465.9 291.2,829.4" fill="#EEF1F2" stroke="#EEF1F2" stroke-width="6" stroke-linejoin="round"/>
+  <circle cx="512.0" cy="675.8" r="81.9" fill="#A9B8C1"/>
 </svg>

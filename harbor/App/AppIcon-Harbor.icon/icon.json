@@ -6,13 +6,13 @@
     {
       "layers": [
         {
-          "image-name": "dot.svg",
-          "name": "dot",
+          "image-name": "core.svg",
+          "name": "core",
           "glass": true
         },
         {
-          "image-name": "h.svg",
-          "name": "h",
+          "image-name": "peak.svg",
+          "name": "peak",
           "glass": true
         }
       ],

@@ -1,18 +1,18 @@
 {
   "fill": {
-    "automatic-gradient": "extended-srgb:0.95294,0.94118,0.90980,1.00000"
+    "automatic-gradient": "extended-srgb:0.11373,0.29412,0.23529,1.00000"
   },
   "groups": [
     {
       "layers": [
         {
-          "image-name": "dot.svg",
-          "name": "dot",
+          "image-name": "core.svg",
+          "name": "core",
           "glass": true
         },
         {
-          "image-name": "h.svg",
-          "name": "h",
+          "image-name": "peak.svg",
+          "name": "peak",
           "glass": true
         }
       ],
