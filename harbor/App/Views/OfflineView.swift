@@ -36,9 +36,9 @@ struct OfflineView: View {
         .overlay {
             if entries.isEmpty {
                 ContentUnavailableView(
-                    "Nothing Offline Yet",
+                    "Nothing Offline",
                     systemImage: "arrow.down.circle",
-                    description: Text("Swipe a file or folder, or use its menu, and choose Keep Offline.")
+                    description: Text("Choose Keep Offline on a file or folder.")
                 )
             }
         }

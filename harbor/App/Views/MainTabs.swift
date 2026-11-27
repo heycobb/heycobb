@@ -12,34 +12,43 @@ enum AppTab: Hashable {
 
 struct MainTabs: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var tab: AppTab = .browse
+
+    /// iPhone (compact width): a tab bar docked to the bottom edge. iPad and
+    /// an open iPhone Duo keep the system's tab bar (top or side).
+    private var embedded: Bool { sizeClass == .compact }
 
     var body: some View {
         TabView(selection: $tab) {
             Tab("Browse", systemImage: "externaldrive", value: AppTab.browse) {
-                BrowserView()
+                BrowserView().modifier(SystemTabBar(hidden: embedded))
             }
             Tab("Photos", systemImage: "photo.on.rectangle.angled", value: AppTab.photos) {
                 NavigationStack {
                     if ProStore.shared.isUnlocked { PhotoLibraryView() } else { ProLockedView(title: "Photos") }
                 }
+                .modifier(SystemTabBar(hidden: embedded))
             }
             if model.keepRecents {
                 Tab("Recents", systemImage: "clock", value: AppTab.recents) {
-                    NavigationStack { RecentsView() }
+                    NavigationStack { RecentsView() }.modifier(SystemTabBar(hidden: embedded))
                 }
             }
             Tab("Offline", systemImage: "arrow.down.circle", value: AppTab.offline) {
-                NavigationStack { OfflineView() }
+                NavigationStack { OfflineView() }.modifier(SystemTabBar(hidden: embedded))
             }
             .badge(model.savedPaths.count)
             Tab(value: AppTab.search, role: .search) {
-                NavigationStack { SearchView() }
+                NavigationStack { SearchView() }.modifier(SystemTabBar(hidden: embedded))
             }
         }
         .tabViewStyle(.tabBarOnly)
-        // Gives photo grids and long folders the whole screen while scrolling.
-        .tabBarMinimizeBehavior(.onScrollDown)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if embedded { EmbeddedTabBar(tab: $tab, items: items) }
+        }
+        // The keyboard covers the docked bar rather than lifting it.
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .onChange(of: model.keepRecents) {
             if !model.keepRecents, tab == .recents { tab = .browse }
         }
@@ -55,6 +64,88 @@ struct MainTabs: View {
             case nil: return
             }
             model.navigationRequest = nil
+        }
+    }
+
+    private var items: [EmbeddedTabBar.Item] {
+        var list: [EmbeddedTabBar.Item] = [
+            .init(tab: .browse, title: "Browse", symbol: "externaldrive"),
+            .init(tab: .photos, title: "Photos", symbol: "photo.on.rectangle.angled"),
+        ]
+        if model.keepRecents { list.append(.init(tab: .recents, title: "Recents", symbol: "clock")) }
+        list.append(.init(tab: .offline, title: "Offline", symbol: "arrow.down.circle", badge: model.savedPaths.count))
+        list.append(.init(tab: .search, title: "Search", symbol: "magnifyingglass"))
+        return list
+    }
+}
+
+/// Hides the system's floating tab bar where the docked one is used.
+private struct SystemTabBar: ViewModifier {
+    let hidden: Bool
+
+    func body(content: Content) -> some View {
+        content.toolbarVisibility(hidden ? .hidden : .automatic, for: .tabBar)
+    }
+}
+
+/// A tab bar docked to the bottom edge, full width, like the classic iOS
+/// tab bar: the screen's own background, a hairline on top.
+struct EmbeddedTabBar: View {
+    struct Item: Identifiable {
+        let tab: AppTab
+        let title: String
+        let symbol: String
+        var badge = 0
+        var id: AppTab { tab }
+    }
+
+    @Binding var tab: AppTab
+    let items: [Item]
+    @Environment(\.isBlackout) private var isBlackout
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(items) { item in
+                let selected = tab == item.tab
+                Button {
+                    if tab != item.tab { Haptics.tap() }
+                    tab = item.tab
+                } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: item.symbol)
+                            .symbolVariant(selected ? .fill : .none)
+                            .font(.system(size: 21, weight: .regular))
+                            .frame(height: 26)
+                            .overlay(alignment: .topTrailing) {
+                                if item.badge > 0 {
+                                    Text("\(item.badge)")
+                                        .font(.caption2.weight(.semibold).monospacedDigit())
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 5)
+                                        .frame(minWidth: 17, minHeight: 17)
+                                        .background(Capsule().fill(.red))
+                                        .offset(x: 12, y: -4)
+                                }
+                            }
+                        Text(item.title)
+                            .font(.caption2.weight(.medium))
+                    }
+                    .foregroundStyle(selected ? Theme.accent : Color.secondary)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(item.badge > 0 ? "\(item.title), \(item.badge)" : item.title)
+                .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
+            }
+        }
+        .padding(.top, 7)
+        .padding(.bottom, 1)
+        .background {
+            Rectangle()
+                .fill(isBlackout ? AnyShapeStyle(Blackout.background) : AnyShapeStyle(.bar))
+                .overlay(alignment: .top) { Divider() }
+                .ignoresSafeArea(edges: .bottom)
         }
     }
 }

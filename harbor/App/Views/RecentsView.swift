@@ -20,7 +20,7 @@ struct RecentsView: View {
         }
         .overlay {
             if model.recents.isEmpty {
-                ContentUnavailableView("No Recent Files", systemImage: "clock", description: Text("Files you open appear here."))
+                ContentUnavailableView("No Recent Files", systemImage: "clock")
             }
         }
         .navigationTitle("Recents")
