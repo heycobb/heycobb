@@ -109,7 +109,8 @@ subscription. No free trial of Pro for now.
   "Back Up Now".
 - **Pro:** automatic Photo Backup, Folder Backup (Mac), Keep Downloaded and
   Keep Finder Up to Date, Photos timeline, Shortcuts actions, Scan to NAS,
-  background uploads, more than one NAS, Wake NAS, Recently Deleted; later NAS
+  background uploads, more than one NAS, Wake NAS, Recently Deleted, encrypted
+  folders (creating; opening stays free); later NAS
   status and other NAS brands.
 - **Build:** StoreKit 2 non-consumable (`app.ownhold.pro`), `Entitlement`
   check in Kit (transaction listener, `Transaction.currentEntitlements`),
@@ -145,7 +146,8 @@ subscription. No free trial of Pro for now.
   Apple's built-in crypto only; format in docs/ENCRYPTION.md. Tested on the
   NAS in TEST FOLDER (create, recovery key, move in/out, preview, lock,
   wrong password, recovery + new password, Keep Unlocked across relaunch).
-  Still to do: decide Free or Pro; check the Files app/Finder with a folder
+  Pro (decided 2026-11-26): making one needs Pro; unlocking, browsing and
+  moving files out never do. Still to do: check the Files app/Finder with a folder
   kept unlocked; Mac UI check; New Encrypted Folder in the Mac File menu.
   Before release: App Store Connect encryption questions and
   ITSAppUsesNonExemptEncryption (now false), see docs/ENCRYPTION.md.

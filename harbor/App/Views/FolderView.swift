@@ -611,7 +611,11 @@ struct FolderView: View {
                         creatingFolder = true
                     }
                     if !encrypted {
-                        Button("New Encrypted Folder…", systemImage: "lock.rectangle.stack") { creatingVault = true }
+                        Button("New Encrypted Folder…", systemImage: "lock.rectangle.stack") {
+                            // Making one is Pro; opening existing ones never is,
+                            // so no one is ever locked out of their own files.
+                            if ProStore.shared.isUnlocked { creatingVault = true } else { model.showingPro = true }
+                        }
                     }
                 } label: {
                     Label("Add", systemImage: "plus")

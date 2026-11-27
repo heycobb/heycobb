@@ -30,6 +30,7 @@ struct ProView: View {
                             feature("Large uploads that finish in the background", "arrow.up.circle")
                         }
                         feature("More than one NAS", "externaldrive.badge.plus")
+                        feature("Encrypted folders", "lock.rectangle.stack")
                         feature("Wake NAS and Recently Deleted", "power")
                     }
                     if store.isUnlocked {
