@@ -92,6 +92,12 @@ Goal: QNAP, UniFi (UNAS), UGREEN, TrueNAS and others, without a separate app.
 4. **Discovery**: keep the SMB Bonjour browse; identify brand by probing
    (DSM API, QNAP `/cgi-bin/authLogin.cgi`, else WebDAV/SMB). Onboarding lists
    any NAS; brand only changes the sign-in details asked for.
+   QNAP research (2026-11-27, parked): File Station HTTP API v5 and the
+   QTS login API v5.1 are public PDFs on qnap.com/dev; write our own client
+   from them (no licensed code found to reuse). Test against a fake server,
+   then a few hours on QuTScloud (paid, AWS/Azure or x86 VM; live demo is
+   browser-only), then TestFlight users. QNAP already works partly today
+   over SMB/WebDAV.
 5. **Per-brand help**: setup guide split by brand; QuickConnect stays Synology.
 6. **Testing**: needs access to each brand (QNAP and UniFi test units or
    loaners). Don't ship a brand we haven't tested on real hardware.
