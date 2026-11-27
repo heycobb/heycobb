@@ -676,6 +676,7 @@ struct FolderView: View {
                     }
                     .menuIndicator(.hidden)
                     .help("Lock this encrypted folder")
+                    .accessibilityLabel("Lock “\((root as NSString).lastPathComponent)”")
                 }
             }
             viewOptions

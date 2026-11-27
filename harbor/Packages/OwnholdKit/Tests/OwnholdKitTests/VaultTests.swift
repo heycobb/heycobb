@@ -372,7 +372,13 @@ struct VaultServiceTests {
         try await service.delete([RemoteItem(path: "/share/W/Plain", name: "Plain", isDirectory: true),
                                   RemoteItem(path: "/share/W/V2", name: "V2", isDirectory: true)])
         #expect(try await names(service, "/share/W") == ["A", "B"])
-        try await service.delete([nas.item("/share/W")])
+        // A locked encrypted folder can still be renamed, moved and deleted.
+        service.state.lock("/share/W")
+        let renamedLocked = try await service.rename(nas.item("/share/W"), to: "W2")
+        #expect(service.state.knownRoots.contains(renamedLocked.path))
+        try FileManager.default.createDirectory(at: nas.url("/share/Box"), withIntermediateDirectories: true)
+        try await service.move([nas.item("/share/W2")], to: "/share/Box")
+        try await service.delete([nas.item("/share/Box/W2")])
         #expect(service.state.knownRoots == ["/share/Other"])
     }
 

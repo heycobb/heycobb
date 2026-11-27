@@ -134,6 +134,13 @@ public final class VaultFileService: FileService {
         return Location(root: root, keys: keys)
     }
 
+    /// Where an item is, for changes to the item itself. An encrypted folder
+    /// is an ordinary folder on the NAS (only its contents are encrypted), so
+    /// it can be renamed, moved or deleted while locked.
+    private func itemLocation(of path: String) throws -> Location? {
+        state.isRoot(path) ? nil : try location(of: path)
+    }
+
     private func components(_ path: String, in root: String) -> [String] {
         path.dropFirst(root.count).split(separator: "/").map(String.init)
     }
@@ -362,7 +369,7 @@ public final class VaultFileService: FileService {
     }
 
     public func rename(_ item: RemoteItem, to name: String) async throws -> RemoteItem {
-        guard let location = try location(of: item.path), item.path != location.root else {
+        guard let location = try itemLocation(of: item.path) else {
             let renamed = try await base.rename(item, to: name)
             state.move(from: item.path, to: renamed.path)
             return renamed
@@ -383,8 +390,8 @@ public final class VaultFileService: FileService {
         var direct: [RemoteItem] = []
         var transfers: [RemoteItem] = []
         for item in items {
-            let source = try location(of: item.path)
-            let isRoot = source?.root == item.path
+            let isRoot = state.isRoot(item.path)
+            let source = try itemLocation(of: item.path)
             if source == nil || isRoot {
                 // Moving a whole encrypted folder (or a plain item) keeps its
                 // stored form; it can't go inside another encrypted folder.
@@ -451,7 +458,7 @@ public final class VaultFileService: FileService {
         var stored: [RemoteItem] = []
         var folders: [String] = []
         for item in items {
-            if let location = try location(of: item.path), item.path != location.root {
+            if let location = try itemLocation(of: item.path) {
                 let storedItem = try storedItem(item, location)
                 stored.append(storedItem)
                 if let sidecar = sidecar(for: storedItem.path) { stored.append(sidecar) }
