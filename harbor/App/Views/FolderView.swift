@@ -212,6 +212,14 @@ struct FolderView: View {
                 creatingFolder = true
             },
             uploadFiles: { showingFiles = true },
+            canNewEncryptedFolder: writable && !encrypted,
+            newEncryptedFolder: { encrypt([]) },
+            canEncryptSelection: canEncrypt(chosen),
+            encryptSelection: {
+                let items = chosen
+                endSelecting()
+                encrypt(items)
+            },
             canRename: writable && chosen.count == 1,
             canDelete: writable && !chosen.isEmpty,
             canExtract: writable && canExtractOnNAS && chosen.count == 1 && chosen[0].isArchive,
@@ -1031,6 +1039,10 @@ struct FolderCommands {
     var isSelecting: Bool
     var newFolder: () -> Void
     var uploadFiles: () -> Void
+    var canNewEncryptedFolder: Bool
+    var newEncryptedFolder: () -> Void
+    var canEncryptSelection: Bool
+    var encryptSelection: () -> Void
     var canRename: Bool
     var canDelete: Bool
     var canExtract: Bool

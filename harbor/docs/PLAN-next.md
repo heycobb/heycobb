@@ -148,7 +148,7 @@ subscription. No free trial of Pro for now.
   wrong password, recovery + new password, Keep Unlocked across relaunch).
   Pro (decided 2026-11-26): making one needs Pro; unlocking, browsing and
   moving files out never do. Still to do: check the Files app/Finder with a folder
-  kept unlocked; Mac UI check; New Encrypted Folder in the Mac File menu.
+  kept unlocked; Mac UI check.
   Face ID / Touch ID unlock with passcode fallback built (2026-11-26);
   the real Face ID prompt needs checking on an iPhone (the simulator
   releases the key without prompting).
