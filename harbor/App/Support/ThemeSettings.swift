@@ -214,7 +214,13 @@ struct MonogramIcon: View {
         Canvas { context, size in
             let s = size.width / 100
             let rect = CGRect(origin: .zero, size: size)
-            context.fill(Path(roundedRect: rect, cornerRadius: 22.4 * s, style: .continuous), with: .color(colors.background))
+            let tile = Path(roundedRect: rect, cornerRadius: 22.4 * s, style: .continuous)
+            context.fill(tile, with: .color(colors.background))
+            // The light icon needs an edge to stand out on white.
+            if choice == .snow {
+                context.stroke(Path(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), cornerRadius: 22.4 * s - 0.5, style: .continuous),
+                               with: .color(.black.opacity(0.12)), lineWidth: 1)
+            }
             var peak = Path()
             peak.addLines(Self.peak.map { CGPoint(x: $0.x * s, y: $0.y * s) })
             peak.closeSubpath()

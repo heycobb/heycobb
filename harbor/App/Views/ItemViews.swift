@@ -143,9 +143,15 @@ struct ThumbnailView: View {
     var body: some View {
         ZStack {
             if let image {
-                Image(decorative: image.image, scale: 1)
-                    .resizable()
-                    .scaledToFill()
+                // Filled and cropped to this view's own size, so the edge
+                // below follows the tile rather than the taller image.
+                Color.clear
+                    .overlay {
+                        Image(decorative: image.image, scale: 1)
+                            .resizable()
+                            .scaledToFill()
+                    }
+                    .clipped()
                     .transition(.opacity)
             } else {
                 Rectangle()
@@ -156,6 +162,11 @@ struct ThumbnailView: View {
         .frame(width: side, height: side)
         .frame(maxWidth: side == nil ? .infinity : nil, maxHeight: side == nil ? .infinity : nil)
         .clipShape(.rect(cornerRadius: side == nil ? 0 : Theme.thumbnailRadius * 0.75))
+        // A hairline edge, so white document pages don't melt into a light background.
+        .overlay {
+            RoundedRectangle(cornerRadius: side == nil ? Theme.thumbnailRadius : Theme.thumbnailRadius * 0.75, style: .continuous)
+                .strokeBorder(.primary.opacity(image == nil ? 0 : 0.12), lineWidth: 0.5)
+        }
         .animation(.easeOut(duration: 0.15), value: image != nil)
         .task(id: item.id) {
             guard item.canShowThumbnail, let cache = model.thumbnails, let service = model.service else { return }
