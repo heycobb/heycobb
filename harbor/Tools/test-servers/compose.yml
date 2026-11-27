@@ -1,0 +1,29 @@
+# Local test servers for Arkenal's WebDAV and SMB code (not used by the app).
+#   colima start && docker compose -f Tools/test-servers/compose.yml up -d
+#   ./Tools/test-servers/run-tests.sh
+# The accounts below are throwaway test accounts for these local containers.
+services:
+  nextcloud:
+    image: nextcloud:stable-apache
+    ports: ["8443:443"]
+    environment:
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_ADMIN_USER: arkenal
+      NEXTCLOUD_ADMIN_PASSWORD: t-538d3d28f4176a10
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost 127.0.0.1
+    volumes:
+      - ./certs/server.crt:/etc/ssl/certs/ssl-cert-snakeoil.pem:ro
+      - ./certs/server.key:/etc/ssl/private/ssl-cert-snakeoil.key:ro
+    # The image serves plain HTTP; Arkenal only uses HTTPS, so turn on
+    # Apache's TLS site with a self-signed certificate (like a fresh NAS).
+    command: bash -c "a2enmod ssl >/dev/null && a2ensite default-ssl >/dev/null && exec /entrypoint.sh apache2-foreground"
+
+  # Samba: the SMB server inside OpenMediaVault, TrueNAS, UGREEN, Asustor,
+  # TerraMaster and most other NAS systems.
+  samba:
+    image: dockurr/samba
+    ports: ["1445:445"]
+    environment:
+      NAME: Data
+      USER: arkenal
+      PASS: t-1982385b794e94b8

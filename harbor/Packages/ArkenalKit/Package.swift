@@ -13,7 +13,8 @@ let package = Package(
     ],
     dependencies: [
         // SMB2/3 client in Swift. MIT licence. Pinned to an exact release.
-        .package(url: "https://github.com/kishikawakatsumi/SMBClient", exact: "0.3.1"),
+        // main after 0.3.1: fixes large SMB downloads stalling (no tagged release yet).
+        .package(url: "https://github.com/kishikawakatsumi/SMBClient", revision: "66eafaa6d17e034e8036dee4b3ebc1b52cb53919"),
     ],
     targets: [
         .target(name: "ArkenalKit", dependencies: [.product(name: "SMBClient", package: "SMBClient")]),

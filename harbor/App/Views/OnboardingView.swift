@@ -481,6 +481,7 @@ struct OnboardingView: View {
             defer { working = false }
             if serverKind == nil, !usesQuickConnect {
                 serverKind = await ServerDetector.detect(addresses: [address])
+                if serverKind == .webdav, let nextcloud = await ServerDetector.nextcloudAddress(address) { address = nextcloud }
             }
             let profile = ServerProfile(
                 name: name.isEmpty ? "NAS" : name,

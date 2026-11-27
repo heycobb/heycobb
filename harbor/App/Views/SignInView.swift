@@ -166,6 +166,14 @@ struct SignInView: View {
         ].compactMap { $0 }
     }
 
+    /// A Nextcloud server's typed address becomes its WebDAV address
+    /// (shown in the field, so it's clear what's used).
+    private func useNextcloudAddresses() async {
+        if let address = await ServerDetector.nextcloudAddress(homeAddress) { homeAddress = address }
+        if let address = await ServerDetector.nextcloudAddress(vpnAddress) { vpnAddress = address }
+        if let address = await ServerDetector.nextcloudAddress(internetAddress) { internetAddress = address }
+    }
+
     private var canSubmit: Bool {
         guard !password.isEmpty, !needsCode || otpCode.count >= 6 else { return false }
         guard existing == nil else { return true }
@@ -187,6 +195,7 @@ struct SignInView: View {
             let qc = quickConnectID.trimmingCharacters(in: .whitespaces)
             if existing == nil, detectedKind == nil {
                 detectedKind = qc.isEmpty ? await ServerDetector.detect(addresses: [homeAddress, vpnAddress, internetAddress]) : .synology
+                if detectedKind == .webdav { await useNextcloudAddresses() }
             }
             let profile = existing ?? ServerProfile(
                 name: name.isEmpty ? "NAS" : name,

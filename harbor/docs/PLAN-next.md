@@ -146,7 +146,11 @@ subscription. No free trial of Pro for now.
   Photos access).
 - Other NAS brands, step 1-2 done (2026-11-26): SMB (SMBClient, MIT) and
   WebDAV, detected from the address. WebDAV tested against Apache mod_dav
-  here; SMB not yet tested against a real server. No brand adapters yet.
+  and Nextcloud 34, SMB against Samba 4.23 (2026-11-27, `Tools/test-servers`:
+  Docker via colima, then `run-tests.sh`). That found large SMB downloads
+  stalling in SMBClient 0.3.1; pinned to a fixed commit on its main branch
+  until a release ships. Nextcloud is found from its plain address
+  (status.php) and uses remote.php/webdav/. No brand adapters yet.
 - Privacy policy: updated for SMB/WebDAV passwords and the backup list (2026-11-26).
 - Encrypted folders: built (2026-11-26). Files encrypted on the device with
   Apple's built-in crypto only; format in docs/ENCRYPTION.md. Tested on the

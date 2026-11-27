@@ -25,6 +25,7 @@ public enum ServerDetector {
         let typedPort = URLComponents(string: text.lowercased().hasPrefix("https://") ? text : "https://" + text)?.port
         if await isSynology(host: host, port: typedPort ?? 5001, timeout: timeout) { return .synology }
         if let typedPort, typedPort != 5001, await isWebDAV(host: host, port: typedPort, timeout: timeout) { return .webdav }
+        if await nextcloudAddress(text, timeout: timeout) != nil { return .webdav }
         if await isListening(host: host, port: 445, timeout: timeout) { return .smb }
         return nil
     }
@@ -56,6 +57,32 @@ public enum ServerDetector {
         guard let (data, _) = try? await session.data(for: URLRequest(url: url, timeoutInterval: timeout)),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
         return json["success"] as? Bool == true && (json["data"] as? [String: Any])?["SYNO.API.Auth"] != nil
+    }
+
+    /// Nextcloud (and ownCloud) keep WebDAV under remote.php: for a typed
+    /// server address ("cloud.example.com", "nas.local:8443/nextcloud"),
+    /// the WebDAV address to use, or nil if it isn't one. Uses the server's
+    /// public status page, so no account details are sent.
+    public static func nextcloudAddress(_ text: String, timeout: TimeInterval = 4) async -> String? {
+        var raw = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty, !raw.lowercased().hasPrefix("http://"), !raw.lowercased().hasPrefix("smb://") else { return nil }
+        if !raw.lowercased().hasPrefix("https://") { raw = "https://" + raw }
+        guard var base = URLComponents(string: raw), base.host?.isEmpty == false,
+              !base.percentEncodedPath.lowercased().contains("remote.php") else { return nil }
+        base.query = nil
+        base.fragment = nil
+        if !base.percentEncodedPath.hasSuffix("/") { base.percentEncodedPath += "/" }
+        var status = base
+        status.percentEncodedPath += "status.php"
+        guard let url = status.url else { return nil }
+        let session = probeSession(timeout)
+        defer { session.finishTasksAndInvalidate() }
+        guard let (data, response) = try? await session.data(for: URLRequest(url: url, timeoutInterval: timeout)),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              json["installed"] as? Bool == true, json["versionstring"] != nil else { return nil }
+        base.percentEncodedPath += "remote.php/webdav/"
+        return base.string
     }
 
     /// Whether an HTTPS server here speaks WebDAV (says "DAV" to OPTIONS).
