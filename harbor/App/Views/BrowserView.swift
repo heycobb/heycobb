@@ -72,6 +72,10 @@ struct BrowserView: View {
         .onChange(of: model.navigationRequest, initial: true) {
             // From the Mac menu bar: show a share or the Offline list.
             guard let request = model.navigationRequest else { return }
+            #if os(iOS)
+            // Tabs on iPhone and iPad (MainTabs handles these).
+            if [.photos, .recents, .offline].contains(request) { return }
+            #endif
             selection = request
             path = []
             model.navigationRequest = nil
@@ -287,22 +291,8 @@ struct BrowserView: View {
                     sectionHeader("Favorites")
                 }
             }
+            // Photos, Recents and Offline are tabs (see MainTabs).
             Section {
-                NavigationLink(value: SidebarItem.photos) {
-                    sidebarLabel("Photos", symbol: "photo.on.rectangle.angled", item: .photos)
-                }
-                .listRowBackground(rowBackground(.photos))
-                if model.keepRecents {
-                    NavigationLink(value: SidebarItem.recents) {
-                        sidebarLabel("Recents", symbol: "clock", item: .recents)
-                    }
-                    .listRowBackground(rowBackground(.recents))
-                }
-                NavigationLink(value: SidebarItem.offline) {
-                    sidebarLabel("Offline", symbol: "arrow.down.circle", item: .offline)
-                        .badge(model.savedPaths.count)
-                }
-                .listRowBackground(rowBackground(.offline))
                 NavigationLink(value: SidebarItem.backup) {
                     sidebarLabel("Photo Backup", symbol: "arrow.triangle.2.circlepath", item: .backup)
                 }

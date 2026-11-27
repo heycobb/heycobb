@@ -15,7 +15,11 @@ struct RootView: View {
             } else if model.activeServer == nil {
                 WelcomeView()
             } else {
+                #if os(iOS)
+                MainTabs()
+                #else
                 BrowserView()
+                #endif
             }
         }
         .tint(Theme.accent)
