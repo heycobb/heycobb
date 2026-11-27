@@ -141,6 +141,14 @@ subscription. No free trial of Pro for now.
   WebDAV, detected from the address. WebDAV tested against Apache mod_dav
   here; SMB not yet tested against a real server. No brand adapters yet.
 - Privacy policy: updated for SMB/WebDAV passwords and the backup list (2026-11-26).
+- Encrypted folders: built (2026-11-26). Files encrypted on the device with
+  Apple's built-in crypto only; format in docs/ENCRYPTION.md. Tested on the
+  NAS in TEST FOLDER (create, recovery key, move in/out, preview, lock,
+  wrong password, recovery + new password, Keep Unlocked across relaunch).
+  Still to do: decide Free or Pro; check the Files app/Finder with a folder
+  kept unlocked; Mac UI check; New Encrypted Folder in the Mac File menu.
+  Before release: App Store Connect encryption questions and
+  ITSAppUsesNonExemptEncryption (now false), see docs/ENCRYPTION.md.
 - NAS status at a glance (item 6), share with NAS users, file versions.
 
 ## Feedback (2026-11-26), done

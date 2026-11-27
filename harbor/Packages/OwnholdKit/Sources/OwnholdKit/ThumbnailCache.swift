@@ -52,7 +52,10 @@ public actor ThumbnailCache {
                     return nil
                 }
             }
-            try? data.write(to: file, options: [.atomic])
+            // Thumbnails of files in encrypted folders stay in memory only.
+            if (service as? VaultFileService)?.isEncrypted(item.path) != true {
+                try? data.write(to: file, options: [.atomic])
+            }
             return ImageDecoding.downsample(data, maxPixel: maxPixel).map(CGImageBox.init)
         }
         inFlight[key] = task

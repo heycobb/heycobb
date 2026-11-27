@@ -149,6 +149,16 @@ struct ThumbnailView: View {
                 Image(systemName: item.kind.symbol)
                     .font(side.map { Font.system(size: $0 * 0.45) } ?? Font.system(size: Platform.isMac ? 60 : 44))
                     .foregroundStyle(item.kind.tint)
+                    .overlay {
+                        // Encrypted folders: a lock on the folder.
+                        if item.isDirectory, model.isEncryptedFolder(item.path) {
+                            Image(systemName: "lock.fill")
+                                .font(side.map { Font.system(size: $0 * 0.17, weight: .bold) } ?? Font.system(size: Platform.isMac ? 22 : 16, weight: .bold))
+                                .foregroundStyle(.background)
+                                .offset(y: (side ?? (Platform.isMac ? 130 : 96)) * 0.03)
+                                .accessibilityLabel("Encrypted")
+                        }
+                    }
             }
         }
         .frame(width: side, height: side)

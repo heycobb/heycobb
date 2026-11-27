@@ -23,6 +23,9 @@ final class AppModel {
     private(set) var activeServer: ServerProfile?
     private(set) var connection: Connection = .idle
     private(set) var service: (any FileService)?
+    /// Changes when an encrypted folder is found, locked or unlocked, so
+    /// folder lists and icons update.
+    var vaultRevision = 0
     private(set) var offline: OfflineStore?
     private(set) var thumbnails: ThumbnailCache?
     private(set) var savedPaths: Set<String> = []
@@ -178,7 +181,7 @@ final class AppModel {
         await refreshSaved()
 
         if profile.isDemo {
-            service = DemoFileService()
+            service = VaultFileService(base: DemoFileService(), state: makeVaultState(for: profile))
             connection = .online(nil)
             await syncFilesApp()
             return
@@ -252,6 +255,7 @@ final class AppModel {
         if activeServer == nil { folderBackup.load(for: nil) }
         #endif
         keychain.remove(sessionKey(profile))
+        VaultStore.forgetAll(server: profile.id)
         // Keep certificates another saved NAS still uses at the same address
         // (two entries for one NAS): forgetting them would make that one ask
         // to trust its certificate again.
@@ -488,6 +492,10 @@ final class AppModel {
 
     /// Central handling for errors from any screen.
     func handle(_ error: Error) {
+        if let error = error as? VaultError {
+            banner = error.errorDescription
+            return
+        }
         guard let error = error as? NASError else { return }
         switch error {
         case .sessionExpired:
@@ -526,7 +534,9 @@ final class AppModel {
     }
 
     func lockIfNeeded() {
-        if requireUnlock { isLocked = true }
+        guard requireUnlock else { return }
+        isLocked = true
+        lockEncryptedFolders()
     }
 
     // MARK: Private
@@ -540,7 +550,7 @@ final class AppModel {
                 if activeServer?.id == updated.id { activeServer = updated }
             }
             let client = try await Connector.connect(profile, at: endpoint, session: session, trust: trust)
-            service = client
+            service = VaultFileService(base: client, state: makeVaultState(for: profile))
             connection = .online(endpoint)
             await filesAppSignedIn(profile)
             if let client = client as? FileStationClient { learnMACAddress(of: profile, from: client, via: endpoint) }

@@ -38,7 +38,7 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
                 }
                 let path = FileProviderItem.path(for: container)
                 let page = try await context.run { service in
-                    try await service.list(folder: path, offset: offset, limit: Self.pageSize, sort: .name, ascending: true)
+                    try await Self.list(service, folder: path, offset: offset, limit: Self.pageSize)
                 }
                 await snapshots.record(page.items.map(\.path), for: path, replacing: offset == 0)
                 if offset == 0 { await snapshots.visited(path) }
@@ -48,6 +48,16 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
             } catch {
                 box.observer.finishEnumeratingWithError(error)
             }
+        }
+    }
+
+    /// Lists a folder. An encrypted folder that isn't set to stay unlocked
+    /// on this device shows as empty here: it's opened in Ownhold.
+    static func list(_ service: any FileService, folder: String, offset: Int, limit: Int) async throws -> FolderPage {
+        do {
+            return try await service.list(folder: folder, offset: offset, limit: limit, sort: .name, ascending: true)
+        } catch VaultError.locked {
+            return FolderPage(items: [], total: 0, offset: 0)
         }
     }
 
@@ -61,7 +71,7 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
             do {
                 let path = FileProviderItem.path(for: container)
                 let items = try await context.run { service in
-                    try await service.list(folder: path, offset: 0, limit: 5000, sort: .name, ascending: true).items
+                    try await Self.list(service, folder: path, offset: 0, limit: 5000).items
                 }
                 let previous = await snapshots.paths(for: path)
                 await snapshots.record(items.map(\.path), for: path, replacing: true)
@@ -94,7 +104,7 @@ final class FileProviderEnumerator: NSObject, NSFileProviderEnumerator, @uncheck
             guard listed.insert(folder).inserted else { continue }
             do {
                 let items = try await context.run { service in
-                    try await service.list(folder: folder, offset: 0, limit: 5000, sort: .name, ascending: true).items
+                    try await Self.list(service, folder: folder, offset: 0, limit: 5000).items
                 }
                 let previous = await snapshots.paths(for: folder)
                 await snapshots.record(items.map(\.path), for: folder, replacing: true)

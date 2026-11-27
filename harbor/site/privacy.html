@@ -16,7 +16,7 @@
 
   <nav><a href="support.html">Support</a><a href="privacy.html" aria-current="page">Privacy</a></nav>
   <h1>Privacy Policy</h1>
-  <p class="muted">Effective 25 November 2026 · Updated 26 November 2026 (SMB and WebDAV, Photo Backup list)</p>
+  <p class="muted">Effective 25 November 2026 · Updated 26 November 2026 (SMB and WebDAV, Photo Backup list, encrypted folders)</p>
 
   <div class="summary">
     <p><strong>The short version: Ownhold collects no data.</strong></p>
@@ -35,6 +35,7 @@
   <ul>
     <li><strong>Your NAS details:</strong> the name you give each NAS, its addresses, your QuickConnect ID if you use one, the addresses it last found, and your account name. These are stored with the app's data, so they're included in your normal device backups. Your password is not.</li>
     <li><strong>Sign-in session:</strong> after you sign in, Ownhold keeps the session your NAS gives it (and, if you choose “Remember this device”, the NAS's device token) in the system Keychain. These items stay on this device only. They don't sync to iCloud Keychain. A NAS connected with SMB or WebDAV has no session to keep, so for those Ownhold keeps your password in the Keychain instead, under the same rules (see <a href="#password">Your password</a>).</li>
+    <li><strong>Encrypted folders:</strong> which folders on your NAS are encrypted, so they show a lock. A folder's key is kept only in memory while it's unlocked, unless you choose <strong>Keep Unlocked on This Device</strong>; then it's kept in the Keychain on this device only, not synced to iCloud, until you lock the folder or remove the NAS (see <a href="#encrypted">Encrypted folders</a>).</li>
     <li><strong>Certificate fingerprints:</strong> when you trust your NAS's certificate, its fingerprint is stored in the Keychain, so Ownhold can warn you if the certificate ever changes.</li>
     <li><strong>Files you keep offline:</strong> stored on your device, encrypted while your iPhone or iPad is locked, and excluded from backups.</li>
     <li><strong>Thumbnails and previews:</strong> kept in a cache your device can clear at any time. Files opened for a quick preview are deleted the next time the app starts.</li>
@@ -51,6 +52,11 @@
   <p><strong>Synology:</strong> when you sign in, your password is sent once, over an encrypted HTTPS connection, directly to your NAS. Ownhold does not store it; it keeps the session your NAS returns.</p>
   <p><strong>SMB and WebDAV</strong> (other NAS): these have no sessions, so Ownhold keeps your password in this device's Keychain, not synced to iCloud, and uses it each time it connects: over HTTPS for WebDAV, and with SMB's own sign-in for SMB. Signing out or removing the NAS deletes it.</p>
   <p>Your password never passes through any server of ours. Connections to a Synology or WebDAV NAS are always HTTPS. Most NAS don't encrypt SMB file transfers, so we recommend SMB only on your home network or over a VPN such as Tailscale.</p>
+
+  <h2 id="encrypted">Encrypted folders</h2>
+  <p>Files in an encrypted folder are encrypted on your device before they're uploaded, and decrypted on your device after they're downloaded. Your NAS, its other users and anyone who gets its drives see only scrambled names and contents. The NAS can still see how many items there are, their approximate sizes and dates.</p>
+  <p>Your encrypted folder's password and recovery key are never sent anywhere, including to your NAS and to us. The NAS stores only a settings file (ownhold-vault.json) with the folder's key locked by your password and by your recovery key. No one can open the files without one of them, and we can't recover them for you.</p>
+  <p>Thumbnails of encrypted files are kept in memory only. Files you keep offline or open are decrypted on your device, where your device's own encryption protects them.</p>
 
   <h2>Connections the app makes</h2>
   <p>Ownhold connects to the NAS addresses you enter: on your home network, through a private network (VPN) such as Tailscale, or over the internet. In the built-in demo library, it makes no network connections at all.</p>

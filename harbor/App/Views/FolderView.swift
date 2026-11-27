@@ -22,7 +22,7 @@ struct FolderView: View {
     /// "not loaded yet", not "Empty Folder".
     @State private var loaded = false
     @State private var retries = 0
-    @State private var failed: NASError?
+    @State private var failed: String?
     @State private var query = ""
     @State private var searchResults: [RemoteItem]?
     @State private var previewURL: URL?
@@ -52,6 +52,8 @@ struct FolderView: View {
     @State private var shareTask: Task<Void, Never>?
     @State private var playing: MediaPlayback?
     @State private var linkItem: RemoteItem?
+    @State private var creatingVault = false
+    @State private var changingVaultPassword: String?
 
     typealias MoveRequest = FolderViewMoveRequest
     typealias UploadBatch = FolderViewUploadBatch
@@ -74,7 +76,8 @@ struct FolderView: View {
             .onSubmit(of: .search) { Task { await runSearch() } }
             .onChange(of: query) { if query.isEmpty { searchResults = nil } }
             .toolbar { toolbar }
-            .task(id: ReloadKey(path: folder.path, sort: sort, ascending: ascending, connection: model.connection, revision: model.revision(of: folder.path))) {
+            .task(id: ReloadKey(path: folder.path, sort: sort, ascending: ascending, connection: model.connection,
+                                revision: model.revision(of: folder.path), locked: lockedRoot != nil)) {
                 await reload()
             }
             .refreshable { await reload() }
@@ -84,6 +87,12 @@ struct FolderView: View {
             }
             .sheet(item: $linkItem) { item in
                 ShareLinkView(item: item)
+            }
+            .sheet(isPresented: $creatingVault) {
+                NewEncryptedFolderView(parent: folder.path)
+            }
+            .sheet(item: Binding(get: { changingVaultPassword.map(IdentifiedPath.init) }, set: { changingVaultPassword = $0?.path })) { request in
+                ChangeFolderPasswordView(root: request.path)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 ActivityBar(working: working, onCancel: shareTask == nil ? nil : { shareTask?.cancel() })
@@ -153,6 +162,18 @@ struct FolderView: View {
     /// What the NAS can do (share links and archives are Synology's).
     private var serverKind: ServerKind { model.activeServer?.kind ?? .synology }
 
+    /// Inside an encrypted folder the NAS only has scrambled data, so it
+    /// can't make share links or extract archives.
+    private var encrypted: Bool { model.isEncrypted(folder.path) }
+    private var canShareLinks: Bool { model.service != nil && serverKind.hasShareLinks && !encrypted }
+    private var canExtractOnNAS: Bool { serverKind.hasArchives && !encrypted }
+
+    /// The encrypted folder this is in, while it's locked.
+    private var lockedRoot: String? {
+        guard let root = model.encryptedRoot(of: folder.path), !model.isUnlocked(root) else { return nil }
+        return root
+    }
+
     /// What the Mac menu bar's File, Edit and View commands act on.
     private var menuCommands: FolderCommands {
         let chosen = selectedItems
@@ -167,8 +188,8 @@ struct FolderView: View {
             uploadFiles: { showingFiles = true },
             canRename: writable && chosen.count == 1,
             canDelete: writable && !chosen.isEmpty,
-            canExtract: writable && serverKind.hasArchives && chosen.count == 1 && chosen[0].isArchive,
-            canShareLink: model.service != nil && serverKind.hasShareLinks && chosen.count == 1,
+            canExtract: writable && canExtractOnNAS && chosen.count == 1 && chosen[0].isArchive,
+            canShareLink: canShareLinks && chosen.count == 1 && !model.isEncryptedFolder(chosen[0].path),
             rename: {
                 guard let item = chosen.first, chosen.count == 1 else { return }
                 endSelecting()
@@ -190,7 +211,7 @@ struct FolderView: View {
     }
 
     private var canChange: Bool {
-        guard model.service != nil, case .online = model.connection else { return false }
+        guard model.service != nil, case .online = model.connection, lockedRoot == nil else { return false }
         return true
     }
 
@@ -319,11 +340,13 @@ struct FolderView: View {
     }
 
     @ViewBuilder private var content: some View {
-        if let failed, items.isEmpty {
+        if let lockedRoot {
+            UnlockFolderView(root: lockedRoot)
+        } else if let failed, items.isEmpty {
             ContentUnavailableView {
                 Label("Couldn't Open Folder", systemImage: "exclamationmark.triangle")
             } description: {
-                Text(failed.errorDescription ?? "")
+                Text(failed)
             } actions: {
                 Button("Try Again") { Task { await reload() } }
             }
@@ -530,8 +553,12 @@ struct FolderView: View {
         }
         Button("Share…", systemImage: "square.and.arrow.up") { share([item]) }
             .disabled(model.service == nil && !saved)
-        if model.service != nil, serverKind.hasShareLinks {
+        if canShareLinks, !model.isEncryptedFolder(item.path) {
             Button("Share Link…", systemImage: "link") { linkItem = item }
+        }
+        if model.isEncryptedFolder(item.path), model.isUnlocked(item.path) {
+            Button("Lock", systemImage: "lock") { model.lockFolder(item.path) }
+            Button("Change Password…", systemImage: "key") { changingVaultPassword = item.path }
         }
         if item.isDirectory {
             Button(model.isFavorite(item) ? "Remove from Favorites" : "Add to Favorites",
@@ -553,8 +580,10 @@ struct FolderView: View {
                 renaming = item
             }
             Button("Move…", systemImage: "folder") { moveRequest = MoveRequest(items: [item]) }
-            Button("Compress", systemImage: "archivebox") { Task { await compress([item]) } }
-            if item.isArchive, serverKind.hasArchives {
+            if !model.isEncryptedFolder(item.path) {
+                Button("Compress", systemImage: "archivebox") { Task { await compress([item]) } }
+            }
+            if item.isArchive, canExtractOnNAS {
                 Button("Extract Here", systemImage: "archivebox.circle") { Task { await extract(item) } }
             }
             Button("Delete…", systemImage: "trash", role: .destructive) { askToDelete([item]) }
@@ -581,6 +610,9 @@ struct FolderView: View {
                         newName = ""
                         creatingFolder = true
                     }
+                    if !encrypted {
+                        Button("New Encrypted Folder…", systemImage: "lock.rectangle.stack") { creatingVault = true }
+                    }
                 } label: {
                     Label("Add", systemImage: "plus")
                 }
@@ -588,6 +620,20 @@ struct FolderView: View {
                 // small glass button; iPhone and iPad already hide it.
                 .menuIndicator(.hidden)
                 .disabled(!canChange)
+            }
+            if let root = model.encryptedRoot(of: folder.path), model.isUnlocked(root) {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button("Lock “\((root as NSString).lastPathComponent)”", systemImage: "lock") { model.lockFolder(root) }
+                        Button("Change Password…", systemImage: "key") { changingVaultPassword = root }
+                    } label: {
+                        Label("Encrypted Folder", systemImage: "lock.open")
+                    } primaryAction: {
+                        model.lockFolder(root)
+                    }
+                    .menuIndicator(.hidden)
+                    .help("Lock this encrypted folder")
+                }
             }
             viewOptions
         }
@@ -678,10 +724,18 @@ struct FolderView: View {
         let ascending: Bool
         let connection: AppModel.Connection
         let revision: Int
+        let locked: Bool
     }
 
     private func reload() async {
         guard let service = model.service else { return }
+        if lockedRoot != nil {
+            // Locked: nothing of it stays on screen.
+            items = []
+            searchResults = nil
+            loaded = false
+            return
+        }
         loading = true
         defer { loading = false }
         do {
@@ -704,8 +758,11 @@ struct FolderView: View {
                     if !loaded, !loading { await reload() }
                 }
             }
+        } catch VaultError.locked {
+            // Found to be an encrypted folder just now: the unlock screen shows.
+            items = []
         } catch {
-            failed = error as? NASError ?? .malformedResponse
+            failed = (error as? LocalizedError)?.errorDescription ?? NASError.malformedResponse.errorDescription
             model.handle(error)
         }
     }
@@ -944,4 +1001,10 @@ struct FolderCommands {
 
 extension FocusedValues {
     @Entry var folderCommands: FolderCommands?
+}
+
+/// A path as a sheet item.
+struct IdentifiedPath: Identifiable {
+    let path: String
+    var id: String { path }
 }

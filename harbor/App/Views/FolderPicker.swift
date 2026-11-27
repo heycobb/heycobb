@@ -46,7 +46,7 @@ private struct FolderPickerLevel: View {
     var body: some View {
         List(folders) { child in
             NavigationLink(value: child) {
-                Label(child.name, systemImage: child.isShare ? "externaldrive" : "folder")
+                Label(child.name, systemImage: child.isShare ? "externaldrive" : model.isEncryptedFolder(child.path) ? "lock.rectangle.stack" : "folder")
                     .labelStyle(PickerLabelStyle())
             }
             // A folder can't be moved into itself.
