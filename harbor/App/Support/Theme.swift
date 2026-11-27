@@ -19,7 +19,8 @@ enum Theme {
 
     /// The sidebar: tinted with the accent, or the system's plain sidebar.
     enum Sidebar {
-        static var isTinted: Bool { ThemeSettings.shared.sidebarStyle == .tinted && ThemeSettings.shared.accent != .system }
+        /// Blackout turns the tint off: the sidebar is black like the rest.
+        static var isTinted: Bool { ThemeSettings.shared.sidebarStyle == .tinted && ThemeSettings.shared.accent != .system && !Blackout.isOn }
         static var background: Color { ThemeSettings.shared.accent.sidebarTint }
         static var text: Color { isTinted ? ThemeSettings.shared.accent.sidebarText : .primary }
         static var secondary: Color { isTinted ? ThemeSettings.shared.accent.sidebarSecondary : .secondary }
@@ -153,6 +154,30 @@ struct BlackoutRows: ViewModifier {
 
 extension View {
     func blackoutSurface() -> some View { modifier(BlackoutSurface()) }
+}
+
+extension EnvironmentValues {
+    /// Settings › Appearance › Blackout, for views that draw their own
+    /// backgrounds (the Mac sidebar).
+    @Entry var isBlackout = false
+}
+
+/// The window itself: black behind everything in Blackout. On the Mac the
+/// window background shows through the sidebar, folders and empty screens.
+struct BlackoutWindow: ViewModifier {
+    let on: Bool
+
+    func body(content: Content) -> some View {
+        if on {
+            #if os(macOS)
+            content.containerBackground(Blackout.background, for: .window)
+            #else
+            content.background(Blackout.background)
+            #endif
+        } else {
+            content
+        }
+    }
 }
 
 /// A Form that follows Blackout: black behind, near-black rows.

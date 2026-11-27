@@ -20,6 +20,8 @@ struct RootView: View {
         }
         .tint(Theme.accent)
         .appAppearance(appearance)
+        .environment(\.isBlackout, appearance == .blackout)
+        .modifier(BlackoutWindow(on: appearance == .blackout))
         .sheet(item: $model.signInRequest) { profile in
             SignInView(existing: profile)
         }

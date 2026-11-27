@@ -423,6 +423,7 @@ struct FolderView: View {
             if loading { DelayedProgressView().frame(maxWidth: .infinity) }
         }
         .listStyle(.plain)
+        .blackoutSurface()
     }
 
     @ViewBuilder private func row(for item: RemoteItem) -> some View {

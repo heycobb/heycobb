@@ -28,6 +28,7 @@ struct BrowserView: View {
     @State private var showingSettings = false
     // Both columns from the start wherever they fit; one column on iPhone either way.
     @State private var visibility: NavigationSplitViewVisibility = .all
+    @Environment(\.isBlackout) private var isBlackout
 
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
@@ -109,8 +110,8 @@ struct BrowserView: View {
     private var sidebar: some View {
         sidebarList
             // Tinted: the accent's light tint. Plain: the system's sidebar.
-            .scrollContentBackground(Theme.Sidebar.isTinted ? .hidden : .automatic)
-            .background(Theme.Sidebar.isTinted ? Theme.Sidebar.background : .clear)
+            .scrollContentBackground(Theme.Sidebar.isTinted || isBlackout ? .hidden : .automatic)
+            .background(Theme.Sidebar.isTinted ? Theme.Sidebar.background : isBlackout ? Blackout.background : .clear)
         .navigationTitle(model.activeServer?.name ?? "Ownhold")
         #if os(iOS)
         // The NAS name is shown as a heading in the list instead (see
