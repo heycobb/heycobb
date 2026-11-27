@@ -70,7 +70,7 @@ struct MenuBarMenu: View {
 
     @ViewBuilder private var uploads: some View {
         let queue = model.uploads
-        if let progress = model.syncProgress, progress.kind == .folderBackup {
+        if let progress = model.syncProgress, progress.kind != .uploads {
             Divider()
             Text(progress.fraction.map { "\(progress.title): \(progress.detail) (\(Int($0 * 100))%)" } ?? "\(progress.title)…")
         }

@@ -1,19 +1,25 @@
-#if os(iOS)
-import BackgroundTasks
 import Network
 import Observation
 import os
 import OwnholdKit
 import Photos
+#if os(iOS)
+import BackgroundTasks
 import UIKit
+#endif
 
 /// Backs up the photo library to a folder on the NAS: originals in their
-/// own format, in Year/Month folders, without duplicates.
+/// own format, in Year/Month folders, without duplicates, on iPhone, iPad
+/// and Mac.
 ///
 /// It runs when asked (Back Up Now), and, only with Back Up Automatically
-/// on, when the app opens and in the background when iOS allows it (by
-/// default only on Wi-Fi and while charging, never in Low Power Mode).
+/// on: on iPhone and iPad when the app opens and in the background when iOS
+/// allows it (by default only while charging); on a Mac when the app opens
+/// and when new photos arrive in the library. Never in Low Power Mode.
 /// Photo library access is requested only when backup is turned on.
+///
+/// An iPhone and a Mac using the same iCloud Photos library don't upload
+/// the same photo twice: see BackupPlanner and BackupManifest.
 @MainActor
 @Observable
 final class PhotoBackup {
@@ -48,6 +54,9 @@ final class PhotoBackup {
     @ObservationIgnored private weak var model: AppModel?
     @ObservationIgnored private var runner: Task<Void, Never>?
     @ObservationIgnored private var serverID: UUID?
+    #if os(macOS)
+    @ObservationIgnored private var libraryWatcher: LibraryWatcher?
+    #endif
 
     init(model: AppModel) { self.model = model }
 
@@ -62,6 +71,11 @@ final class PhotoBackup {
         serverID = profile?.id
         phase = .idle
         waiting = nil
+        defer {
+            #if os(macOS)
+            updateWatcher()
+            #endif
+        }
         guard let id = profile?.id, let data = UserDefaults.standard.data(forKey: Self.settingsKey(id)),
               let saved = try? JSONDecoder().decode(Settings.self, from: data) else {
             settings = Settings()
@@ -79,7 +93,11 @@ final class PhotoBackup {
     private func saveSettings() {
         guard let serverID else { return }
         UserDefaults.standard.set(try? JSONEncoder().encode(settings), forKey: Self.settingsKey(serverID))
+        #if os(iOS)
         if settings.automatic { Self.scheduleBackground(settings) } else { BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.taskID) }
+        #else
+        updateWatcher()
+        #endif
     }
 
     /// A new destination starts a fresh record: files are checked against
@@ -96,11 +114,28 @@ final class PhotoBackup {
 
     func requestAccess() async {
         access = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        #if os(macOS)
+        updateWatcher()
+        #endif
     }
 
     func refreshAccess() {
         access = PHPhotoLibrary.authorizationStatus(for: .readWrite)
     }
+
+    #if os(macOS)
+    /// With Back Up Automatically on, new photos in the library (taken on
+    /// this Mac, imported, or arriving from iCloud) start a backup a minute
+    /// after the last change. Nothing watches while it's off.
+    private func updateWatcher() {
+        let wanted = settings.automatic && serverID != nil && (access == .authorized || access == .limited)
+        if wanted, libraryWatcher == nil {
+            libraryWatcher = LibraryWatcher { [weak self] in self?.runIfAutomatic() }
+        } else if !wanted {
+            libraryWatcher = nil
+        }
+    }
+    #endif
 
     // MARK: Running
 
@@ -125,13 +160,14 @@ final class PhotoBackup {
     /// Counts what's left to back up, without uploading anything.
     func check() async {
         guard isReady, runner == nil, let service = model?.service, let destination = settings.destination, let serverID else { return }
-        if let plan = try? await makePlan(service: service, destination: destination, history: Self.loadHistory(serverID)) {
+        if let plan = try? await makePlan(service: service, destination: destination, history: Self.loadHistory(serverID), shared: Self.loadManifest(destination, service: service).items) {
             waiting = Set(plan.jobs.map(\.assetID)).count
         }
     }
 
     func run(background: Bool) async {
         guard isReady, let service = model?.service, let destination = settings.destination, let serverID else { return }
+        #if os(iOS)
         let keepAwake = !background
         if keepAwake { UIApplication.shared.isIdleTimerDisabled = true }
         let grace = background ? .invalid : UIApplication.shared.beginBackgroundTask(withName: "Photo Backup") { }
@@ -139,13 +175,27 @@ final class PhotoBackup {
             if keepAwake { UIApplication.shared.isIdleTimerDisabled = false }
             if grace != .invalid { UIApplication.shared.endBackgroundTask(grace) }
         }
+        #else
+        // Keeps the Mac from sleeping while you wait for Back Up Now; an
+        // automatic run only asks not to be put in App Nap.
+        let activity = ProcessInfo.processInfo.beginActivity(
+            options: background ? [.background] : [.userInitiated, .idleSystemSleepDisabled],
+            reason: "Photo Backup"
+        )
+        defer { ProcessInfo.processInfo.endActivity(activity) }
+        #endif
         phase = .scanning
         var history = Self.loadHistory(serverID)
+        // iCloud items now on the NAS, for its shared list.
+        var newShared: [String] = []
         do {
-            let plan = try await makePlan(service: service, destination: destination, history: history)
+            let manifest = try await Self.loadManifest(destination, service: service)
+            let plan = try await makePlan(service: service, destination: destination, history: history, shared: manifest.items)
+            Self.log.notice("Backup plan: \(plan.jobs.count) to upload (\(plan.jobs.count { $0.checkExisting }) to compare), \(plan.alreadyThere.count) already there")
             history.formUnion(plan.alreadyThere)
+            newShared += plan.sharedFound
             var uploaded = 0
-            var existingByFolder: [String: [String: Int64?]] = [:]
+            var existingByFolder: [String: [String: BackupPlanner.ExistingFile]] = [:]
             for (index, job) in plan.jobs.enumerated() {
                 try Task.checkCancellation()
                 phase = .uploading(done: index, total: plan.jobs.count, current: job.name)
@@ -158,31 +208,44 @@ final class PhotoBackup {
                     }
                     let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap { $0.map(Int64.init) }
                     let existing = existingByFolder[job.folder] ?? [:]
-                    if let there = existing[name.lowercased()], there != nil, there == size {
+                    if let there = existing[name.lowercased()]?.size, there == size {
                         history.insert(job.historyKey)
+                        if let key = job.cloudKey { newShared.append(key) }
                         continue
                     }
                     name = RemoteItem.uniqueName(for: name, avoiding: Set(existing.keys))
                 }
                 do {
+                    #if os(iOS)
                     try await service.uploadAllowingBackground(file, as: name, to: job.folder, replacing: false) { _ in }
+                    #else
+                    try await service.upload(file, as: name, to: job.folder, replacing: false) { _ in }
+                    #endif
                 } catch NASError.alreadyExists {
                     // Uploaded by another device meanwhile: leave it.
                 }
                 history.insert(job.historyKey)
+                if let key = job.cloudKey { newShared.append(key) }
                 uploaded += 1
                 if uploaded % 10 == 0 { Self.saveHistory(history, serverID) }
+                if newShared.count >= 200 {
+                    await Self.addToManifest(newShared, destination, service: service)
+                    newShared = []
+                }
             }
             Self.saveHistory(history, serverID)
+            await Self.addToManifest(newShared, destination, service: service)
             settings.lastBackup = .now
             waiting = 0
             phase = .finished(uploaded: uploaded)
             if uploaded > 0 { model?.folderChanged(destination) }
         } catch is CancellationError {
             Self.saveHistory(history, serverID)
+            await Self.addToManifest(newShared, destination, service: service)
             phase = .idle
         } catch {
             Self.saveHistory(history, serverID)
+            await Self.addToManifest(newShared, destination, service: service)
             Self.log.error("Backup failed: \(String(describing: error), privacy: .public)")
             phase = .failed((error as? LocalizedError)?.errorDescription ?? "The backup stopped. Try again.")
         }
@@ -206,25 +269,63 @@ final class PhotoBackup {
 
     // MARK: Planning
 
-    private func makePlan(service: any FileService, destination: String, history: Set<String>) async throws -> BackupPlanner.Plan {
+    private func makePlan(service: any FileService, destination: String, history: Set<String>, shared: Set<String>) async throws -> BackupPlanner.Plan {
         let assets = Self.libraryAssets(settings)
         // List each month folder once, to spot files already there.
         let folders = Set(assets.map { BackupPlanner.folder(for: $0.created, in: destination) })
-        var existing: [String: [String: Int64?]] = [:]
+        var existing: [String: [String: BackupPlanner.ExistingFile]] = [:]
         for folder in folders {
             try Task.checkCancellation()
             existing[folder] = try await Self.listing(folder, service: service)
         }
-        return BackupPlanner.plan(assets, destination: destination, history: history, existing: existing)
+        return BackupPlanner.plan(assets, destination: destination, history: history, shared: shared, files: existing)
     }
 
-    private static func listing(_ folder: String, service: any FileService) async throws -> [String: Int64?] {
+    // MARK: The NAS's list of backed-up iCloud items
+
+    /// Read at the start of each run. Missing (first backup, or a NAS
+    /// backed up before this list existed) means empty.
+    private static func loadManifest(_ destination: String, service: any FileService) async throws -> BackupManifest {
+        let item = RemoteItem(path: RemoteItem.join(destination, BackupManifest.fileName), name: BackupManifest.fileName, isDirectory: false)
         do {
-            var result: [String: Int64?] = [:]
+            let file = try await service.download(item)
+            defer { try? FileManager.default.removeItem(at: file) }
+            return BackupManifest.decode(try Data(contentsOf: file))
+        } catch NASError.notFound {
+            return BackupManifest()
+        }
+    }
+
+    /// Adds keys to the list, re-reading it first so another device's
+    /// additions since this run started are kept. Failing here only means
+    /// the next run compares names and dates instead.
+    private static func addToManifest(_ keys: [String], _ destination: String, service: any FileService) async {
+        guard !keys.isEmpty else { return }
+        do {
+            var manifest = try await loadManifest(destination, service: service)
+            let before = manifest.items.count
+            manifest.items.formUnion(keys)
+            guard manifest.items.count != before else { return }
+            let folder = FileManager.default.temporaryDirectory.appending(path: "Manifest-" + UUID().uuidString, directoryHint: .isDirectory)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: folder) }
+            let file = folder.appending(path: BackupManifest.fileName)
+            try manifest.encoded().write(to: file)
+            try await service.upload(file, as: BackupManifest.fileName, to: destination, replacing: true) { _ in }
+        } catch {
+            log.error("Couldn't update the backup list: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    private static func listing(_ folder: String, service: any FileService) async throws -> [String: BackupPlanner.ExistingFile] {
+        do {
+            var result: [String: BackupPlanner.ExistingFile] = [:]
             var offset = 0
             while true {
                 let page = try await service.list(folder: folder, offset: offset, limit: 1000, sort: .name, ascending: true)
-                for item in page.items where !item.isDirectory { result[item.name.lowercased()] = item.size }
+                for item in page.items where !item.isDirectory {
+                    result[item.name.lowercased()] = BackupPlanner.ExistingFile(size: item.size, modified: item.modified)
+                }
                 offset += page.items.count
                 if page.items.isEmpty || offset >= page.total { break }
             }
@@ -247,6 +348,18 @@ final class PhotoBackup {
         let fetched = PHAsset.fetchAssets(with: options)
         var assets: [BackupPlanner.Asset] = []
         assets.reserveCapacity(fetched.count)
+        // iCloud Photos identifiers, the same on every device using the
+        // library. Items not in iCloud (or with iCloud Photos off) get none.
+        var cloudIDs: [String: String] = [:]
+        var localIDs: [String] = []
+        localIDs.reserveCapacity(fetched.count)
+        fetched.enumerateObjects { asset, _, _ in localIDs.append(asset.localIdentifier) }
+        for start in stride(from: 0, to: localIDs.count, by: 500) {
+            let batch = Array(localIDs[start..<min(start + 500, localIDs.count)])
+            for (local, result) in PHPhotoLibrary.shared().cloudIdentifierMappings(forLocalIdentifiers: batch) {
+                if case let .success(cloud) = result { cloudIDs[local] = cloud.stringValue }
+            }
+        }
         fetched.enumerateObjects { asset, _, _ in
             let wanted: Set<PHAssetResourceType> = settings.includeLivePhotoVideos
                 ? [.photo, .video, .alternatePhoto, .pairedVideo]
@@ -255,7 +368,7 @@ final class PhotoBackup {
                 .filter { wanted.contains($0.type) }
                 .map { BackupPlanner.Resource(name: $0.originalFilename, size: nil) }
             guard !resources.isEmpty else { return }
-            assets.append(.init(id: asset.localIdentifier, created: asset.creationDate, resources: resources))
+            assets.append(.init(id: asset.localIdentifier, cloudID: cloudIDs[asset.localIdentifier], created: asset.creationDate, resources: resources))
         }
         return assets
     }
@@ -302,16 +415,19 @@ final class PhotoBackup {
     /// Wi-Fi and power conditions for an automatic run. Never in Low Power Mode.
     private static func conditionsAllow(_ settings: Settings, foreground: Bool) -> Bool {
         if ProcessInfo.processInfo.isLowPowerModeEnabled { return false }
+        #if os(iOS)
         if settings.chargingOnly, !foreground {
             UIDevice.current.isBatteryMonitoringEnabled = true
             let state = UIDevice.current.batteryState
             if state != .charging, state != .full { return false }
         }
+        #endif
         // Settings › Cellular Data › Photo Backup, and Low Data Mode.
         if !NetworkPolicy.allows(.backups, automatic: true) { return false }
         return true
     }
 
+    #if os(iOS)
     static func scheduleBackground(_ settings: Settings) {
         let request = BGProcessingTaskRequest(identifier: taskID)
         request.requiresNetworkConnectivity = true
@@ -347,6 +463,38 @@ final class PhotoBackup {
             }
         }
     }
+    #endif
 }
 
+#if os(macOS)
+/// Tells Photo Backup when the Mac's photo library changes, a minute after
+/// the last change (an import or an iCloud sync arrives in bursts).
+@MainActor
+private final class LibraryWatcher: NSObject, PHPhotoLibraryChangeObserver {
+    private let changed: @MainActor () -> Void
+    private var pending: Task<Void, Never>?
+
+    init(changed: @escaping @MainActor () -> Void) {
+        self.changed = changed
+        super.init()
+        PHPhotoLibrary.shared().register(self)
+    }
+
+    deinit {
+        PHPhotoLibrary.shared().unregisterChangeObserver(self)
+    }
+
+    nonisolated func photoLibraryDidChange(_ changeInstance: PHChange) {
+        Task { @MainActor in self.schedule() }
+    }
+
+    private func schedule() {
+        pending?.cancel()
+        pending = Task {
+            try? await Task.sleep(for: .seconds(60))
+            guard !Task.isCancelled else { return }
+            changed()
+        }
+    }
+}
 #endif

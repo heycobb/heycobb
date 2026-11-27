@@ -61,7 +61,8 @@ struct FolderView: View {
 
     private let pageSize = 300
 
-    private var shown: [RemoteItem] { searchResults ?? items }
+    /// Ownhold's own housekeeping files (Photo Backup's list) stay out of sight.
+    private var shown: [RemoteItem] { (searchResults ?? items).filter { $0.name != BackupManifest.fileName } }
 
     var body: some View {
         content

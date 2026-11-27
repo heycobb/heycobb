@@ -833,3 +833,52 @@ struct WebDAVIntegrationTests {
         #expect(after.items.map(\.name) == ["Sub", "Hello World.txt"])
     }
 }
+
+@Suite("Photo Backup across devices")
+struct CrossDeviceBackupTests {
+    let taken = Date(timeIntervalSince1970: 1_750_000_000)
+    let utc: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        return calendar
+    }()
+
+    private func asset(_ id: String, cloud: String?, names: [String] = ["IMG_0001.HEIC"]) -> BackupPlanner.Asset {
+        .init(id: id, cloudID: cloud, created: taken, resources: names.map { .init(name: $0, size: nil) })
+    }
+
+    @Test func skipsItemsAnotherDeviceBackedUp() {
+        // The iPhone backed up this iCloud item; the Mac has its own local ID.
+        let plan = BackupPlanner.plan([asset("mac-local", cloud: "CLOUD-1")], destination: "/b", history: [],
+                                      shared: ["CLOUD-1|IMG_0001.HEIC"], files: [:], calendar: utc)
+        #expect(plan.jobs.isEmpty)
+        #expect(plan.alreadyThere == ["mac-local|IMG_0001.HEIC"])
+    }
+
+    @Test func sameNameAndDateCountsAsThereWithoutDownloading() {
+        let folder = BackupPlanner.folder(for: taken, in: "/b", calendar: utc)
+        let files = [folder: ["img_0001.heic": BackupPlanner.ExistingFile(size: 2_000_000, modified: taken)]]
+        let plan = BackupPlanner.plan([asset("a", cloud: "C")], destination: "/b", history: [], files: files, calendar: utc)
+        #expect(plan.jobs.isEmpty)
+        #expect(plan.sharedFound == ["C|IMG_0001.HEIC"])
+    }
+
+    @Test func sameNameDifferentDateIsCheckedNotSkipped() {
+        let folder = BackupPlanner.folder(for: taken, in: "/b", calendar: utc)
+        let files = [folder: ["img_0001.heic": BackupPlanner.ExistingFile(size: 2_000_000, modified: taken.addingTimeInterval(3600))]]
+        let plan = BackupPlanner.plan([asset("a", cloud: nil)], destination: "/b", history: [], files: files, calendar: utc)
+        #expect(plan.jobs.count == 1 && plan.jobs[0].checkExisting)
+    }
+
+    @Test func newItemsCarryTheirCloudKey() {
+        let plan = BackupPlanner.plan([asset("a", cloud: "C", names: ["IMG_0002.HEIC", "IMG_0002.MOV"])],
+                                      destination: "/b", history: [], files: [:], calendar: utc)
+        #expect(plan.jobs.map(\.cloudKey) == ["C|IMG_0002.HEIC", "C|IMG_0002.MOV"])
+    }
+
+    @Test func manifestRoundTrips() throws {
+        let manifest = BackupManifest(items: ["A|x.heic", "B|y.mov"])
+        #expect(BackupManifest.decode(try manifest.encoded()) == manifest)
+        #expect(BackupManifest.decode(Data("not json".utf8)).items.isEmpty)
+    }
+}

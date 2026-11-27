@@ -49,10 +49,9 @@ final class AppModel {
     @ObservationIgnored private(set) lazy var uploads = UploadQueue(model: self)
     /// The Photos view's index for the active server.
     @ObservationIgnored private(set) lazy var photoLibrary = PhotoLibrary(model: self)
-    #if os(iOS)
-    /// Photo Backup for the active server (iPhone and iPad).
+    /// Photo Backup for the active server.
     @ObservationIgnored private(set) lazy var backup = PhotoBackup(model: self)
-    #else
+    #if os(macOS)
     /// Folder Backup for the active server (Mac).
     @ObservationIgnored private(set) lazy var folderBackup = FolderBackup(model: self)
     #endif
@@ -172,9 +171,8 @@ final class AppModel {
         thumbnails = ThumbnailCache(namespace: profile.id.uuidString)
         loadLibrary(for: profile)
         photoLibrary.load(for: profile)
-        #if os(iOS)
         backup.load(for: profile)
-        #else
+        #if os(macOS)
         folderBackup.load(for: profile)
         #endif
         await refreshSaved()
@@ -247,10 +245,9 @@ final class AppModel {
         forgetLibrary(for: profile)
         photoLibrary.forget(profile)
         if activeServer == nil { photoLibrary.load(for: nil) }
-        #if os(iOS)
         backup.forget(profile)
         if activeServer == nil { backup.load(for: nil) }
-        #else
+        #if os(macOS)
         folderBackup.forget(profile)
         if activeServer == nil { folderBackup.load(for: nil) }
         #endif
@@ -547,9 +544,8 @@ final class AppModel {
             connection = .online(endpoint)
             await filesAppSignedIn(profile)
             if let client = client as? FileStationClient { learnMACAddress(of: profile, from: client, via: endpoint) }
-            #if os(iOS)
             backup.runIfAutomatic()
-            #else
+            #if os(macOS)
             folderBackup.runIfAutomatic()
             #endif
             await refreshOffline()

@@ -188,7 +188,7 @@ struct SettingsView: View {
     /// you open yourself always work; this covers automatic and large work.
     private var cellularSection: some View {
         Section {
-            Toggle(Platform.isMac ? "Folder Backup" : "Photo Backup", isOn: $cellularBackups)
+            Toggle(Platform.isMac ? "Backups" : "Photo Backup", isOn: $cellularBackups)
             Toggle("Large Uploads", isOn: $cellularLargeUploads)
             #if os(macOS)
             Toggle("Keep Downloaded", isOn: $cellularKeptDownloads)

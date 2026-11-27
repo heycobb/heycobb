@@ -1,4 +1,3 @@
-#if os(iOS)
 import OwnholdKit
 import Photos
 import SwiftUI
@@ -63,12 +62,18 @@ struct BackupView: View {
                         if !ProStore.shared.isUnlocked { Image(systemName: "lock").foregroundStyle(.secondary) }
                     }
                 }
+                #if os(iOS)
                 if backup.settings.automatic {
                     Toggle("Only While Charging", isOn: $backup.settings.chargingOnly)
                 }
+                #endif
             } footer: {
                 if backup.settings.automatic {
+                    #if os(iOS)
                     Text("Backs up when you open Ownhold, and in the background when iOS allows. Never in Low Power Mode. Cellular use is in Settings.")
+                    #else
+                    Text("Backs up while Ownhold is open, when new photos arrive. Never in Low Power Mode.")
+                    #endif
                 }
             }
         }
@@ -86,8 +91,12 @@ struct BackupView: View {
             case .notDetermined:
                 Button("Allow Access to Photos") { Task { await backup.requestAccess(); await backup.check() } }
             case .denied, .restricted:
-                Button("Allow Access in Settings") {
+                Button(Platform.isMac ? "Allow Access in System Settings…" : "Allow Access in Settings") {
+                    #if os(iOS)
                     if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                    #else
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Photos") { openURL(url) }
+                    #endif
                 }
             default:
                 status
@@ -101,6 +110,9 @@ struct BackupView: View {
         } footer: {
             if backup.access == .limited {
                 Text("Ownhold can see only the photos you selected. To back up everything, allow full access in Settings.")
+            } else if Platform.isMac {
+                // Needed: on a Mac this is the question people ask first.
+                Text("Photos already backed up from an iPhone using the same iCloud library are skipped.")
             }
         }
     }
@@ -137,4 +149,3 @@ struct BackupView: View {
         return backup.waiting == 0 ? "Up to date" : "Not backed up yet"
     }
 }
-#endif

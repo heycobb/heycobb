@@ -7,6 +7,8 @@ enum SidebarItem: Hashable {
     case recents
     case offline
     case backup
+    /// The Mac's Photo Backup (on iPhone and iPad, `backup` is Photo Backup).
+    case photoBackup
     case recentlyDeleted
     case photos
 }
@@ -91,6 +93,8 @@ struct BrowserView: View {
             #else
             if ProStore.shared.isUnlocked { FolderBackupView() } else { ProLockedView(title: "Folder Backup") }
             #endif
+        case .photoBackup:
+            BackupView()
         case .offline:
             OfflineView()
         case .recentlyDeleted:
@@ -212,6 +216,7 @@ struct BrowserView: View {
                     macRow(.recents, title: "Recents", symbol: "clock")
                 }
                 macRow(.offline, title: "Offline", symbol: "arrow.down.circle", badge: model.savedPaths.count)
+                macRow(.photoBackup, title: "Photo Backup", symbol: "photo.on.rectangle")
                 macRow(.backup, title: "Folder Backup", symbol: "clock.arrow.circlepath")
                 if !recycleBins.isEmpty {
                     macRow(.recentlyDeleted, title: "Recently Deleted", symbol: "trash")

@@ -131,7 +131,17 @@ subscription. No free trial of Pro for now.
 
 - Real-iPhone tests: Scan to NAS (scanner, PDF, naming, Shortcuts action), background Photo Backup, Live Photos, Lock Screen
   controls, iPhone Picture in Picture.
-- Photo Backup on the Mac (reads the Mac's Photos library: ask first).
+- Photo Backup on the Mac: done (2026-11-26). Same screen as iPhone; with
+  Back Up Automatically on, runs when new photos arrive. iPhone and Mac on
+  one iCloud library skip each other's photos via iCloud identifiers in
+  `.ownhold-backup.json` in the backup folder, and by name + taken date.
+  Untested with a real iCloud library and on a real Mac library (needs
+  Photos access).
+- Other NAS brands, step 1-2 done (2026-11-26): SMB (SMBClient, MIT) and
+  WebDAV, detected from the address. WebDAV tested against Apache mod_dav
+  here; SMB not yet tested against a real server. No brand adapters yet.
+- Privacy policy: needs a line saying SMB/WebDAV passwords are kept in the
+  Keychain (not done: waiting for approval).
 - NAS status at a glance (item 6), share with NAS users, file versions.
 
 ## Feedback (2026-11-26), done

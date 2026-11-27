@@ -12,9 +12,8 @@ import SwiftUI
 extension AppModel {
     /// The backup or upload running now, if any. Backups come first.
     var syncProgress: SyncProgress? {
-        #if os(iOS)
         if let progress = Self.progress(backup.phase, kind: .photoBackup) { return progress }
-        #else
+        #if os(macOS)
         if let progress = Self.progress(folderBackup.phase, kind: .folderBackup) { return progress }
         #endif
         let queue = uploads
@@ -23,13 +22,23 @@ extension AppModel {
         return SyncProgress(kind: .uploads, done: queue.completed, total: active, fraction: queue.fraction)
     }
 
-    private static func progress(_ phase: PhotoBackupPhase, kind: SyncProgress.Kind) -> SyncProgress? {
+    private static func progress(_ phase: PhotoBackup.Phase, kind: SyncProgress.Kind) -> SyncProgress? {
         switch phase {
         case .scanning: SyncProgress(kind: kind)
         case let .uploading(done, total, _): SyncProgress(kind: kind, done: done, total: total, fraction: total > 0 ? Double(done) / Double(total) : nil)
         default: nil
         }
     }
+
+    #if os(macOS)
+    private static func progress(_ phase: FolderBackup.Phase, kind: SyncProgress.Kind) -> SyncProgress? {
+        switch phase {
+        case .scanning: SyncProgress(kind: kind)
+        case let .uploading(done, total, _): SyncProgress(kind: kind, done: done, total: total, fraction: total > 0 ? Double(done) / Double(total) : nil)
+        default: nil
+        }
+    }
+    #endif
 
     /// Watches `syncProgress` for as long as the app runs and passes each
     /// change to the indicator.
@@ -41,11 +50,6 @@ extension AppModel {
     }
 }
 
-#if os(iOS)
-typealias PhotoBackupPhase = PhotoBackup.Phase
-#else
-typealias PhotoBackupPhase = FolderBackup.Phase
-#endif
 
 /// iPhone and iPad: a Live Activity for long jobs (Settings › Show Progress
 /// on Lock Screen). Mac: a progress bar on the Dock icon.
