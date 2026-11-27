@@ -46,7 +46,8 @@ struct ItemTile: View {
     let saved: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+        // Centered, like Finder's icon view and the Files app.
+        VStack(alignment: .center, spacing: Theme.Spacing.xs) {
             Color.clear
                 .aspectRatio(1, contentMode: .fit)
                 .overlay { ThumbnailView(item: item, size: .medium, side: nil) }
@@ -64,12 +65,15 @@ struct ItemTile: View {
                 .font(.tileName)
                 .lineLimit(2)
                 .truncationMode(.middle)
-            if !item.isDirectory {
-                Text(Format.bytes(item.size))
-                    .font(.tileMeta)
-                    .foregroundStyle(.secondary)
-            }
+                .multilineTextAlignment(.center)
+            // Folders show their date: their size isn't known without
+            // listing everything inside.
+            Text(item.isDirectory ? Format.date(item.modified) : Format.bytes(item.size))
+                .font(.tileMeta)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
         }
+        .frame(maxWidth: .infinity)
         .contentShape(.rect)
     }
 }
@@ -146,19 +150,7 @@ struct ThumbnailView: View {
             } else {
                 Rectangle()
                     .fill(.quaternary.opacity(item.isDirectory ? 0 : 0.6))
-                Image(systemName: item.kind.symbol)
-                    .font(side.map { Font.system(size: $0 * 0.45) } ?? Font.system(size: Platform.isMac ? 60 : 44))
-                    .foregroundStyle(item.kind.tint)
-                    .overlay {
-                        // Encrypted folders: a lock on the folder.
-                        if item.isDirectory, model.isEncryptedFolder(item.path) {
-                            Image(systemName: "lock.fill")
-                                .font(side.map { Font.system(size: $0 * 0.17, weight: .bold) } ?? Font.system(size: Platform.isMac ? 22 : 16, weight: .bold))
-                                .foregroundStyle(.background)
-                                .offset(y: (side ?? (Platform.isMac ? 130 : 96)) * 0.03)
-                                .accessibilityLabel("Encrypted")
-                        }
-                    }
+                symbol
             }
         }
         .frame(width: side, height: side)
@@ -169,6 +161,41 @@ struct ThumbnailView: View {
             guard item.canShowThumbnail, let cache = model.thumbnails, let service = model.service else { return }
             let pixels = Int((side ?? Theme.gridMinimumRegular * 1.4) * scale)
             image = await cache.image(for: item, size: size, maxPixel: pixels, service: service)
+        }
+    }
+}
+
+extension ThumbnailView {
+    /// The item's symbol when there's no thumbnail. In grid tiles (no fixed
+    /// side) it scales with the tile, as in Finder: folders fill most of it.
+    @ViewBuilder var symbol: some View {
+        if let side {
+            Image(systemName: item.kind.symbol)
+                .font(.system(size: side * 0.45))
+                .foregroundStyle(item.kind.tint)
+                .overlay { lock(size: side * 0.17, drop: side * 0.03) }
+        } else {
+            GeometryReader { proxy in
+                let width = proxy.size.width * (item.isDirectory ? 0.62 : 0.4)
+                Image(systemName: item.kind.symbol)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(item.kind.tint)
+                    .frame(width: width)
+                    .overlay { lock(size: width * 0.26, drop: width * 0.06) }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+
+    /// Encrypted folders: a lock on the folder.
+    @ViewBuilder private func lock(size: CGFloat, drop: CGFloat) -> some View {
+        if item.isDirectory, model.isEncryptedFolder(item.path) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: size, weight: .bold))
+                .foregroundStyle(.background)
+                .offset(y: drop)
+                .accessibilityLabel("Encrypted")
         }
     }
 }
