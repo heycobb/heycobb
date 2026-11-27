@@ -33,7 +33,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Ownhold backs up your photos and videos to your NAS when you turn on Photo Backup.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Ownhold can use Face ID to keep your files private.</string>
+	<string>Ownhold can use Face ID to unlock the app and your encrypted folders.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Lets HTTPS connections to local addresses (192.168.x.x, nas.local) proceed so

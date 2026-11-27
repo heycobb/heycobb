@@ -44,9 +44,25 @@ extension AppModel {
     }
 
     func isRemembered(_ root: String) -> Bool {
+        unlockMode(of: root) == .keepUnlocked
+    }
+
+    /// How a folder opens next time on this device.
+    func unlockMode(of root: String) -> VaultUnlockMode {
         _ = vaultRevision
-        guard let id = activeServer?.id else { return false }
-        return VaultStore.isRemembered(root, for: id)
+        guard let id = activeServer?.id else { return .password }
+        return VaultStore.mode(for: root, server: id)
+    }
+
+    /// Changes how an unlocked folder opens next time.
+    func setUnlockMode(_ mode: VaultUnlockMode, for root: String) {
+        guard let id = activeServer?.id, let keys = vaultService?.state.keys(for: root) else { return }
+        do {
+            try VaultStore.setMode(mode, keys: keys, root: root, server: id)
+        } catch {
+            handle(error)
+        }
+        vaultRevision += 1
     }
 
     /// Makes an encrypted folder and returns its recovery key.
@@ -57,19 +73,36 @@ extension AppModel {
         return result
     }
 
-    func unlockFolder(_ root: String, password: String, remember: Bool) async throws {
+    func unlockFolder(_ root: String, password: String, mode: VaultUnlockMode) async throws {
         guard let vaultService, let id = activeServer?.id else { throw NASError.unreachable }
         let keys = try await vaultService.unlock(root, password: password)
-        if remember { VaultStore.remember(keys, for: root, server: id) }
+        try? VaultStore.setMode(mode, keys: keys, root: root, server: id)
+        lockedByHand.remove(root)
+        vaultRevision += 1
         folderChanged(root)
     }
 
-    /// Unlocks with the recovery key and sets a new password.
-    func recoverFolder(_ root: String, recoveryKey: String, newPassword: String, remember: Bool) async throws {
+    /// Unlocks with Face ID (or the device passcode). Throws
+    /// `.biometryUnavailable` when the password is needed instead.
+    func unlockWithBiometrics(_ root: String) async throws {
         guard let vaultService, let id = activeServer?.id else { throw NASError.unreachable }
-        let keys = try await vaultService.unlock(root, recoveryKey: recoveryKey)
+        let name = (root as NSString).lastPathComponent
+        do {
+            let keys = try await VaultStore.biometricKeys(for: root, server: id, reason: "Unlock “\(name)”")
+            vaultService.state.unlock(root, keys: keys)
+            lockedByHand.remove(root)
+            folderChanged(root)
+        } catch {
+            vaultRevision += 1
+            throw error
+        }
+    }
+
+    /// Unlocks with the recovery key and sets a new password.
+    func recoverFolder(_ root: String, recoveryKey: String, newPassword: String) async throws {
+        guard let vaultService else { throw NASError.unreachable }
+        _ = try await vaultService.unlock(root, recoveryKey: recoveryKey)
         try await vaultService.changePassword(of: root, to: newPassword)
-        if remember { VaultStore.remember(keys, for: root, server: id) }
         folderChanged(root)
     }
 
@@ -78,12 +111,25 @@ extension AppModel {
         try await vaultService.changePassword(of: root, to: password)
     }
 
-    /// Locks a folder now; it also stops staying unlocked on this device.
+    /// Locks a folder now. A folder kept unlocked stops being kept unlocked;
+    /// Face ID stays on (it opens with Face ID next time).
     func lockFolder(_ root: String) {
         guard let vaultService else { return }
         if let id = activeServer?.id { VaultStore.forget(root, server: id) }
         vaultService.state.lock(root)
+        lockedByHand.insert(root)
+        vaultRevision += 1
         folderChanged(root)
+    }
+
+    /// How long Ownhold can be in the background before folders that aren't
+    /// kept unlocked lock again.
+    nonisolated static let vaultLockDelay: TimeInterval = 180
+
+    /// Called when Ownhold comes back: locks folders after time away.
+    func lockEncryptedFoldersIfAway(since date: Date?) {
+        guard let date, Date().timeIntervalSince(date) >= Self.vaultLockDelay else { return }
+        lockEncryptedFolders()
     }
 
     /// When the app lock engages: folders not set to stay unlocked lock too.

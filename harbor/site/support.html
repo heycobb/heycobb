@@ -134,8 +134,14 @@
   <ul>
     <li>In any folder, tap <strong>+</strong> and choose <strong>New Encrypted Folder</strong> (Ownhold Pro). Choose a name and a password. Files you put in it are encrypted on your device before they're uploaded, so your NAS only ever stores scrambled data.</li>
     <li>You'll see a <strong>recovery key</strong> once. Keep it somewhere safe, such as your password manager. If you forget the password, it's the only way back in: no one else can open the files, including us.</li>
-    <li>To open an encrypted folder on another device, open it in Ownhold and enter the password. Turn on <strong>Keep Unlocked on This Device</strong> to skip the password next time, and to see the folder in the Files app or Finder.</li>
-    <li>Tap the open lock at the top to lock the folder. Folders that aren't kept unlocked lock when Ownhold quits.</li>
+    <li>To open an encrypted folder on another device, open it in Ownhold and enter the password. Under <strong>Next Time</strong>, choose how it opens on that device from then on:
+      <ul>
+        <li><strong>Ask for Password</strong>: the password each time.</li>
+        <li><strong>Use Face ID</strong> (or Touch ID): Face ID, with your device passcode if Face ID doesn't work. If a face or fingerprint is added on the device later, the password is needed once.</li>
+        <li><strong>Keep Unlocked</strong>: no prompt. Only this option shows the folder in the Files app or Finder.</li>
+      </ul>
+    </li>
+    <li>Tap the open lock at the top to lock the folder, or touch and hold it to change <strong>Next Time</strong>. Folders that aren't kept unlocked lock when Ownhold quits or after 3 minutes away.</li>
     <li>To encrypt files you already have, select them (or touch and hold one), then choose <strong>Encrypt into New Folder</strong> (under <strong>More</strong> when selecting). Ownhold makes the encrypted folder and moves them into it.</li>
     <li>Moving files in or out of an encrypted folder encrypts or decrypts them. The original is deleted only once the copy is complete.</li>
     <li>Your NAS can't read the files, so share links, extracting archives on the NAS and opening the files in other NAS apps (such as Synology Photos) don't work in an encrypted folder. Thumbnails and search work in Ownhold.</li>

@@ -211,18 +211,63 @@ struct RecoveryKeyView: View {
 
 // MARK: - Unlock
 
+/// The three ways a folder can open next time, as people read them.
+extension VaultUnlockMode {
+    static var available: [VaultUnlockMode] {
+        VaultBiometrics.isAvailable ? [.password, .biometric, .keepUnlocked] : [.password, .keepUnlocked]
+    }
+
+    var title: String {
+        switch self {
+        case .password: "Ask for Password"
+        case .biometric: "Use \(VaultBiometrics.biometryName ?? "Device Passcode")"
+        case .keepUnlocked: "Keep Unlocked"
+        }
+    }
+
+    /// What it means, for a footer.
+    var explanation: String {
+        let away = "after \(Int(AppModel.vaultLockDelay / 60)) minutes away"
+        switch self {
+        case .password:
+            return "It locks when Ownhold quits or \(away), and asks for the password again."
+        case .biometric:
+            let name = VaultBiometrics.biometryName ?? "the device passcode"
+            return "It locks when Ownhold quits or \(away), and opens with \(name)\(VaultBiometrics.biometryName == nil ? "" : " or the device passcode"). Ownhold never sees your face or fingerprint."
+        case .keepUnlocked:
+            return "It opens without asking, also in \(Platform.isMac ? "Finder" : "the Files app"). The folder's key stays in this device's Keychain until you lock the folder. Anyone who can use this device unlocked can open it."
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .password: "key"
+        case .biometric:
+            switch VaultBiometrics.biometryName {
+            case "Face ID": "faceid"
+            case "Touch ID": "touchid"
+            case "Optic ID": "opticid"
+            default: "lock"
+            }
+        case .keepUnlocked: "lock.open"
+        }
+    }
+}
+
 /// Fills a locked encrypted folder's screen.
 struct UnlockFolderView: View {
     let root: String
     @Environment(AppModel.self) private var model
     @State private var password = ""
-    @State private var remember = false
+    @State private var nextTime: VaultUnlockMode = .password
     @State private var working = false
     @State private var error: String?
     @State private var recovering = false
+    @State private var triedBiometrics = false
     @FocusState private var focused: Bool
 
     private var name: String { (root as NSString).lastPathComponent }
+    private var usesBiometrics: Bool { model.unlockMode(of: root) == .biometric && VaultBiometrics.isAvailable }
 
     var body: some View {
         Form {
@@ -238,16 +283,28 @@ struct UnlockFolderView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Theme.Spacing.s)
             }
+            if usesBiometrics {
+                Section {
+                    Button {
+                        Task { await unlockWithBiometrics() }
+                    } label: {
+                        Label("Unlock with \(VaultBiometrics.biometryName ?? "Passcode")", systemImage: VaultUnlockMode.biometric.symbol)
+                    }
+                    .disabled(working)
+                }
+            }
             Section {
                 SecureField("Password", text: $password)
                     .textContentType(.password)
                     .focused($focused)
                     .onSubmit { Task { await unlock() } }
-                Toggle("Keep Unlocked on This Device", isOn: $remember)
+                Picker("Next Time", selection: $nextTime) {
+                    ForEach(VaultUnlockMode.available, id: \.self) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
             } footer: {
-                Text(remember
-                     ? "The folder's key is kept in this device's Keychain, so it opens without the password, also in \(Platform.isMac ? "Finder" : "the Files app"). Lock it to stop."
-                     : "It locks again when Ownhold quits\(model.requireUnlock ? " or locks" : "").")
+                Text(nextTime.explanation)
             }
             if let error {
                 Section { Text(error).foregroundStyle(.red) }
@@ -255,16 +312,43 @@ struct UnlockFolderView: View {
             Section {
                 Button(working ? "Unlocking…" : "Unlock") { Task { await unlock() } }
                     .disabled(password.isEmpty || working)
-                    .keyboardShortcut(.defaultAction)
                 Button("Forgot Password?") { recovering = true }
             }
         }
         .formStyle(.grouped)
         .frame(maxWidth: 520)
         .frame(maxWidth: .infinity)
-        .onAppear { focused = true }
+        .onAppear {
+            nextTime = model.unlockMode(of: root) == .keepUnlocked ? .password : model.unlockMode(of: root)
+            if !VaultBiometrics.isAvailable, nextTime == .biometric { nextTime = .password }
+        }
+        .task(id: root) {
+            // Face ID right away, once; the password stays as the fallback.
+            guard usesBiometrics, !triedBiometrics, !model.lockedByHand.contains(root) else {
+                focused = true
+                return
+            }
+            triedBiometrics = true
+            await unlockWithBiometrics()
+        }
         .sheet(isPresented: $recovering) {
             RecoverFolderView(root: root)
+        }
+    }
+
+    private func unlockWithBiometrics() async {
+        guard !working else { return }
+        working = true
+        defer { working = false }
+        error = nil
+        do {
+            try await model.unlockWithBiometrics(root)
+        } catch VaultError.biometryCanceled {
+            focused = true
+        } catch {
+            self.error = error.localizedDescription
+            nextTime = .biometric
+            focused = true
         }
     }
 
@@ -274,13 +358,31 @@ struct UnlockFolderView: View {
         defer { working = false }
         error = nil
         do {
-            try await model.unlockFolder(root, password: password, remember: remember)
+            try await model.unlockFolder(root, password: password, mode: nextTime)
             password = ""
         } catch {
             self.error = error.localizedDescription
             password = ""
             focused = true
         }
+    }
+}
+
+/// "Next Time" in an unlocked folder's lock menu.
+struct UnlockModePicker: View {
+    let root: String
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Picker("Next Time", selection: Binding(
+            get: { model.unlockMode(of: root) },
+            set: { model.setUnlockMode($0, for: root) }
+        )) {
+            ForEach(VaultUnlockMode.available, id: \.self) { mode in
+                Label(mode.title, systemImage: mode.symbol).tag(mode)
+            }
+        }
+        .pickerStyle(.menu)
     }
 }
 
@@ -354,7 +456,7 @@ struct RecoverFolderView: View {
         defer { working = false }
         error = nil
         do {
-            try await model.recoverFolder(root, recoveryKey: recoveryKey, newPassword: password, remember: false)
+            try await model.recoverFolder(root, recoveryKey: recoveryKey, newPassword: password)
             dismiss()
         } catch {
             self.error = error.localizedDescription

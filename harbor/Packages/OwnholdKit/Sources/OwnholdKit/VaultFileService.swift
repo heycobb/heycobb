@@ -656,6 +656,7 @@ public enum VaultStore {
     public static func forgetAll(server id: UUID) {
         SharedContainer.defaults.removeObject(forKey: rootsKey(id))
         SharedContainer.keychain.remove(keysKey(id))
+        forgetAllBiometric(server: id)
     }
 
     /// The state for a NAS, with folders set to stay unlocked already
@@ -667,6 +668,7 @@ public enum VaultStore {
         }
         state.onRootsChange = { roots in
             save(roots, for: id)
+            pruneBiometric(keeping: roots, server: id)
             // Keys of folders that were renamed, moved or deleted.
             var all = storedKeys(for: id)
             let stale = all.keys.filter { !roots.contains($0) }

@@ -115,9 +115,22 @@ file.
 
 ## On the device
 
-Unlocked keys stay in memory. "Keep Unlocked on This Device" puts the master
-key in the Keychain (this device only, never synced). Folders not kept
-unlocked lock when Ownhold quits, and also when the app lock engages.
+Unlocked keys stay in memory. "Next Time" chooses how a folder opens again
+on this device:
+
+- **Ask for Password**: nothing is stored.
+- **Use Face ID**: the master key goes in a Keychain item (this device only,
+  `WhenPasscodeSetThisDeviceOnly`, not shared with the extensions) with the
+  access control `biometryCurrentSet OR devicePasscode`. The system releases
+  it only after Face ID, Touch ID or Optic ID, or the device passcode.
+  Enrolling a new face or finger invalidates the biometric path; Ownhold
+  then asks for the password and stores the key again.
+- **Keep Unlocked**: the master key goes in the shared Keychain group without
+  a prompt, so the Files app and Finder extensions can open the folder.
+
+Folders not kept unlocked lock when Ownhold quits, after 3 minutes in the
+background, and when the app lock engages. Locking with the Lock button
+keeps Face ID on; it stops Keep Unlocked.
 Thumbnails of encrypted files are kept in memory only, never in the
 thumbnail cache on disk.
 

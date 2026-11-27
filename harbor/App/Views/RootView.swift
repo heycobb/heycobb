@@ -4,6 +4,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
+    @State private var backgroundedAt: Date?
     @AppStorage("appearance") private var appearance: AppearanceChoice = .system
 
     var body: some View {
@@ -51,6 +52,12 @@ struct RootView: View {
         }
         .animation(.snappy(duration: 0.25), value: model.banner)
         .onChange(of: scenePhase) { _, phase in
+            // Encrypted folders lock after a few minutes away.
+            if phase == .background { backgroundedAt = backgroundedAt ?? .now }
+            if phase == .active {
+                model.lockEncryptedFoldersIfAway(since: backgroundedAt)
+                backgroundedAt = nil
+            }
             if phase == .background { model.lockIfNeeded() }
             if phase == .active, model.isLocked { Task { await model.unlock() } }
             #if os(iOS)

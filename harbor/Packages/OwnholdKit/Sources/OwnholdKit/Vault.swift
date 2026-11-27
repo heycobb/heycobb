@@ -104,6 +104,10 @@ public enum VaultError: Error, Equatable, Sendable {
     case unavailable
     /// Encrypted folders can't be inside one another.
     case nested
+    /// Face ID's saved key is gone or no longer valid (for example, a face
+    /// or finger was added in Settings): the password is needed.
+    case biometryUnavailable
+    case biometryCanceled
 }
 
 extension VaultError: LocalizedError {
@@ -118,6 +122,8 @@ extension VaultError: LocalizedError {
         case .locked: "This encrypted folder is locked."
         case .unavailable: "This isn't available in an encrypted folder, because the NAS can't read the files."
         case .nested: "An encrypted folder can't be inside another encrypted folder."
+        case .biometryUnavailable: "Enter the password. Face ID needs to be turned on again for this folder, for example after a face or fingerprint was added on this device."
+        case .biometryCanceled: "Unlocking was cancelled."
         }
     }
 }

@@ -26,6 +26,9 @@ final class AppModel {
     /// Changes when an encrypted folder is found, locked or unlocked, so
     /// folder lists and icons update.
     var vaultRevision = 0
+    /// Encrypted folders locked with the Lock button this session: their
+    /// unlock screen waits for a tap instead of asking for Face ID at once.
+    var lockedByHand: Set<String> = []
     private(set) var offline: OfflineStore?
     private(set) var thumbnails: ThumbnailCache?
     private(set) var savedPaths: Set<String> = []

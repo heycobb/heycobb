@@ -584,6 +584,7 @@ struct FolderView: View {
         }
         if model.isEncryptedFolder(item.path), model.isUnlocked(item.path) {
             Button("Lock", systemImage: "lock") { model.lockFolder(item.path) }
+            UnlockModePicker(root: item.path)
             Button("Change Password…", systemImage: "key") { changingVaultPassword = item.path }
         }
         if item.isDirectory {
@@ -658,6 +659,7 @@ struct FolderView: View {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         Button("Lock “\((root as NSString).lastPathComponent)”", systemImage: "lock") { model.lockFolder(root) }
+                        UnlockModePicker(root: root)
                         Button("Change Password…", systemImage: "key") { changingVaultPassword = root }
                     } label: {
                         Label("Encrypted Folder", systemImage: "lock.open")
