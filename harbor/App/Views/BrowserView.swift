@@ -113,6 +113,9 @@ struct BrowserView: View {
                         FolderView(folder: folder)
                     }
             }
+            // A fresh stack per Mac tab, so one tab's folder views don't
+            // carry over to another.
+            .id(state.id)
             #if os(macOS)
             .modifier(GlassCard(on: Theme.Sidebar.isGlass && !isBlackout))
             #endif
@@ -146,6 +149,11 @@ struct BrowserView: View {
         .onChange(of: appearsActive) { handleNavigationRequest() }
         #endif
         .onChange(of: model.navigationRequest, initial: true) { handleNavigationRequest() }
+        // Another Mac tab: open its folder right away (shares are loaded).
+        .onChange(of: state.id) {
+            openInitialFolder()
+            if showsTwoColumns { selectInitialShare() }
+        }
         #if os(iOS)
         .sheet(isPresented: $showingSettings) {
             NavigationStack { SettingsView() }

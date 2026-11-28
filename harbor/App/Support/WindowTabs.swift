@@ -34,6 +34,24 @@ final class WindowTabsModel {
 
     func newTab(_ folder: RemoteItem? = nil) {
         let tab = BrowserState(initialFolder: folder)
+        // + opens the folder you're in (as in Finder), so the tab never
+        // starts empty.
+        if folder == nil {
+            tab.selection = current.selection
+            tab.path = current.path
+        } else if let folder {
+            // A folder inside this tab's shared folder or favorite: set the
+            // new tab up now rather than after it looks the folder up.
+            switch current.selection {
+            case let .share(root), let .favorite(root):
+                if folder.path == root.path || folder.path.hasPrefix(root.path + "/") {
+                    tab.selection = current.selection
+                    tab.path = folder.path == root.path ? [] : [folder]
+                    tab.openedInitialFolder = true
+                }
+            default: break
+            }
+        }
         let index = tabs.firstIndex { $0.id == currentID }.map { $0 + 1 } ?? tabs.endIndex
         tabs.insert(tab, at: index)
         currentID = tab.id
@@ -65,9 +83,9 @@ struct TabHost: View {
     }
 
     var body: some View {
+        // The same view for every tab: switching swaps its state, so only the
+        // folder area changes (BrowserView gives each tab a fresh stack).
         BrowserView(externalState: model.current)
-            // A fresh view per tab, so one tab's folder views don't carry over.
-            .id(model.currentID)
             .environment(\.openInNewTab, TabOpener(window: model.id) { [model] in model.newTab($0) })
             .toolbar {
                 if model.tabs.count > 1 {
