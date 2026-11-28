@@ -10,7 +10,7 @@ struct FolderView: View {
     let folder: RemoteItem
 
     @Environment(AppModel.self) private var model
-    @Environment(\.openWindow) private var openWindow
+    @Environment(\.openInNewTab) private var openInNewTab
     @Environment(\.horizontalSizeClass) private var sizeClass
     @AppStorage("layout") private var layout: BrowseLayout = .list
     @AppStorage("sortField") private var sort: SortField = .name
@@ -597,11 +597,9 @@ struct FolderView: View {
             UnlockModePicker(root: item.path)
             Button("Change Password…", systemImage: "key") { changingVaultPassword = item.path }
         }
-        #if os(macOS)
-        if item.isDirectory {
-            Button("Open in New Tab", systemImage: "plus.square.on.square") { WindowTabs.openTab(item, with: openWindow) }
+        if item.isDirectory, let openInNewTab {
+            Button("Open in New Tab", systemImage: "plus.square.on.square") { openInNewTab(item) }
         }
-        #endif
         if item.isDirectory {
             Button(model.isFavorite(item) ? "Remove from Favorites" : "Add to Favorites",
                    systemImage: model.isFavorite(item) ? "star.slash" : "star") { model.toggleFavorite(item) }
@@ -635,11 +633,25 @@ struct FolderView: View {
         }
     }
 
+    /// The folder's buttons (add, view options): on the Mac they sit at the
+    /// trailing end by Search, as in Finder, apart from the tabs.
+    private static var actionPlacement: ToolbarItemPlacement {
+        #if os(macOS)
+        .automatic
+        #else
+        .primaryAction
+        #endif
+    }
+
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
+        #if os(macOS)
+        // Pushes the folder's buttons to the trailing end, by Search.
+        ToolbarSpacer(.flexible)
+        #endif
         if selecting {
             selectionToolbar
         } else {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: Self.actionPlacement) {
                 Menu {
                     Button("Upload Photos and Videos", systemImage: "photo.on.rectangle") { showingPhotos = true }
                     Button("Upload Files…", systemImage: "arrow.up.doc") { showingFiles = true }
@@ -671,7 +683,7 @@ struct FolderView: View {
                 .disabled(!canChange)
             }
             if let root = model.encryptedRoot(of: folder.path), model.isUnlocked(root) {
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: Self.actionPlacement) {
                     Menu {
                         Button("Lock “\((root as NSString).lastPathComponent)”", systemImage: "lock") { model.lockFolder(root) }
                         UnlockModePicker(root: root)
@@ -706,7 +718,7 @@ struct FolderView: View {
             selectionActions
         }
         #else
-        ToolbarItemGroup(placement: .primaryAction) {
+        ToolbarItemGroup(placement: Self.actionPlacement) {
             selectionActions
         }
         #endif
@@ -755,7 +767,7 @@ struct FolderView: View {
     }
 
     @ToolbarContentBuilder private var viewOptions: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
+        ToolbarItem(placement: Self.actionPlacement) {
             Menu {
                 Button("Select", systemImage: "checkmark.circle") { selecting = true }
                     .disabled(shown.isEmpty)

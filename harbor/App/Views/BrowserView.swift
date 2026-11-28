@@ -16,6 +16,63 @@ enum SidebarItem: Hashable {
 extension EnvironmentValues {
     /// A folder a new Mac window or tab opens with (Open in New Tab).
     @Entry var initialFolder: RemoteItem? = nil
+    /// Opens a folder in a new tab of this window (Mac tabs; nil elsewhere).
+    @Entry var openInNewTab: TabOpener? = nil
+}
+
+/// Opens a folder in a new tab. Compared by its window, so views reading it
+/// don't redraw on every update.
+struct TabOpener: Equatable {
+    let window: UUID
+    let open: @MainActor (RemoteItem) -> Void
+
+    @MainActor func callAsFunction(_ folder: RemoteItem) { open(folder) }
+
+    static func == (a: TabOpener, b: TabOpener) -> Bool { a.window == b.window }
+}
+
+/// What a Browse screen shows: the sidebar item and the folders opened in
+/// it. Each Mac tab has its own (see TabHost); elsewhere BrowserView keeps one.
+@Observable
+final class BrowserState: Identifiable {
+    let id = UUID()
+    var selection: SidebarItem?
+    var path: [RemoteItem] = []
+    /// A folder to open first (Open in New Tab).
+    var initialFolder: RemoteItem?
+    var openedInitialFolder = false
+
+    init(initialFolder: RemoteItem? = nil) {
+        self.initialFolder = initialFolder
+    }
+
+    /// The tab's name: the folder on top, else the sidebar item.
+    var title: String {
+        if let folder = path.last { return folder.name }
+        switch selection {
+        case let .share(item), let .favorite(item): return item.name
+        case .photos: return "Photos"
+        case .recents: return "Recents"
+        case .offline: return "Offline"
+        case .backup: return "Folder Backup"
+        case .photoBackup: return "Photo Backup"
+        case .recentlyDeleted: return "Recently Deleted"
+        case nil: return initialFolder?.name ?? "Arkenal"
+        }
+    }
+
+    var symbol: String {
+        switch selection {
+        case .share, nil: path.isEmpty ? "externaldrive" : "folder"
+        case .favorite: path.isEmpty ? "star" : "folder"
+        case .photos: "photo.on.rectangle.angled"
+        case .recents: "clock"
+        case .offline: "arrow.down.circle"
+        case .backup: "clock.arrow.circlepath"
+        case .photoBackup: "arrow.triangle.2.circlepath"
+        case .recentlyDeleted: "trash"
+        }
+    }
 }
 
 /// Sidebar of shares + a folder stack. On iPhone this collapses into a single
@@ -25,19 +82,20 @@ struct BrowserView: View {
     /// Compact (iPhone, folded iPhone Duo, narrow iPad window): the sidebar
     /// is the first screen. Regular, or the Mac (no size class): two columns.
     @Environment(\.horizontalSizeClass) private var sizeClass
-    @State private var selection: SidebarItem?
+    /// Mac tabs pass theirs in; otherwise the view keeps its own.
+    var externalState: BrowserState?
+    @State private var ownState = BrowserState()
+    private var state: BrowserState { externalState ?? ownState }
     @State private var shares: [RemoteItem] = []
     /// Shared folders with a Recycle Bin this account can open.
     @State private var recycleBins: [AppModel.RecycleBinFolder] = []
-    @State private var path: [RemoteItem] = []
     @State private var showingSettings = false
     // Both columns from the start wherever they fit; one column on iPhone either way.
     @State private var visibility: NavigationSplitViewVisibility = .all
     @Environment(\.isBlackout) private var isBlackout
     @Environment(\.initialFolder) private var initialFolder
-    @State private var openedInitialFolder = false
     #if os(macOS)
-    @Environment(\.openWindow) private var openWindow
+    @Environment(\.openInNewTab) private var openInNewTab
     /// Whether this window is the front one: menu bar requests go there.
     @Environment(\.appearsActive) private var appearsActive
     #endif
@@ -46,11 +104,11 @@ struct BrowserView: View {
         NavigationSplitView(columnVisibility: $visibility) {
             sidebar
         } detail: {
-            NavigationStack(path: $path) {
+            NavigationStack(path: Bindable(state).path) {
                 detailRoot
                     // A new screen per sidebar item, so a folder's first load
                     // isn't cancelled by swapping it in place of another.
-                    .id(selection)
+                    .id(state.selection)
                     .navigationDestination(for: RemoteItem.self) { folder in
                         FolderView(folder: folder)
                     }
@@ -65,7 +123,10 @@ struct BrowserView: View {
         .navigationSplitViewStyle(.balanced)
         #endif
         .task(id: model.connection) { await loadShares() }
-        .onChange(of: selection) { path = [] }
+        .onChange(of: state.selection) {
+            // Opening a folder in a new tab sets both at once: keep its stack.
+            if state.path.first.map({ !isInside($0, state.selection) }) ?? false { state.path = [] }
+        }
         .onChange(of: sizeClass) {
             // Unfolding an iPhone Duo, or widening an iPad window, makes
             // room for the second column: fill it rather than leave it empty.
@@ -103,32 +164,41 @@ struct BrowserView: View {
         // Tabs on iPhone and iPad (MainTabs handles these).
         if [.photos, .recents, .offline].contains(request) { return }
         #endif
-        selection = request
-        path = []
+        state.selection = request
+        state.path = []
         model.navigationRequest = nil
+    }
+
+    /// Whether a folder belongs to a sidebar item's shared folder or favorite
+    /// (so switching to it keeps the folder stack that was just set).
+    private func isInside(_ folder: RemoteItem, _ item: SidebarItem?) -> Bool {
+        switch item {
+        case let .share(root), let .favorite(root): folder.path.hasPrefix(root.path + "/")
+        default: false
+        }
     }
 
     /// A new Mac window or tab opened on a folder: its shared folder in the
     /// sidebar, the folder itself on top.
     private func openInitialFolder() {
-        guard !openedInitialFolder, let folder = initialFolder,
+        guard !state.openedInitialFolder, let folder = state.initialFolder ?? initialFolder,
               let share = shares.first(where: { $0.path == "/" + (folder.path.split(separator: "/").first.map(String.init) ?? "") })
         else { return }
-        openedInitialFolder = true
-        selection = .share(share)
-        guard folder.path != share.path else { return }
-        // After the selection change, which clears the folder stack.
-        Task { @MainActor in path = [folder] }
+        state.openedInitialFolder = true
+        state.path = folder.path == share.path ? [] : [folder]
+        state.selection = .share(share)
     }
 
     #if os(macOS)
-    private func openInNewTabButton(_ folder: RemoteItem) -> some View {
-        Button("Open in New Tab", systemImage: "plus.square.on.square") { WindowTabs.openTab(folder, with: openWindow) }
+    @ViewBuilder private func openInNewTabButton(_ folder: RemoteItem) -> some View {
+        if let openInNewTab {
+            Button("Open in New Tab", systemImage: "plus.square.on.square") { openInNewTab(folder) }
+        }
     }
     #endif
 
     @ViewBuilder private var detailRoot: some View {
-        switch selection {
+        switch state.selection {
         case let .share(share):
             FolderView(folder: share)
         case let .favorite(folder):
@@ -278,8 +348,8 @@ struct BrowserView: View {
     }
 
     private func macRow(_ item: SidebarItem, title: String, symbol: String, badge: Int = 0) -> some View {
-        let selected = selection == item
-        return Button { selection = item } label: {
+        let selected = state.selection == item
+        return Button { state.selection = item } label: {
             HStack(spacing: Theme.Spacing.s) {
                 Image(systemName: symbol)
                     .foregroundStyle(selected ? Theme.onAccent : Theme.accent)
@@ -308,7 +378,7 @@ struct BrowserView: View {
     /// iPhone and iPad keep the system list (it drives navigation on iPhone);
     /// the tint makes the selection highlight the accent color.
     private var sidebarList: some View {
-        List(selection: $selection) {
+        List(selection: Bindable(state).selection) {
             Section {} header: { serverHeading }
             Section {
                 sharesPlaceholder
@@ -369,7 +439,7 @@ struct BrowserView: View {
     /// Whether `item` shows the accent selection. Only with two columns:
     /// in one column, a selected row is the screen you've moved on to.
     private func isHighlighted(_ item: SidebarItem) -> Bool {
-        showsTwoColumns && selection == item
+        showsTwoColumns && state.selection == item
     }
 
     private func sidebarLabel(_ title: String, symbol: String, item: SidebarItem) -> some View {
@@ -400,7 +470,7 @@ struct BrowserView: View {
 
     private func unfavoriteButton(_ folder: RemoteItem) -> some View {
         Button("Remove from Favorites", systemImage: "star.slash") {
-            if selection == .favorite(folder) { selection = nil }
+            if state.selection == .favorite(folder) { state.selection = nil }
             model.toggleFavorite(folder)
         }
     }
@@ -512,7 +582,7 @@ struct BrowserView: View {
     /// With two columns showing, open the first share instead of leaving
     /// the detail column empty. In one column the sidebar is the first screen.
     private func selectInitialShare() {
-        guard selection == nil else { return }
+        guard state.selection == nil else { return }
         var initial = shares.first
         #if DEBUG
         // `-share Photos` opens a specific share: used for screenshots.
@@ -520,7 +590,7 @@ struct BrowserView: View {
             initial = shares.first { $0.name == name } ?? initial
         }
         #endif
-        if let initial { selection = .share(initial) }
+        if let initial { state.selection = .share(initial) }
     }
 }
 

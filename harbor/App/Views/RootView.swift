@@ -6,6 +6,7 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var backgroundedAt: Date?
     @AppStorage("appearance") private var appearance: AppearanceChoice = .system
+    @Environment(\.initialFolder) private var initialFolder
 
     var body: some View {
         @Bindable var model = model
@@ -18,7 +19,7 @@ struct RootView: View {
                 #if os(iOS)
                 MainTabs()
                 #else
-                BrowserView()
+                TabHost(initialFolder: initialFolder)
                 #endif
             }
         }
