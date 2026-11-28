@@ -31,7 +31,7 @@ final class ThemeSettings: @unchecked Sendable {
     private init() {
         let defaults = UserDefaults.standard
         accent = defaults.string(forKey: "accent").flatMap(AccentChoice.init(storedValue:)) ?? .granite
-        sidebarStyle = defaults.string(forKey: "sidebarStyle").flatMap(SidebarStyle.init) ?? .tinted
+        sidebarStyle = defaults.string(forKey: "sidebarStyle").flatMap(SidebarStyle.init) ?? .default
         appIcon = defaults.string(forKey: "appIcon").flatMap(AppIconChoice.init(storedValue:)) ?? .granite
         SharedContainer.defaults.set(accent.rawValue, forKey: "accent")
     }
@@ -42,6 +42,15 @@ enum SidebarStyle: String, CaseIterable, Identifiable {
     /// Mac only: the whole window frosted, the content on a rounded card.
     case glass
     var id: String { rawValue }
+
+    /// New installs: Glass on the Mac, Tinted on iPhone and iPad.
+    static var `default`: SidebarStyle {
+        #if os(macOS)
+        .glass
+        #else
+        .tinted
+        #endif
+    }
 
     var title: String {
         switch self {

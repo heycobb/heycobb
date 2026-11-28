@@ -46,6 +46,10 @@ struct AppearanceSection: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .fixedSize()
+                    // The Mac control keeps its old segment widths when an
+                    // option is added (System → an accent adds Tinted), which
+                    // squeezed the labels; a new control sizes them afresh.
+                    .id(SidebarStyle.available(accent: theme.accent))
                 }
             }
 
