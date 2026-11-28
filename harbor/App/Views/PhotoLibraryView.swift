@@ -74,7 +74,7 @@ struct PhotoLibraryView: View {
                             .padding(.horizontal, Theme.Spacing.m)
                             .padding(.vertical, Theme.Spacing.xs)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.bar)
+                            .background { BarBackground() }
                     }
                 }
             }
@@ -124,3 +124,4 @@ struct PhotoLibraryView: View {
         }
     }
 }
+

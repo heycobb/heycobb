@@ -104,15 +104,29 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         }
     }
 
-    var accent: Color {
+    /// The accent's two shades: the light-mode one (also the swatch in
+    /// Settings) and a lighter one that stays readable in dark mode.
+    private var shades: (light: UInt32, dark: UInt32)? {
         switch self {
-        case .system: Self.systemAccent
-        case .spruce: Color(light: 0x1D4B3C, dark: 0x6FBF9A)
-        case .fjord: Color(light: 0x1F4A6E, dark: 0x7FB2DA)
-        case .granite: Color(light: 0x2E3A41, dark: 0xA9B8C1)
-        case .rowan: Color(light: 0x7A2F3B, dark: 0xE3949F)
-        case .amber: Color(light: 0x9A6312, dark: 0xE3B261)
+        case .system: nil
+        case .spruce: (0x1D4B3C, 0x6FBF9A)
+        case .fjord: (0x1F4A6E, 0x7FB2DA)
+        case .granite: (0x2E3A41, 0xA9B8C1)
+        case .rowan: (0x7A2F3B, 0xE3949F)
+        case .amber: (0x9A6312, 0xE3B261)
         }
+    }
+
+    var accent: Color {
+        guard let shades else { return Self.systemAccent }
+        return Color(light: shades.light, dark: shades.dark)
+    }
+
+    /// The swatch's shade in both modes: the selection fill with the plain
+    /// sidebar, so it matches the circle in Settings.
+    var swatch: Color {
+        guard let shades else { return Self.systemAccent }
+        return Color(hex: shades.light)
     }
 
     /// Unused for System, which always has the plain sidebar.
@@ -146,15 +160,26 @@ enum AccentChoice: String, CaseIterable, Identifiable {
         }
     }
 
-    var onAccent: Color {
+    private var onShades: (light: UInt32, dark: UInt32)? {
         switch self {
-        case .system: .white
-        case .spruce: Color(light: 0xF3F0E8, dark: 0x0E1F18)
-        case .fjord: Color(light: 0xF2F5F8, dark: 0x0D1B28)
-        case .granite: Color(light: 0xF3F5F6, dark: 0x12171A)
-        case .rowan: Color(light: 0xFAF2F2, dark: 0x22100F)
-        case .amber: Color(light: 0xFCF7EE, dark: 0x22180A)
+        case .system: nil
+        case .spruce: (0xF3F0E8, 0x0E1F18)
+        case .fjord: (0xF2F5F8, 0x0D1B28)
+        case .granite: (0xF3F5F6, 0x12171A)
+        case .rowan: (0xFAF2F2, 0x22100F)
+        case .amber: (0xFCF7EE, 0x22180A)
         }
+    }
+
+    var onAccent: Color {
+        guard let onShades else { return .white }
+        return Color(light: onShades.light, dark: onShades.dark)
+    }
+
+    /// Text and icons on `swatch`.
+    var onSwatch: Color {
+        guard let onShades else { return .white }
+        return Color(hex: onShades.light)
     }
 
     /// The Mac's accent from System Settings › Appearance (the Mac target has

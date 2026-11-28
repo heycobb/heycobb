@@ -227,8 +227,32 @@ extension ReorderDifference where CollectionID == ReorderableSingleCollectionIde
 enum WindowTabs {
     static func attach(_ window: NSWindow) {
         window.tabbingMode = .disallowed
+        #if DEBUG
+        // `-snapshot` writes a PNG of the window to standard output a few
+        // seconds after launch, then quits. It's drawn by the app itself, so
+        // it works while the screen is locked (Glass shows no desktop behind
+        // it). Run the executable directly: Arkenal -snapshot YES > out.png
+        if UserDefaults.standard.bool(forKey: "snapshot") {
+            Task { @MainActor [weak window] in
+                try? await Task.sleep(for: .seconds(UserDefaults.standard.double(forKey: "snapshotDelay").nonZero ?? 4))
+                guard let view = window?.contentView?.superview ?? window?.contentView,
+                      let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+                view.cacheDisplay(in: view.bounds, to: rep)
+                if let png = rep.representation(using: .png, properties: [:]) {
+                    FileHandle.standardOutput.write(png)
+                }
+                exit(0)
+            }
+        }
+        #endif
     }
 }
+
+#if DEBUG
+private extension Double {
+    var nonZero: Double? { self == 0 ? nil : self }
+}
+#endif
 
 /// Finds the NSWindow a view is in, once it's on screen.
 struct WindowReader: NSViewRepresentable {

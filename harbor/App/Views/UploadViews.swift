@@ -71,7 +71,7 @@ struct ActivityBar: View {
             .padding(.horizontal, Theme.Spacing.l)
             .padding(.vertical, Theme.Spacing.s + 2)
             .frame(maxWidth: .infinity)
-            .background(.bar)
+            .background { BarBackground() }
             .overlay(alignment: .top) { Divider() }
     }
 }

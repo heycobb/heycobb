@@ -24,7 +24,13 @@ struct BackupView: View {
                         Text(backup.settings.destination.map { ($0 as NSString).lastPathComponent } ?? "Choose…")
                             .foregroundStyle(.secondary)
                     }
+                    .contentShape(.rect)
                 }
+                #if os(macOS)
+                // A plain row, as in Folder Backup: the Mac's default button
+                // drew a grey box across the row.
+                .buttonStyle(.plain)
+                #endif
                 .disabled(model.service == nil || backup.isRunning)
                 if let destination = backup.settings.destination {
                     Text(destination + "/Year/Month")

@@ -32,6 +32,11 @@ enum Theme {
         static var background: Color { ThemeSettings.shared.accent.sidebarTint }
         static var text: Color { isTinted ? ThemeSettings.shared.accent.sidebarText : .primary }
         static var secondary: Color { isTinted ? ThemeSettings.shared.accent.sidebarSecondary : .secondary }
+        /// The selected row. Tinted: the accent. Plain and Glass: the
+        /// swatch's shade in light and dark mode alike, as in Settings.
+        /// Blackout keeps the lighter accent, which reads on black.
+        static var selection: Color { isTinted || Blackout.isOn ? Theme.accent : ThemeSettings.shared.accent.swatch }
+        static var onSelection: Color { isTinted || Blackout.isOn ? Theme.onAccent : ThemeSettings.shared.accent.onSwatch }
     }
 
     enum Spacing {
@@ -158,6 +163,20 @@ extension View {
     func blackoutSurface() -> some View { modifier(BlackoutSurface()) }
 }
 
+/// Behind pinned headers and status bars: the bar material, or black in
+/// Blackout (the material would show grey).
+struct BarBackground: View {
+    @AppStorage("appearance") private var appearance: AppearanceChoice = .system
+
+    var body: some View {
+        if appearance == .blackout {
+            Blackout.background
+        } else {
+            Rectangle().fill(.bar)
+        }
+    }
+}
+
 #if os(macOS)
 /// The desktop behind the window, frosted (like Finder's sidebar). Goes
 /// solid while the window is in the background, as macOS does, and with
@@ -186,11 +205,13 @@ struct GlassCard: ViewModifier {
     let on: Bool
     static let radius: CGFloat = 10
     static let inset: CGFloat = 8
+    @AppStorage("appearance") private var appearance: AppearanceChoice = .system
 
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: on ? Self.radius : 0, style: .continuous)
+        // Blackout: black behind grids too (lists paint their own).
         content
-            .background { shape.fill(Color(nsColor: .controlBackgroundColor)) }
+            .background { shape.fill(appearance == .blackout ? Blackout.background : Color(nsColor: .controlBackgroundColor)) }
             .clipShape(shape)
             .overlay { shape.strokeBorder(.primary.opacity(on ? 0.08 : 0), lineWidth: 0.5) }
             .padding([.horizontal, .bottom], on ? Self.inset : 0)

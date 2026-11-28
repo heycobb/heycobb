@@ -56,6 +56,7 @@ struct FolderBackupView: View {
                         Text(backup.settings.destination.map { ($0 as NSString).lastPathComponent } ?? "Choose…")
                             .foregroundStyle(.secondary)
                     }
+                    .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
                 .disabled(model.service == nil || backup.isRunning)

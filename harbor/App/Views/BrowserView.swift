@@ -360,15 +360,15 @@ struct BrowserView: View {
         return Button { state.selection = item } label: {
             HStack(spacing: Theme.Spacing.s) {
                 Image(systemName: symbol)
-                    .foregroundStyle(selected ? Theme.onAccent : Theme.accent)
+                    .foregroundStyle(selected ? Theme.Sidebar.onSelection : Theme.accent)
                     .frame(width: 18)
                 Text(title)
-                    .foregroundStyle(selected ? Theme.onAccent : Theme.Sidebar.text)
+                    .foregroundStyle(selected ? Theme.Sidebar.onSelection : Theme.Sidebar.text)
                 Spacer(minLength: 0)
                 if badge > 0 {
                     Text("\(badge)")
                         .font(.meta)
-                        .foregroundStyle(selected ? Theme.onAccent : Theme.Sidebar.secondary)
+                        .foregroundStyle(selected ? Theme.Sidebar.onSelection : Theme.Sidebar.secondary)
                 }
             }
             .padding(.vertical, 3)
@@ -377,7 +377,7 @@ struct BrowserView: View {
         .buttonStyle(.plain)
         .listRowBackground(
             RoundedRectangle(cornerRadius: 7)
-                .fill(selected ? Theme.accent : .clear)
+                .fill(selected ? Theme.Sidebar.selection : .clear)
                 .padding(.horizontal, 10)
         )
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -453,9 +453,9 @@ struct BrowserView: View {
     private func sidebarLabel(_ title: String, symbol: String, item: SidebarItem) -> some View {
         let highlighted = isHighlighted(item)
         return Label {
-            Text(title).foregroundStyle(highlighted ? Theme.onAccent : Theme.Sidebar.text)
+            Text(title).foregroundStyle(highlighted ? Theme.Sidebar.onSelection : Theme.Sidebar.text)
         } icon: {
-            Image(systemName: symbol).foregroundStyle(highlighted ? Theme.onAccent : Theme.accent)
+            Image(systemName: symbol).foregroundStyle(highlighted ? Theme.Sidebar.onSelection : Theme.accent)
         }
     }
 
@@ -465,7 +465,7 @@ struct BrowserView: View {
     private func rowBackground(_ item: SidebarItem) -> AnyView? {
         if isHighlighted(item) {
             return AnyView(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Theme.accent)
+                .fill(Theme.Sidebar.selection)
                 .padding(.horizontal, 10))
         }
         if Theme.Sidebar.isTinted { return AnyView(Color.clear) }
@@ -654,6 +654,18 @@ struct BrowserView: View {
         // `-share Photos` opens a specific share: used for screenshots.
         if let name = UserDefaults.standard.string(forKey: "share") {
             initial = shares.first { $0.name == name } ?? initial
+        }
+        #endif
+        #if DEBUG
+        // `-select backup` opens a list instead (photos, recents, offline,
+        // backup, photoBackup): used for screenshots.
+        switch UserDefaults.standard.string(forKey: "select") {
+        case "photos": state.selection = .photos; return
+        case "recents": state.selection = .recents; return
+        case "offline": state.selection = .offline; return
+        case "backup": state.selection = .backup; return
+        case "photoBackup": state.selection = .photoBackup; return
+        default: break
         }
         #endif
         if let initial { state.selection = .share(initial) }
