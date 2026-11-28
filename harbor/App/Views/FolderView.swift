@@ -645,7 +645,8 @@ struct FolderView: View {
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         #if os(macOS)
-        // Pushes the folder's buttons to the trailing end, by Search.
+        // Keeps the folder's buttons at the trailing end, by Search (and
+        // the Mac's tabs centered).
         ToolbarSpacer(.flexible)
         #endif
         if selecting {

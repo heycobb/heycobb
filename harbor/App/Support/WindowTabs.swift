@@ -71,8 +71,17 @@ struct TabHost: View {
             .environment(\.openInNewTab, TabOpener(window: model.id) { [model] in model.newTab($0) })
             .toolbar {
                 if model.tabs.count > 1 {
-                    ToolbarItem(placement: .navigation) { TabChips(model: model) }
+                    // Centered, like Safari's tabs: the item stretches over the
+                    // free space and centers the tabs in it; the folder's
+                    // buttons and Search stay trailing.
+                    // An empty anchor first: a leading flexible space only
+                    // takes effect with an item before it.
+                    ToolbarItem { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
                         .sharedBackgroundVisibility(.hidden)
+                    ToolbarSpacer(.flexible)
+                    ToolbarItem { TabChips(model: model) }
+                        .sharedBackgroundVisibility(.hidden)
+                    ToolbarSpacer(.flexible)
                 }
             }
             // The chips say where each tab is; the window title would repeat it.
@@ -88,7 +97,7 @@ private struct TabChips: View {
     @Bindable var model: WindowTabsModel
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
             HStack(spacing: 4) {
                 ForEach(model.tabs) { tab in
                     TabChip(tab: tab, selected: tab.id == model.currentID,
@@ -103,8 +112,8 @@ private struct TabChips: View {
             // Its full width: the toolbar would otherwise squeeze the names.
             .fixedSize(horizontal: true, vertical: false)
             Button { model.newTab() } label: {
-                Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
-                    .frame(width: 22, height: 22)
+                Image(systemName: "plus").font(.system(size: 13, weight: .medium))
+                    .frame(width: 28, height: 28)
                     .contentShape(.circle)
             }
             .buttonStyle(.plain)
@@ -129,36 +138,45 @@ private struct TabChip: View {
             Button(action: select) {
                 HStack(spacing: 5) {
                     Image(systemName: tab.symbol)
-                        .font(.system(size: 11))
+                        .font(.system(size: 13))
                         .foregroundStyle(selected ? Theme.accent : .secondary)
                     Text(tab.title)
                         .lineLimit(1)
                         .truncationMode(.middle)
-                        .frame(maxWidth: 140, alignment: .leading)
+                        .frame(maxWidth: 160, alignment: .leading)
                         .fixedSize(horizontal: true, vertical: false)
                 }
-                .padding(.leading, 9)
-                .frame(height: 24)
+                .padding(.leading, 12)
+                .frame(height: 30)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(tab.title)
             .accessibilityAddTraits(selected ? .isSelected : [])
+            // The × is hidden until hover, so VoiceOver gets it as an action.
+            .accessibilityAction(named: "Close Tab", close)
             Button(action: close) {
-                Image(systemName: "xmark").font(.system(size: 8.5, weight: .bold))
-                    .frame(width: 14, height: 14)
+                Image(systemName: "xmark").font(.system(size: 9.5, weight: .bold))
+                    .frame(width: 18, height: 18)
                     .contentShape(.circle)
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .opacity(selected || hovering ? 1 : 0)
-            .padding(.trailing, 5)
+            // Shown on hover only; its space stays, so tabs don't shift.
+            .opacity(hovering ? 1 : 0)
+            .allowsHitTesting(hovering)
+            .accessibilityHidden(true)
+            .padding(.trailing, 6)
             .help("Close Tab")
             .accessibilityLabel("Close \(tab.title)")
         }
-        .font(.subheadline)
+        .font(.body)
         .foregroundStyle(selected ? .primary : .secondary)
-        .background(Capsule().fill(.primary.opacity(selected ? 0.09 : hovering ? 0.05 : 0)))
+        .background {
+            Capsule()
+                .fill(.primary.opacity(selected ? 0.13 : hovering ? 0.06 : 0))
+                .overlay { Capsule().strokeBorder(.primary.opacity(selected ? 0.12 : 0), lineWidth: 0.5) }
+        }
         .onHover { hovering = $0 }
     }
 }
