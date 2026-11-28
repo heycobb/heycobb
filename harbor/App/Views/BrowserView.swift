@@ -488,41 +488,41 @@ struct BrowserView: View {
     }
 
     #if os(macOS)
-    /// The NAS in use, at the top of the Mac sidebar (like the account in
-    /// Mail): one line, with a dot for the connection. Clicking it opens
-    /// the server menu, which also says how it's connected.
+    /// The NAS in use, at the top of the Mac sidebar: a card with the
+    /// device, its connection dot, its kind and how it's reached. Clicking
+    /// anywhere on it opens the server menu.
     private var macServerRow: some View {
         Menu {
             Section(ConnectionBadge.title(for: model.connection)) {
                 serverMenuItems
             }
         } label: {
-            HStack(spacing: Theme.Spacing.s) {
-                Circle()
-                    .fill(connectionColor)
-                    .frame(width: 8, height: 8)
-                    .accessibilityHidden(true)
-                Text(model.activeServer?.name ?? "Arkenal")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.Sidebar.text)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.Sidebar.secondary)
-                Spacer(minLength: 0)
-            }
-            .contentShape(.rect)
+            ServerCard(name: model.activeServer?.name ?? "Arkenal",
+                       detail: serverDetail,
+                       dot: connectionColor)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
-        // The whole row opens the menu, not just the name.
         .frame(maxWidth: .infinity, alignment: .leading)
         .help(ConnectionBadge.title(for: model.connection))
-        .accessibilityLabel("\(model.activeServer?.name ?? "Arkenal"), \(ConnectionBadge.title(for: model.connection))")
+        .accessibilityLabel("\(model.activeServer?.name ?? "Arkenal"), \(serverDetail)")
         .listRowBackground(Color.clear)
-        .padding(.vertical, 2)
+        .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
+    }
+
+    /// "Synology · Home network" when connected; otherwise the state.
+    private var serverDetail: String {
+        guard case let .online(endpoint) = model.connection, let endpoint,
+              let kind = model.activeServer?.kind else {
+            return ConnectionBadge.title(for: model.connection)
+        }
+        let short = switch kind {
+        case .synology: "Synology"
+        case .webdav: "WebDAV"
+        case .smb: "SMB"
+        }
+        return "\(short) · \(endpoint.displayName)"
     }
 
     private var connectionColor: Color {
@@ -530,6 +530,64 @@ struct BrowserView: View {
         case .online: .green
         case .offline: .orange
         case .idle, .connecting: .secondary
+        }
+    }
+    #endif
+
+    #if os(macOS)
+    /// The card drawn for the NAS at the top of the Mac sidebar.
+    private struct ServerCard: View {
+        let name: String
+        let detail: String
+        let dot: Color
+        @State private var hovering = false
+
+        var body: some View {
+            HStack(spacing: 9) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(Theme.Sidebar.text.opacity(0.13))
+                    Image(systemName: "externaldrive.fill")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Theme.Sidebar.text.opacity(0.85))
+                }
+                .frame(width: 30, height: 30)
+                // The dot sits in a cut-out ring, so it reads on any sidebar.
+                .mask {
+                    Rectangle().overlay(alignment: .bottomTrailing) {
+                        Circle().frame(width: 13, height: 13).offset(x: 3, y: 3)
+                            .blendMode(.destinationOut)
+                    }
+                    .compositingGroup()
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    Circle().fill(dot).frame(width: 8, height: 8).offset(x: 0.5, y: 0.5)
+                }
+                .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(name)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.Sidebar.text)
+                    Text(detail)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.Sidebar.secondary)
+                }
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.Sidebar.secondary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 7)
+            .padding(.vertical, 6)
+            .background(Theme.Sidebar.text.opacity(hovering ? 0.10 : 0.06),
+                        in: .rect(cornerRadius: 10, style: .continuous))
+            .contentShape(.rect)
+            .onHover { hovering = $0 }
         }
     }
     #endif
