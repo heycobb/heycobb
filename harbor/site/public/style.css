@@ -1,0 +1,120 @@
+/* arkenal.xyz: the home page, Support and Privacy. */
+:root {
+  --bg: #F5F6F6; --surface: #FFFFFF; --text: #1E262B; --muted: #5A666D;
+  --line: #DEE2E4; --accent: #2E3A41; --link: #2E5E86;
+  --band: #232B30; --band-text: #EEF1F2; --band-muted: #A9B8C1;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14191C; --surface: #1C2327; --text: #E6EAEC; --muted: #9AA7AE;
+          --line: #2A3338; --accent: #C9D3D8; --link: #8FBCE0;
+          --band: #0E1215; }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 17px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--link); }
+img { max-width: 100%; height: auto; display: block; }
+code { font: 0.92em ui-monospace, "SF Mono", Menlo, monospace; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+.skip { position: absolute; left: -999px; }
+.skip:focus { left: 12px; top: 12px; background: var(--surface); padding: 6px 10px; border-radius: 6px; z-index: 2; }
+
+/* Top bar, shared by every page */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 600; font-size: 18px; }
+.brand img { width: 32px; height: 32px; border-radius: 7px; }
+.top nav { display: flex; gap: 22px; font-size: 15px; }
+.top nav a { color: var(--muted); text-decoration: none; }
+.top nav a:hover, .top nav a[aria-current] { color: var(--text); }
+
+/* Home: hero */
+.hero { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: center; padding: 48px 0 72px; }
+.hero h1 { font-size: 52px; line-height: 1.05; letter-spacing: -0.025em; margin: 0 0 20px; font-weight: 700; }
+.lede { font-size: 19px; color: var(--muted); margin: 0 0 28px; max-width: 30em; }
+.store { display: inline-block; padding: 12px 20px; border-radius: 11px; background: var(--accent); color: var(--bg); font-weight: 600; font-size: 16px; text-decoration: none; }
+.fine { font-size: 14px; color: var(--muted); margin: 12px 0 0; }
+.shots { position: relative; padding: 0 0 36px; }
+.shots .mac { border-radius: 12px; box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 18px 40px -18px rgba(20,30,40,.35); }
+.shots .phone { position: absolute; right: -8px; bottom: 0; width: 25%; border-radius: 28px; border: 5px solid #15191C;
+                box-shadow: 0 18px 40px -16px rgba(20,30,40,.45); background: #15191C; }
+
+/* Home: features, as plain rows */
+section { padding: 56px 0; border-top: 1px solid var(--line); }
+section h2 { font-size: 30px; line-height: 1.15; letter-spacing: -0.015em; margin: 0 0 14px; }
+.row { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 48px; }
+.row p { margin: 0 0 14px; max-width: 36em; }
+.row p:last-child { margin-bottom: 0; }
+.also { columns: 2; column-gap: 48px; margin: 0; padding: 0; list-style: none; }
+.also li { break-inside: avoid; padding: 0 0 14px; }
+.also b { display: block; font-weight: 600; }
+.also span { color: var(--muted); font-size: 15px; }
+.pro { font-size: 13px; color: var(--muted); font-weight: 400; }
+
+/* Home: servers and pricing */
+dl.servers { margin: 0; }
+.servers dt { font-weight: 600; }
+.servers dd { margin: 0 0 16px; color: var(--muted); }
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.plan { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+.plan h3 { margin: 0; font-size: 18px; }
+.price { font-size: 28px; font-weight: 700; margin: 4px 0 12px; letter-spacing: -0.01em; }
+.price small { font-size: 15px; font-weight: 400; color: var(--muted); }
+.plan ul { margin: 0; padding-left: 20px; font-size: 15px; }
+.plan li { margin: 0 0 6px; }
+
+/* Home: the name */
+.name { background: var(--band); color: var(--band-text); border: 0; padding: 0; margin-top: 24px; overflow: hidden; }
+.name .wrap { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 40px; align-items: end; }
+.name .words { padding: 64px 0; }
+.say { color: var(--band-muted); font-size: 15px; margin: 0 0 10px; }
+.name h2 { font-size: 34px; margin: 0 0 16px; }
+.name p { margin: 0 0 12px; max-width: 32em; }
+.name a { color: var(--band-text); }
+.peak { width: 100%; max-width: 380px; justify-self: end; display: block; }
+
+/* FAQ */
+details { border-top: 1px solid var(--line); padding: 14px 0; }
+details:last-of-type { border-bottom: 1px solid var(--line); }
+summary { cursor: pointer; font-weight: 600; }
+details[open] summary { margin-bottom: 8px; }
+details p { margin: 0 0 10px; }
+details p:last-child, details ul:last-child { margin-bottom: 0; }
+
+/* Footer */
+footer { border-top: 1px solid var(--line); padding: 24px 0 40px; font-size: 14px; color: var(--muted); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; }
+footer a { color: var(--muted); margin-right: 18px; }
+.home footer { border-top: 0; }
+
+/* Support and Privacy */
+main.doc { max-width: 720px; margin: 0 auto; padding: 24px 24px 80px; }
+.doc h1 { font-size: 38px; line-height: 1.1; letter-spacing: -0.02em; margin: 8px 0 8px; }
+.doc h2 { font-size: 22px; margin: 44px 0 8px; }
+.doc h3 { font-size: 17px; margin: 22px 0 4px; }
+.doc p, .doc li { margin: 0 0 12px; }
+.doc ul { padding-left: 22px; }
+.muted { color: var(--muted); font-size: 15px; }
+.summary { margin: 24px 0 8px; font-size: 1.05em; }
+.summary p:last-child { margin-bottom: 0; }
+.msg { font-style: italic; color: var(--muted); }
+.placeholder { background: #FFE9A8; color: #3B2F00; padding: 0 4px; border-radius: 4px; }
+
+@media (max-width: 820px) {
+  .hero { grid-template-columns: 1fr; gap: 36px; padding: 24px 0 48px; }
+  .hero h1 { font-size: 40px; }
+  .row, .plans, .name .wrap { grid-template-columns: 1fr; gap: 20px; }
+  .also { columns: 1; }
+  .name .words { padding: 48px 0 0; }
+  .peak { max-width: 240px; justify-self: start; }
+  section { padding: 44px 0; }
+  .top nav { gap: 16px; }
+}
+@media (max-width: 420px) {
+  .top nav a.hide-small { display: none; }
+  .hero h1 { font-size: 34px; }
+}

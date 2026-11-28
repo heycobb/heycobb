@@ -20,8 +20,8 @@ before submitting; they change.
 |---|---|
 | **2.1 Demo access.** Reviewers can't use your NAS. Apple asks for a demo account or a fully featured demo mode. | ✅ Built-in demo library ("Try the demo library" on first launch). In the App Review notes, explain that it's a client for the user's own NAS and point to demo mode. Be ready to send a short video of the app on a real device with your NAS. |
 | **5.2 Intellectual property.** Don't use Synology's or Tailscale's names or logos so it looks like their app. | ✅ Independent name. ⚠️ Mention compatibility only in descriptive text ("works with Synology DSM 7"). Don't put a Synology logo in screenshots or the icon. The About screen carries a "not affiliated" line. |
-| **5.1.1 Privacy policy URL.** Required for every app. | ✅ Written: `site/privacy.html` (also linked in Settings › About as `https://arkenal.app/privacy`). ⬜ Fill in your name (yellow placeholder), host it at `arkenal.app/privacy`, and set up `privacy@arkenal.app`. |
-| **Support URL.** Required on the App Store listing. | ✅ Written: `site/support.html` (setup, Tailscale and other VPNs, DDNS, QuickConnect, certificates, offline files, fixes for every in-app error message; linked in Settings › About as `https://arkenal.app/support`). ⬜ Host it at `arkenal.app/support` and set up `support@arkenal.app`. |
+| **5.1.1 Privacy policy URL.** Required for every app. | ✅ Written: `site/public/privacy.html` (also linked in Settings › About as `https://arkenal.xyz/privacy`). ⬜ Fill in your name (yellow placeholder), host it at `arkenal.xyz/privacy`, and set up `privacy@arkenal.xyz`. |
+| **Support URL.** Required on the App Store listing. | ✅ Written: `site/public/support.html` (setup, Tailscale and other VPNs, DDNS, QuickConnect, certificates, offline files, fixes for every in-app error message; linked in Settings › About as `https://arkenal.xyz/support`). ⬜ Host it at `arkenal.xyz/support` and set up `support@arkenal.xyz`. |
 | **App Privacy "nutrition label".** | ✅ Answer "Data Not Collected". This matches `PrivacyInfo.xcprivacy`. |
 | **Privacy manifest** with reasons for "required reason" APIs. | ✅ `App/PrivacyInfo.xcprivacy` declares UserDefaults, file timestamps and disk space. |
 | **Purpose strings** for local network and Face ID. | ✅ `Config/Info.plist`. |
@@ -47,7 +47,7 @@ uses the exact name. Close names: ARKEN (EU mark, covers software), ARKEON
 Store search for "Arkenal" shows Arsenal FC's app.
 
 Still to do:
-1. Register arkenal.com and arkenal.app (and snowlightlabs.com / .app).
+1. ✅ Registered 2026-11-27 on Cloudflare: arkenal.xyz (app site, `site/`), snowlightlabs.com and snowlightlabs.xyz.
 2. Have a trademark attorney clear ARKENAL against ARSENAL (Arsenal FC) and
    ARKEN in Class 9 (software) and Class 42 (software services), US and EU.
    Consider an intent-to-use filing for ARKENAL in Class 9.

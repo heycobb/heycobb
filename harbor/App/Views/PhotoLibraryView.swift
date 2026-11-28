@@ -45,6 +45,11 @@ struct PhotoLibraryView: View {
             // Start with the Photo Backup folder, if there is one.
             if library.folders.isEmpty, let destination = model.backup.settings.destination { library.addFolder(destination) }
             #endif
+            // The demo library starts with its Photos folder, so the tab
+            // isn't empty for someone trying the app (or App Review).
+            if library.folders.isEmpty, model.activeServer?.isDemo == true, model.connection != .connecting {
+                library.addFolder("/Photos")
+            }
             library.refresh()
         }
     }

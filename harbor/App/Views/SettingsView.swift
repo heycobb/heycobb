@@ -244,8 +244,8 @@ struct SettingsView: View {
                 #if os(macOS)
                 .buttonStyle(.link) // matches the links below
                 #endif
-            Link("Get Support", destination: URL(string: "https://arkenal.app/support")!)
-            Link("Privacy Policy", destination: URL(string: "https://arkenal.app/privacy")!)
+            Link("Get Support", destination: URL(string: "https://arkenal.xyz/support")!)
+            Link("Privacy Policy", destination: URL(string: "https://arkenal.xyz/privacy")!)
             Button("Acknowledgements") { showingAcknowledgements = true }
                 #if os(macOS)
                 .buttonStyle(.link)
